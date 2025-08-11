@@ -86,6 +86,8 @@ app.ws('/connection', (ws) => {
         marks = marks.filter(m => m !== msg.mark.name);
       } else if (msg.event === 'stop') {
         console.log(`Twilio -> Media stream ${streamSid} ended.`.underline.red);
+        // Clean up the transcription service when call ends
+        transcriptionService.close();
       }
     });
 
@@ -99,6 +101,8 @@ app.ws('/connection', (ws) => {
             event: 'clear',
           })
         );
+        // Clear transcription buffers on interruption
+        transcriptionService.clearBuffers();
       }
     });
 
@@ -122,6 +126,12 @@ app.ws('/connection', (ws) => {
 
     streamService.on('audiosent', (markLabel) => {
       marks.push(markLabel);
+    });
+    
+    // Clean up when WebSocket closes
+    ws.on('close', () => {
+      console.log('WebSocket closed, cleaning up services'.cyan);
+      transcriptionService.close();
     });
   } catch (err) {
     console.log(err);
