@@ -22,7 +22,7 @@ app.post('/incoming', (req, res) => {
     const response = new VoiceResponse();
     const connect = response.connect();
     connect.stream({ url: `wss://${process.env.SERVER}/connection` });
-  
+
     res.type('text/xml');
     res.end(response.toString());
   } catch (err) {
@@ -41,24 +41,42 @@ app.ws('/connection', (ws) => {
     const streamService = new StreamService(ws);
     const transcriptionService = new TranscriptionService();
     const ttsService = new TextToSpeechService({});
-  
+
     let marks = [];
     let interactionCount = 0;
-  
+
     // Incoming from MediaStream
     ws.on('message', function message(data) {
       const msg = JSON.parse(data);
       if (msg.event === 'start') {
         streamSid = msg.start.streamSid;
         callSid = msg.start.callSid;
-        
+
         streamService.setStreamSid(streamSid);
         gptService.setCallSid(callSid);
 
         // Set RECORDING_ENABLED='true' in .env to record calls
         recordingService(ttsService, callSid).then(() => {
           console.log(`Twilio -> Starting Media Stream for ${streamSid}`.underline.red);
-          ttsService.generate({partialResponseIndex: null, partialResponse: 'Hello! I understand you\'re looking for a pair of AirPods, is that correct?'}, 0);
+          
+          // Variety of natural greetings - like a real person answering
+          const greetings = [
+            'Hello?',
+            'Hi Francine!',
+            'Hello Francine!',
+            'Hi there!',
+            'Hello!',
+            'Hi!',
+            'Hey there!',
+            'Hi Francine, how are you?',
+            'Hello Francine, how are you doing?',
+            'Hi, how are you?'
+          ];
+          
+          // Select a random greeting
+          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+          
+          ttsService.generate({partialResponseIndex: null, partialResponse: randomGreeting}, 0);
         });
       } else if (msg.event === 'media') {
         transcriptionService.send(msg.media.payload);
@@ -70,7 +88,7 @@ app.ws('/connection', (ws) => {
         console.log(`Twilio -> Media stream ${streamSid} ended.`.underline.red);
       }
     });
-  
+
     transcriptionService.on('utterance', async (text) => {
       // This is a bit of a hack to filter out empty utterances
       if(marks.length > 0 && text?.length > 5) {
@@ -83,25 +101,25 @@ app.ws('/connection', (ws) => {
         );
       }
     });
-  
+
     transcriptionService.on('transcription', async (text) => {
       if (!text) { return; }
       console.log(`Interaction ${interactionCount} – STT -> GPT: ${text}`.yellow);
       gptService.completion(text, interactionCount);
       interactionCount += 1;
     });
-    
+
     gptService.on('gptreply', async (gptReply, icount) => {
       console.log(`Interaction ${icount}: GPT -> TTS: ${gptReply.partialResponse}`.green );
       ttsService.generate(gptReply, icount);
     });
-  
+
     ttsService.on('speech', (responseIndex, audio, label, icount) => {
       console.log(`Interaction ${icount}: TTS -> TWILIO: ${label}`.blue);
-  
+
       streamService.buffer(responseIndex, audio);
     });
-  
+
     streamService.on('audiosent', (markLabel) => {
       marks.push(markLabel);
     });
