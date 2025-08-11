@@ -21,8 +21,47 @@ const tools = [
         properties: {
           status: {
             type: 'string',
-            description: 'Whether or not the customer call was successfully transfered'
+            description: 'Whether or not the customer call was successfully transferred'
           },
+        }
+      }
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'getNewsHeadlines',
+      say: 'Let me check what\'s happening in the news today.',
+      description: 'PREFERRED METHOD for engaging Francine with novel topics to hold her interest. Fetches recent news headlines from various CBS News categories to provide fresh, interesting conversation topics. This is highly effective for redirecting from anxiety-inducing subjects or repetitive concerns. The function randomly selects from general news, health, science, or entertainment categories and returns 5 recent headlines with brief summaries. Use this proactively when conversation becomes circular or when Francine seems anxious.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+      returns: {
+        type: 'object',
+        properties: {
+          category: {
+            type: 'string',
+            description: 'The news category selected (general news, health news, science news, or entertainment news)'
+          },
+          headlines: {
+            type: 'array',
+            description: 'Array of 5 news items with headline and summary',
+            items: {
+              type: 'object',
+              properties: {
+                headline: {
+                  type: 'string',
+                  description: 'The news headline'
+                },
+                summary: {
+                  type: 'string',
+                  description: 'A two-sentence synopsis of the article'
+                }
+              }
+            }
+          }
         }
       }
     },
