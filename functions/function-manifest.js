@@ -65,6 +65,32 @@ const tools = [
         }
       }
     },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'endCall',
+      description: 'Ends the current phone call gracefully.',
+      parameters: {
+        type: 'object',
+        properties: {
+          callSid: {
+            type: 'string',
+            description: 'The unique identifier for the active phone call.',
+          },
+        },
+        required: ['callSid'],
+      },
+      returns: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'Confirmation message about the call ending'
+          },
+        }
+      }
+    },
   }
 ];
 
