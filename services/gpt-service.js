@@ -12,9 +12,10 @@ tools.forEach((tool) => {
 });
 
 class GptService extends EventEmitter {
-  constructor() {
+  constructor(markCompletionService) {
     super();
     this.openai = new OpenAI();
+    this.markCompletionService = markCompletionService;
 
     // Get current date and time in Los Angeles
     const laTime = new Date().toLocaleString('en-US', {
@@ -118,13 +119,31 @@ class GptService extends EventEmitter {
           partialResponse: say
         }, interactionCount);
 
-        let functionResponse = await functionToCall(validatedArgs);
+        // For transfer and endCall functions, pass the markCompletionService
+        let functionResponse;
+        if (functionName === 'transferCallDeferred' || functionName === 'endCallDeferred') {
+          // Add delay to ensure the "say" message gets processed through TTS and marked
+          // This allows the audio to be generated, sent, and queued before we check for marks
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const argsWithService = {
+            ...validatedArgs,
+            markCompletionService: this.markCompletionService
+          };
+          functionResponse = await functionToCall(argsWithService);
+        } else {
+          functionResponse = await functionToCall(validatedArgs);
+        }
 
         // Step 4: send the info on the function call and function response to GPT
         this.updateUserContext(functionName, 'function', functionResponse);
 
-        // call the completion function again but pass in the function response to have OpenAI generate a new assistant response
-        await this.completion(functionResponse, interactionCount, 'function', functionName);
+        // For endCall, don't call completion again since the call is ending
+        // For other functions, call completion to get GPT's response
+        if (functionName !== 'endCallDeferred') {
+          // call the completion function again but pass in the function response to have OpenAI generate a new assistant response
+          await this.completion(functionResponse, interactionCount, 'function', functionName);
+        }
       } else {
         // We use completeResponse for userContext
         completeResponse += content;

@@ -9,6 +9,7 @@ const { StreamService } = require('./services/stream-service');
 const { TranscriptionService } = require('./services/transcription-service');
 const { TextToSpeechService } = require('./services/tts-service');
 const { recordingService } = require('./services/recording-service');
+const { MarkCompletionService } = require('./services/mark-completion-service');
 
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
@@ -41,7 +42,8 @@ app.ws('/connection', (ws) => {
     let streamSid;
     let callSid;
 
-    const gptService = new GptService();
+    const markCompletionService = new MarkCompletionService();
+    const gptService = new GptService(markCompletionService);
     const streamService = new StreamService(ws);
     const transcriptionService = new TranscriptionService();
     const ttsService = new TextToSpeechService({});
@@ -88,6 +90,7 @@ app.ws('/connection', (ws) => {
         const label = msg.mark.name;
         console.log(`Twilio -> Audio completed mark (${msg.sequenceNumber}): ${label}`.red);
         marks = marks.filter(m => m !== msg.mark.name);
+        markCompletionService.removeMark(label);
       } else if (msg.event === 'stop') {
         console.log(`Twilio -> Media stream ${streamSid} ended.`.underline.red);
         // Clean up the transcription service when call ends
@@ -130,12 +133,14 @@ app.ws('/connection', (ws) => {
 
     streamService.on('audiosent', (markLabel) => {
       marks.push(markLabel);
+      markCompletionService.addMark(markLabel);
     });
 
     // Clean up when WebSocket closes
     ws.on('close', () => {
       console.log('WebSocket closed, cleaning up services'.cyan);
       transcriptionService.close();
+      markCompletionService.clearAll();
     });
   } catch (err) {
     console.log(err);

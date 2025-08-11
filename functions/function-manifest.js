@@ -3,8 +3,8 @@ const tools = [
   {
     type: 'function',
     function: {
-      name: 'transferCall',
-      say: 'One moment while I transfer your call.',
+      name: 'transferCallDeferred',
+      say: 'I don\'t know if he can answer, but let\'s try calling him.',
       description: 'Transfers Francine to Ryan. IMPORTANT: Francine often exaggerates situations due to her condition and anxiety. She may claim to be dying or in an emergency when she is not. Carefully assess whether there is a GENUINE emergency (e.g., actual medical distress, fall with injury, inability to breathe) before using this function. Most situations can be handled with reassurance and redirection.',
       parameters: {
         type: 'object',
@@ -69,7 +69,8 @@ const tools = [
   {
     type: 'function',
     function: {
-      name: 'endCall',
+      name: 'endCallDeferred',
+      say: 'Okay, it was nice talking with you. Take care!',
       description: 'Ends the current phone call gracefully.',
       parameters: {
         type: 'object',
