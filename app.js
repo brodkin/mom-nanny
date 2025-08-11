@@ -20,6 +20,10 @@ const PORT = process.env.PORT || 3000;
 app.post('/incoming', (req, res) => {
   try {
     const response = new VoiceResponse();
+
+    // Simulate 4 rings (each ring cycle is ~5 seconds)
+    response.pause({ length: 18 });
+
     const connect = response.connect();
     connect.stream({ url: `wss://${process.env.SERVER}/connection` });
 
@@ -58,7 +62,7 @@ app.ws('/connection', (ws) => {
         // Set RECORDING_ENABLED='true' in .env to record calls
         recordingService(ttsService, callSid).then(() => {
           console.log(`Twilio -> Starting Media Stream for ${streamSid}`.underline.red);
-          
+
           // Variety of natural greetings - like a real person answering
           const greetings = [
             'Hello?',
@@ -72,10 +76,10 @@ app.ws('/connection', (ws) => {
             'Hello Francine, how are you doing?',
             'Hi, how are you?'
           ];
-          
+
           // Select a random greeting
           const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-          
+
           ttsService.generate({partialResponseIndex: null, partialResponse: randomGreeting}, 0);
         });
       } else if (msg.event === 'media') {
@@ -127,7 +131,7 @@ app.ws('/connection', (ws) => {
     streamService.on('audiosent', (markLabel) => {
       marks.push(markLabel);
     });
-    
+
     // Clean up when WebSocket closes
     ws.on('close', () => {
       console.log('WebSocket closed, cleaning up services'.cyan);
