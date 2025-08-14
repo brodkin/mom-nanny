@@ -16,7 +16,21 @@ const VoiceResponse = require('twilio').twiml.VoiceResponse;
 const app = express();
 ExpressWs(app);
 
+// Admin routes
+const adminRouter = require('./routes/admin');
+const adminStatsRouter = require('./routes/api/admin-stats');
+const adminConfigRouter = require('./routes/api/admin-config');
+
 const PORT = process.env.PORT || 3000;
+
+// Add JSON parsing middleware for admin API routes
+app.use('/admin', express.json());
+app.use('/api/admin', express.json());
+
+// Mount admin routes
+app.use('/admin', adminRouter);
+app.use('/api/admin/stats', adminStatsRouter);
+app.use('/api/admin/config', adminConfigRouter);
 
 app.post('/incoming', (req, res) => {
   try {
@@ -145,6 +159,42 @@ app.ws('/connection', (ws) => {
   } catch (err) {
     console.log(err);
   }
+});
+
+// 404 handler for admin routes
+app.use('/admin/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Admin endpoint not found',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.use('/api/admin/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Admin API endpoint not found',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Error handling middleware for admin routes
+app.use('/admin', (error, req, res, next) => {
+  console.error('Admin route error:', error);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.use('/api/admin', (error, req, res, next) => {
+  console.error('Admin API error:', error);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.listen(PORT);
