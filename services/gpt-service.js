@@ -207,7 +207,8 @@ class GptService extends EventEmitter {
         if (content.trim().slice(-1) === '•' || finishReason === 'stop') {
           const gptReply = {
             partialResponseIndex: this.partialResponseIndex,
-            partialResponse
+            partialResponse,
+            isFinal: finishReason === 'stop'
           };
 
           this.emit('gptreply', gptReply, interactionCount);
@@ -223,7 +224,7 @@ class GptService extends EventEmitter {
       }
     }
     this.userContext.push({'role': 'assistant', 'content': completeResponse});
-    console.log(`GPT -> user context length: ${this.userContext.length}`.green);
+    // Context length tracked internally, no need to log during conversation
     
     if (returnUsage) {
       return {

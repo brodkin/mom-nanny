@@ -53,6 +53,9 @@ class ChatSession extends EventEmitter {
     this.conversationHistory = [];
     this.isActive = true;
     this.startTime = Date.now();
+    this.loadingInterval = null;
+    this.firstResponseReceived = false;
+    this.lastUsage = null;
     
     // Set up event handlers
     this.setupEventHandlers();
@@ -133,10 +136,15 @@ class ChatSession extends EventEmitter {
       messageId: this.messageCount
     });
 
-    // Display user message
-    console.log(`\n${chalk.cyan('🗣️ ')} ${chalk.cyan(message)}`);
+    // User message already displayed by readline prompt, no need to repeat
 
     try {
+      // Reset flag for new response
+      this.firstResponseReceived = false;
+      
+      // Show loading animation
+      this.showLoadingAnimation();
+      
       // Get GPT response with usage tracking
       const result = await this.gptService.completion(
         message,
@@ -149,9 +157,37 @@ class ChatSession extends EventEmitter {
       if (result && result.usage) {
         this.updateTokenUsage(result.usage);
         this.displayTokenUsage(result.usage);
+        // Store usage for display with response
+        this.lastUsage = result.usage;
       }
     } catch (error) {
       console.log(chalk.red(`❌ Error processing message: ${error.message}`));
+    }
+  }
+
+  /**
+   * Show loading animation while waiting for GPT response
+   */
+  showLoadingAnimation() {
+    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    let frameIndex = 0;
+    
+    process.stdout.write('\n🤖 ');
+    this.loadingInterval = setInterval(() => {
+      process.stdout.write(`\r🤖 ${chalk.gray(frames[frameIndex])} Thinking...`);
+      frameIndex = (frameIndex + 1) % frames.length;
+    }, 80);
+  }
+
+  /**
+   * Stop loading animation
+   */
+  stopLoadingAnimation() {
+    if (this.loadingInterval) {
+      clearInterval(this.loadingInterval);
+      this.loadingInterval = null;
+      // Clear the loading line completely
+      process.stdout.write('\r\x1b[K');
     }
   }
 
@@ -161,9 +197,15 @@ class ChatSession extends EventEmitter {
    * @param {number} interactionCount - Current interaction number
    */
   handleGptReply(gptReply, interactionCount) {
-    const { partialResponseIndex, partialResponse } = gptReply;
+    const { partialResponseIndex, partialResponse, isFinal } = gptReply;
     
     if (!partialResponse) return;
+
+    // Stop loading animation on first response
+    if (!this.firstResponseReceived) {
+      this.stopLoadingAnimation();
+      this.firstResponseReceived = true;
+    }
 
     const timestamp = new Date().toLocaleTimeString();
     const fullTimestamp = new Date(); // Use full Date object for conversation analyzer
@@ -208,6 +250,18 @@ class ChatSession extends EventEmitter {
 
     // Generate TTS (which will just log for mock service)
     this.ttsService.generate(gptReply, interactionCount);
+    
+    // If this is the final response, show stats and emit event to show prompt again
+    if (isFinal) {
+      // Show compact stats after final response
+      if (this.lastUsage) {
+        const statsString = this.getStatsString(this.lastUsage);
+        if (statsString) {
+          console.log(`\n${statsString.trim()}`);
+        }
+      }
+      this.emit('responseComplete');
+    }
   }
 
   /**
@@ -237,20 +291,36 @@ class ChatSession extends EventEmitter {
   }
 
   /**
-   * Display token usage statistics
+   * Get stats string for message display
+   * @param {Object} turnUsage - Usage for current turn
+   * @returns {string} Compact stats string
+   */
+  getStatsString(turnUsage = null) {
+    if (!this.debugMode && turnUsage) {
+      const contextSize = this.gptService.userContext.length;
+      const maxContext = 128000; // GPT-4 context limit
+      const contextPercent = ((contextSize / maxContext) * 100).toFixed(0);
+      return chalk.gray(`[${turnUsage.total_tokens || 0}/${contextPercent}%] `);
+    }
+    return '';
+  }
+
+  /**
+   * Display token usage statistics (legacy method for debug mode)
    * @param {Object} turnUsage - Usage for current turn
    */
   displayTokenUsage(turnUsage) {
     if (!turnUsage) return;
 
-    const contextSize = this.gptService.userContext.length;
-    const maxContext = 128000; // GPT-4 context limit
-    const contextPercent = ((contextSize / maxContext) * 100).toFixed(1);
+    if (this.debugMode) {
+      const contextSize = this.gptService.userContext.length;
+      const maxContext = 128000; // GPT-4 context limit
+      const contextPercent = ((contextSize / maxContext) * 100).toFixed(1);
 
-    console.log(chalk.white.bold('\n📈 Token Usage:'));
-    console.log(chalk.white(`   ├─ This Turn: ${turnUsage.prompt_tokens || 0} prompt + ${turnUsage.completion_tokens || 0} completion = ${turnUsage.total_tokens || 0} total`));
-    console.log(chalk.white(`   ├─ Session Total: ${this.sessionTokens.total} tokens`));
-    console.log(chalk.white(`   └─ Context: ${contextSize} messages / ${maxContext} (${contextPercent}%)`));
+      // Full debug stats
+      console.log(chalk.gray(`\n[${turnUsage.total_tokens || 0} tokens (${turnUsage.prompt_tokens || 0}p+${turnUsage.completion_tokens || 0}c) | ${contextSize} msgs | ${contextPercent}% context]`));
+    }
+    // In non-debug mode, stats are shown inline with messages
   }
 
   /**

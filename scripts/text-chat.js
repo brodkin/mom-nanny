@@ -113,10 +113,7 @@ class TextChatCLI {
       // Process user input through chat session
       await this.chatSession.processUserInput(trimmedInput);
       
-      if (this.isRunning) {
-        console.log(); // Add some spacing
-        this.rl.prompt();
-      }
+      // Don't show prompt immediately - let GPT response complete first
     });
 
     // Handle Ctrl+C
@@ -129,6 +126,14 @@ class TextChatCLI {
       this.isRunning = false;
       this.rl.close();
       process.exit(0);
+    });
+
+    // Handle response complete - show prompt again
+    this.chatSession.on('responseComplete', () => {
+      if (this.isRunning) {
+        console.log(); // Add some spacing
+        this.rl.prompt();
+      }
     });
 
     // Handle readline close
