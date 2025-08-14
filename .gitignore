@@ -147,4 +147,7 @@ dist
 # Ignore Fly.io configuration file
 fly.toml
 
+# Git worktrees directory
+trees/
+
 # End of https://www.toptal.com/developers/gitignore/api/node
