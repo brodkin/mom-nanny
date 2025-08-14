@@ -150,4 +150,13 @@ fly.toml
 # Git worktrees directory
 trees/
 
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+conversation-summaries.db*
+
+# Storage directory for recordings
+storage/
+
 # End of https://www.toptal.com/developers/gitignore/api/node
