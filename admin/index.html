@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mom & Nanny AI - Admin Dashboard</title>
+  <title>Nanny - Admin Dashboard</title>
   
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   
   <!-- CSS -->
-  <link rel="stylesheet" href="./css/admin.css">
+  <link rel="stylesheet" href="css/admin.css">
   
   <!-- Meta tags -->
-  <meta name="description" content="Admin dashboard for Mom & Nanny AI compassionate companion system">
+  <meta name="description" content="Admin dashboard for Nanny compassionate companion system">
   <meta name="theme-color" content="#6366f1">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='65' font-size='60' text-anchor='middle' fill='white'>🤱</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><g transform='translate(50,50) scale(1.5)'><path d='M12 2C8.5 2 6 4.5 6 7.5C6 8.2 6.1 8.9 6.3 9.5C5.8 9.3 5.3 9.2 4.8 9.2C3.8 9.2 3 10 3 11C3 12 3.8 12.8 4.8 12.8C5.3 12.8 5.8 12.7 6.3 12.5C6.5 12.8 6.8 13.1 7.1 13.3C7.5 13.6 8 13.8 8.5 13.9V14.5C8.5 15.3 9.2 16 10 16H14C14.8 16 15.5 15.3 15.5 14.5V13.9C16 13.8 16.5 13.6 16.9 13.3C17.2 13.1 17.5 12.8 17.7 12.5C18.2 12.7 18.7 12.8 19.2 12.8C20.2 12.8 21 12 21 11C21 10 20.2 9.2 19.2 9.2C18.7 9.2 18.2 9.3 17.7 9.5C17.9 8.9 18 8.2 18 7.5C18 4.5 15.5 2 12 2Z' fill='white'/><ellipse cx='12' cy='10' rx='4.5' ry='4' fill='%236366f1'/><path d='M9 14.5L10.5 15.5L12 15L13.5 15.5L15 14.5' stroke='white' stroke-width='0.5' fill='none'/><path d='M8 16C7.5 16 7 16.5 7 17V20C7 20.5 7.5 21 8 21H16C16.5 21 17 20.5 17 20V17C17 16.5 16.5 16 16 16' fill='white'/><path d='M10 17H14V20.5C14 20.8 13.8 21 13.5 21H10.5C10.2 21 10 20.8 10 20.5V17Z' fill='%236366f1'/><ellipse cx='6.5' cy='18' rx='1.5' ry='2.5' transform='rotate(-20 6.5 18)' fill='white'/><ellipse cx='17.5' cy='18' rx='1.5' ry='2.5' transform='rotate(20 17.5 18)' fill='white'/></g></svg>">
   
   <!-- Prevent FOUC -->
   <style>
@@ -34,10 +34,31 @@
     <aside class="admin-sidebar custom-scrollbar" role="navigation" aria-label="Main navigation">
       <!-- Brand -->
       <div class="sidebar-brand">
-        <div class="brand-logo" aria-label="Mom & Nanny AI Logo">
-          🤱
+        <div class="brand-logo" aria-label="Nanny Logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <!-- Hair bun and sides -->
+            <circle cx="12" cy="6" r="4.5" fill="white"/>
+            <circle cx="7" cy="8" r="2" fill="white"/>
+            <circle cx="17" cy="8" r="2" fill="white"/>
+            
+            <!-- Face (negative space/cutout) -->
+            <circle cx="12" cy="9.5" r="3.2" fill="var(--color-primary)"/>
+            
+            <!-- Collar -->
+            <path d="M9 13L12 14L15 13" stroke="white" stroke-width="1" fill="none"/>
+            
+            <!-- Body/Uniform -->
+            <rect x="8" y="14" width="8" height="8" rx="1" fill="white"/>
+            
+            <!-- Apron -->
+            <rect x="10" y="15.5" width="4" height="6" rx="0.5" fill="var(--color-primary)"/>
+            
+            <!-- Arms -->
+            <ellipse cx="6" cy="17" rx="1.2" ry="2.5" fill="white"/>
+            <ellipse cx="18" cy="17" rx="1.2" ry="2.5" fill="white"/>
+          </svg>
         </div>
-        <div class="brand-text">Mom & Nanny AI</div>
+        <div class="brand-text">Nanny</div>
       </div>
 
       <!-- Navigation Menu -->
@@ -160,16 +181,22 @@
           class="theme-toggle"
           aria-label="Toggle dark mode"
           data-tooltip="Toggle Theme (Ctrl+Shift+T)"
-        ></button>
+        >
+          <!-- Sun Icon (for light mode) -->
+          <svg class="theme-icon theme-icon-light" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <!-- Moon Icon (for dark mode) -->
+          <svg class="theme-icon theme-icon-dark" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
 
         <!-- Notifications -->
         <button class="btn-icon" aria-label="View notifications" data-tooltip="Notifications">
           <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
           </svg>
-          <span class="badge badge-error" style="position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; padding: 0; min-width: 0;">
-            <span class="sr-only">3 new notifications</span>
-          </span>
         </button>
 
         <!-- User Profile -->
@@ -241,6 +268,12 @@
               </svg>
               View Analytics
             </a>
+            <button onclick="window.adminDashboard.testToastPositioning()" class="btn btn-outline" style="border-color: rgba(255,255,255,0.3); color: white;">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              Test Notifications
+            </button>
           </div>
         </div>
       </section>
@@ -270,28 +303,60 @@
           <div class="stat-card hover-lift">
             <div class="stat-value" data-stat="total-calls">0</div>
             <div class="stat-label">Total Calls</div>
-            <div class="stat-change positive">+12% from last month</div>
+            <div class="stat-trend">
+              <span class="trend-badge trend-up">
+                <svg class="trend-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <path d="M6 3L11 8L9.5 8L9.5 11L8.5 11L8.5 8L7 8L6 8L5 8L3.5 8L3.5 11L2.5 11L2.5 8L1 8L6 3Z"/>
+                </svg>
+                <span class="trend-value">12%</span>
+              </span>
+              <span class="trend-text">from last month</span>
+            </div>
           </div>
 
           <!-- Active Sessions -->
           <div class="stat-card hover-lift">
             <div class="stat-value" data-stat="active-sessions">0</div>
             <div class="stat-label">Active Sessions</div>
-            <div class="stat-change positive">+3 new sessions</div>
+            <div class="stat-trend">
+              <span class="trend-badge trend-up">
+                <svg class="trend-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <path d="M6 3L11 8L9.5 8L9.5 11L8.5 11L8.5 8L7 8L6 8L5 8L3.5 8L3.5 11L2.5 11L2.5 8L1 8L6 3Z"/>
+                </svg>
+                <span class="trend-value">+3</span>
+              </span>
+              <span class="trend-text">new sessions</span>
+            </div>
           </div>
 
           <!-- System Uptime -->
           <div class="stat-card hover-lift">
             <div class="stat-value" data-stat="system-uptime">0</div>
             <div class="stat-label">Uptime</div>
-            <div class="stat-change positive">Excellent performance</div>
+            <div class="stat-trend">
+              <span class="trend-badge trend-stable">
+                <svg class="trend-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <path d="M2 6L10 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="trend-value">99.9%</span>
+              </span>
+              <span class="trend-text">excellent performance</span>
+            </div>
           </div>
 
           <!-- Response Time -->
           <div class="stat-card hover-lift">
             <div class="stat-value" data-stat="response-time">0</div>
             <div class="stat-label">Avg Response Time</div>
-            <div class="stat-change positive">-15ms improvement</div>
+            <div class="stat-trend">
+              <span class="trend-badge trend-down">
+                <svg class="trend-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <path d="M6 9L1 4L2.5 4L2.5 1L3.5 1L3.5 4L5 4L6 4L7 4L8.5 4L8.5 1L9.5 1L9.5 4L11 4L6 9Z"/>
+                </svg>
+                <span class="trend-value">15ms</span>
+              </span>
+              <span class="trend-text">improvement</span>
+            </div>
           </div>
         </div>
       </section>
@@ -627,6 +692,6 @@
   </div>
 
   <!-- JavaScript -->
-  <script src="./js/admin.js"></script>
+  <script src="js/admin.js"></script>
 </body>
 </html>

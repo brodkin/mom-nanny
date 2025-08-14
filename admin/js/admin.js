@@ -618,7 +618,7 @@ class AdminDashboard {
     toast.innerHTML = `
       <div class="toast-header">
         <h4 class="toast-title">${title}</h4>
-        <button class="toast-close" onclick="this.parentElement.parentElement.remove()">
+        <button class="toast-close" onclick="window.adminDashboard.removeToast(this.parentElement.parentElement)">
           <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
             <path d="M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z"/>
           </svg>
@@ -638,18 +638,51 @@ class AdminDashboard {
 
     // Auto remove after 5 seconds
     setTimeout(() => {
-      if (toast.parentNode) {
-        toast.classList.add('animate-slide-out');
-        setTimeout(() => {
-          toast.remove();
-          
-          // Remove container if empty
-          if (container.children.length === 0) {
-            container.remove();
-          }
-        }, 300);
-      }
+      this.removeToast(toast);
     }, 5000);
+  }
+
+  removeToast(toast) {
+    if (!toast || !toast.parentNode) return;
+
+    const container = toast.parentNode;
+    const allToasts = Array.from(container.children);
+    const toastIndex = allToasts.indexOf(toast);
+    const toastsBelow = allToasts.slice(toastIndex + 1);
+
+    // Calculate the height of the toast being removed BEFORE starting animations
+    const toastHeight = toast.offsetHeight;
+    const toastMargin = 12; // var(--space-3) = 12px from CSS
+    const totalHeightRemoved = toastHeight + toastMargin;
+
+    // Start slide-out animation for the toast being removed
+    toast.classList.add('animate-slide-out');
+    
+    // Immediately start slide-up animation for remaining toasts
+    toastsBelow.forEach((remainingToast) => {
+      remainingToast.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      remainingToast.style.transform = `translateY(-${totalHeightRemoved}px)`;
+    });
+
+    // After slide-out animation completes (400ms), remove the toast
+    setTimeout(() => {
+      toast.remove();
+      
+      // Reset transforms on remaining toasts after both animations complete
+      setTimeout(() => {
+        toastsBelow.forEach((remainingToast) => {
+          if (remainingToast.parentNode) { // Check toast still exists
+            remainingToast.style.transition = '';
+            remainingToast.style.transform = '';
+          }
+        });
+      }, 50); // Small delay to ensure DOM is updated
+
+      // Remove container if empty
+      if (container.children.length === 0) {
+        container.remove();
+      }
+    }, 400); // Wait for slide-out animation to complete
   }
 
   loadInitialData() {
@@ -739,6 +772,23 @@ class AdminDashboard {
     }
   }
 
+  // Test method for toast notifications
+  testToastPositioning() {
+    const types = ['success', 'info', 'warning', 'error'];
+    const messages = [
+      { title: 'Success', message: 'Operation completed successfully' },
+      { title: 'Information', message: 'New updates are available' },
+      { title: 'Warning', message: 'Please review your settings' },
+      { title: 'Error', message: 'An error occurred' }
+    ];
+    
+    types.forEach((type, index) => {
+      setTimeout(() => {
+        this.showToast(messages[index].title, messages[index].message, type);
+      }, index * 1000);
+    });
+  }
+
   resizeCharts() {
     // Placeholder for chart resize logic
     console.log('Resizing charts...');
@@ -748,16 +798,16 @@ class AdminDashboard {
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   window.adminDashboard = new AdminDashboard();
-});
-
-// Add ripple animation keyframe
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes ripple {
-    to {
-      transform: scale(4);
-      opacity: 0;
+  
+  // Add ripple animation keyframe after DOM is ready
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
     }
-  }
-`;
-document.head.appendChild(style);
+  `;
+  document.head.appendChild(style);
+});

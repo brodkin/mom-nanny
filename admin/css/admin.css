@@ -10,41 +10,102 @@
 @import './layout.css';
 @import './components.css';
 @import './animations.css';
+@import './fixes.css'; /* UI improvements and fixes */
 
 /* Admin-Specific Styles */
 
-/* Theme Toggle */
+/* Theme Toggle - Modern Switch Design */
 .theme-toggle {
   position: relative;
-  width: 60px;
-  height: 32px;
+  width: 66px;
+  height: 22px;
   background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-full);
+  border: 2px solid var(--border-secondary);
+  border-radius: 11px;
   cursor: pointer;
   transition: all var(--transition-fast);
-  overflow: hidden;
+  overflow: hidden; /* Keep knob inside the border */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 3px;
 }
 
+/* Toggle Knob */
 .theme-toggle::before {
   content: '';
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 26px;
-  height: 26px;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-full);
-  transition: transform var(--transition-fast);
-  box-shadow: var(--shadow-sm);
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 3;
 }
 
+/* Dark mode knob position */
 .theme-toggle.dark::before {
-  transform: translateX(28px);
+  transform: translateX(44px); /* Move knob to the right side (66px - 4px borders - 14px knob - 2px left = 46px, using 44px for proper fit) */
+  background: white; /* Keep white for better visibility */
 }
 
+/* Toggle background colors */
+.theme-toggle {
+  background: #e2e8f0; /* Light gray for off state */
+}
+
+.theme-toggle.dark {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Hover effects */
 .theme-toggle:hover {
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.theme-toggle:hover::before {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Theme Icons */
+.theme-icon {
+  position: relative;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+/* Light mode icon (sun) */
+.theme-icon-light {
+  color: #f59e0b;
+  opacity: 1;
+  transform: scale(1);
+  margin-left: 3px;
+}
+
+.theme-toggle.dark .theme-icon-light {
+  opacity: 0.3;
+  transform: scale(0.8);
+}
+
+/* Dark mode icon (moon) */
+.theme-icon-dark {
+  color: #64748b;
+  opacity: 0.3;
+  transform: scale(0.8);
+  margin-right: 3px;
+}
+
+.theme-toggle.dark .theme-icon-dark {
+  color: white;
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* Sidebar Brand */
@@ -505,7 +566,7 @@
 /* Notification Toast */
 .toast-container {
   position: fixed;
-  top: var(--space-6);
+  top: calc(var(--header-height) + var(--space-4));
   right: var(--space-6);
   z-index: var(--z-toast);
   display: flex;
@@ -652,7 +713,7 @@
   }
   
   .toast-container {
-    top: calc(var(--header-height) + var(--space-4));
+    top: calc(var(--header-height) + var(--space-3));
     right: var(--space-4);
     left: var(--space-4);
   }
