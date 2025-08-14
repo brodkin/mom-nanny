@@ -12,10 +12,11 @@ tools.forEach((tool) => {
 });
 
 class GptService extends EventEmitter {
-  constructor(markCompletionService) {
+  constructor(markCompletionService, conversationAnalyzer = null) {
     super();
     this.openai = new OpenAI();
     this.markCompletionService = markCompletionService;
+    this.conversationAnalyzer = conversationAnalyzer;
 
     // Get current date and time in Los Angeles
     const laTime = new Date().toLocaleString('en-US', {
@@ -40,6 +41,11 @@ class GptService extends EventEmitter {
   // ChatGPT decides to transfer the call.
   setCallSid (callSid) {
     this.userContext.push({ 'role': 'system', 'content': `callSid: ${callSid}` });
+  }
+
+  // Set conversation analyzer for tracking
+  setConversationAnalyzer(analyzer) {
+    this.conversationAnalyzer = analyzer;
   }
 
   validateFunctionArgs (args) {
@@ -75,6 +81,11 @@ class GptService extends EventEmitter {
 
   async completion(text, interactionCount, role = 'user', name = 'user', returnUsage = false) {
     this.updateUserContext(name, role, text);
+
+    // Track user utterances in conversation analyzer (CRITICAL for mental state detection)
+    if (this.conversationAnalyzer && role === 'user' && name === 'user') {
+      this.conversationAnalyzer.trackUserUtterance(text, new Date());
+    }
 
     // Step 1: Send user transcription to Chat GPT
     const stream = await this.openai.chat.completions.create({
@@ -141,6 +152,11 @@ class GptService extends EventEmitter {
           partialResponseIndex: null,
           partialResponse: say
         }, interactionCount);
+        
+        // Track function call pre-message in analyzer
+        if (this.conversationAnalyzer) {
+          this.conversationAnalyzer.trackAssistantResponse(say, new Date());
+        }
 
         // For transfer and endCall functions, pass the markCompletionService
         let functionResponse;
@@ -156,6 +172,11 @@ class GptService extends EventEmitter {
           functionResponse = await functionToCall(argsWithService);
         } else {
           functionResponse = await functionToCall(validatedArgs);
+        }
+
+        // Track function call in analyzer
+        if (this.conversationAnalyzer) {
+          this.conversationAnalyzer.trackFunctionCall(functionName, validatedArgs, new Date());
         }
 
         // Step 4: send the info on the function call and function response to GPT
@@ -190,6 +211,12 @@ class GptService extends EventEmitter {
           };
 
           this.emit('gptreply', gptReply, interactionCount);
+          
+          // Track assistant response in analyzer
+          if (this.conversationAnalyzer) {
+            this.conversationAnalyzer.trackAssistantResponse(gptReply.partialResponse, new Date());
+          }
+          
           this.partialResponseIndex++;
           partialResponse = '';
         }

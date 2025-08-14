@@ -1,0 +1,38 @@
+{
+  "date": "2024-01-15",
+  "totalCalls": 5,
+  "totalDuration": 1500,
+  "averageDuration": 300,
+  "calls": [
+    {
+      "callSid": "integration-test-123",
+      "startTime": "2024-01-15T14:30:00Z",
+      "endTime": "2024-01-15T14:35:00Z",
+      "duration": 300
+    },
+    {
+      "callSid": "integration-test-123",
+      "startTime": "2024-01-15T14:30:00Z",
+      "endTime": "2024-01-15T14:35:00Z",
+      "duration": 300
+    },
+    {
+      "callSid": "integration-test-123",
+      "startTime": "2024-01-15T14:30:00Z",
+      "endTime": "2024-01-15T14:35:00Z",
+      "duration": 300
+    },
+    {
+      "callSid": "integration-test-123",
+      "startTime": "2024-01-15T14:30:00Z",
+      "endTime": "2024-01-15T14:35:00Z",
+      "duration": 300
+    },
+    {
+      "callSid": "integration-test-123",
+      "startTime": "2024-01-15T14:30:00Z",
+      "endTime": "2024-01-15T14:35:00Z",
+      "duration": 300
+    }
+  ]
+}

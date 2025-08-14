@@ -118,7 +118,7 @@ class TranscriptionService extends EventEmitter {
         console.error(warning);
       });
 
-      this.dgConnection.on(LiveTranscriptionEvents.Metadata, (metadata) => {
+      this.dgConnection.on(LiveTranscriptionEvents.Metadata, () => {
         // Reduced logging for metadata
         console.log('STT -> Deepgram metadata received'.gray);
       });

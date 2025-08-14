@@ -5,6 +5,10 @@ const { GptService } = require('./gpt-service');
 const { TranscriptionService } = require('./mock-transcription-service');
 const { TextToSpeechService } = require('./mock-tts-service');
 const { StreamService } = require('./mock-stream-service');
+const ConversationAnalyzer = require('./conversation-analyzer');
+const SqliteStorageService = require('./sqlite-storage-service');
+const DatabaseManager = require('./database-manager');
+const SummaryGenerator = require('./summary-generator');
 
 /**
  * Chat Session Manager for text-based conversation testing
@@ -17,11 +21,27 @@ class ChatSession extends EventEmitter {
     // Debug mode flag
     this.debugMode = debugMode;
     
+    // Generate a simulated call SID for the chat session
+    this.callSid = `CHAT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Initialize SQLite storage (following app.js pattern)
+    const dbPath = process.env.SQLITE_DB_PATH || './conversation-summaries.db';
+    this.databaseManager = new DatabaseManager(dbPath);
+    this.storageService = new SqliteStorageService(this.databaseManager);
+    this.summaryGenerator = new SummaryGenerator();
+    
+    // Initialize conversation analyzer (following app.js pattern)
+    this.conversationAnalyzer = new ConversationAnalyzer(this.callSid, new Date());
+    
     // Initialize services with debug mode
     this.streamService = new StreamService(this.debugMode);
     this.transcriptionService = new TranscriptionService(this.debugMode);
     this.ttsService = new TextToSpeechService(this.debugMode);
     this.gptService = new GptService(null); // No mark completion service needed for text chat
+    
+    // Set the conversation analyzer in GPT service (following app.js pattern)
+    this.gptService.setCallSid(this.callSid);
+    this.gptService.setConversationAnalyzer(this.conversationAnalyzer);
     
     // Session state
     this.messageCount = 0;
@@ -83,7 +103,7 @@ class ChatSession extends EventEmitter {
 
     // Handle commands
     if (trimmedText.startsWith('/')) {
-      this.handleCommand(trimmedText);
+      await this.handleCommand(trimmedText);
       return;
     }
 
@@ -98,6 +118,12 @@ class ChatSession extends EventEmitter {
   async handleUserMessage(message) {
     this.messageCount++;
     const timestamp = new Date().toLocaleTimeString();
+    const fullTimestamp = new Date(); // Use full Date object for conversation analyzer
+    
+    // Track user utterance in analyzer
+    if (this.conversationAnalyzer) {
+      this.conversationAnalyzer.trackUserUtterance(message, fullTimestamp);
+    }
     
     // Add to conversation history
     this.conversationHistory.push({
@@ -140,6 +166,7 @@ class ChatSession extends EventEmitter {
     if (!partialResponse) return;
 
     const timestamp = new Date().toLocaleTimeString();
+    const fullTimestamp = new Date(); // Use full Date object for conversation analyzer
 
     // Check if this is a function call message
     const isFunctionCall = this.isFunctionCallMessage(partialResponse);
@@ -156,6 +183,11 @@ class ChatSession extends EventEmitter {
       });
     } else {
       console.log(`${chalk.green('🤖')} ${chalk.green(partialResponse)}`);
+      
+      // Track assistant response in analyzer
+      if (this.conversationAnalyzer) {
+        this.conversationAnalyzer.trackAssistantResponse(partialResponse, fullTimestamp);
+      }
       
       // Add to conversation history
       const lastEntry = this.conversationHistory[this.conversationHistory.length - 1];
@@ -225,7 +257,7 @@ class ChatSession extends EventEmitter {
    * Handle CLI commands
    * @param {string} command - Command to execute
    */
-  handleCommand(command) {
+  async handleCommand(command) {
     const cmd = command.toLowerCase().split(' ')[0];
     
     switch (cmd) {
@@ -243,6 +275,9 @@ class ChatSession extends EventEmitter {
         break;
       case '/reset':
         this.resetSession();
+        break;
+      case '/storage':
+        await this.showStoredSummaries();
         break;
       case '/exit':
         this.endSession();
@@ -263,6 +298,7 @@ class ChatSession extends EventEmitter {
     console.log(chalk.blue('   /context  - Show conversation context'));
     console.log(chalk.blue('   /debug    - Toggle debug mode (show/hide mock service logs)'));
     console.log(chalk.blue('   /reset    - Reset the conversation'));
+    console.log(chalk.blue('   /storage  - Show recent stored conversation summaries'));
     console.log(chalk.blue('   /exit     - End the chat session'));
     console.log(chalk.gray('\n💬 Just type your message to chat with Jessica!'));
   }
@@ -371,12 +407,148 @@ class ChatSession extends EventEmitter {
   }
 
   /**
+   * Show recent stored conversation summaries
+   */
+  async showStoredSummaries() {
+    console.log(chalk.blue.bold('\n📚 Recent Conversation Summaries:'));
+    
+    try {
+      // Get recent summaries from SQLite
+      const recentSummaries = await this.storageService.getRecentSummaries(5);
+      
+      if (!recentSummaries || recentSummaries.length === 0) {
+        console.log(chalk.gray('   No stored summaries found'));
+        return;
+      }
+      
+      recentSummaries.forEach((summary, index) => {
+        console.log(chalk.cyan(`\n   ${index + 1}. ${summary.call_sid.startsWith('CHAT_') ? '💬 Chat Session' : '📞 Phone Call'}`));
+        console.log(chalk.white(`      Call ID: ${summary.call_sid}`));
+        console.log(chalk.gray(`      Time: ${new Date(summary.start_time).toLocaleString()}`));
+        console.log(chalk.gray(`      Duration: ${summary.duration ? `${Math.round(summary.duration)}s` : 'N/A'}`));
+        
+        // Parse and display summary highlights
+        if (summary.summary_text) {
+          try {
+            const summaryData = JSON.parse(summary.summary_text);
+            
+            // Display mental state indicators
+            if (summaryData.mentalStateIndicators) {
+              console.log(chalk.yellow(`      Mental State:`));
+              console.log(chalk.gray(`        - Anxiety Level: ${summaryData.mentalStateIndicators.anxietyLevel || 0}`));
+              console.log(chalk.gray(`        - Agitation: ${summaryData.mentalStateIndicators.agitationLevel || 0}`));
+              console.log(chalk.gray(`        - Confusion Events: ${summaryData.mentalStateIndicators.confusionCount || 0}`));
+            }
+            
+            // Display conversation metrics
+            if (summaryData.conversationMetrics) {
+              console.log(chalk.yellow(`      Conversation Metrics:`));
+              console.log(chalk.gray(`        - Total Interactions: ${summaryData.conversationMetrics.totalInteractions || 0}`));
+              console.log(chalk.gray(`        - User Utterances: ${summaryData.conversationMetrics.userUtterances || 0}`));
+              console.log(chalk.gray(`        - Repetitions: ${summaryData.conversationMetrics.repetitionCount || 0}`));
+            }
+            
+            // Display care indicators
+            if (summaryData.careIndicators) {
+              const hasIndicators = summaryData.careIndicators.medicationMentions > 0 || 
+                                   summaryData.careIndicators.painComplaints > 0 ||
+                                   summaryData.careIndicators.staffComplaints > 0;
+              if (hasIndicators) {
+                console.log(chalk.yellow(`      Care Indicators:`));
+                if (summaryData.careIndicators.medicationMentions > 0) {
+                  console.log(chalk.gray(`        - Medication Mentions: ${summaryData.careIndicators.medicationMentions}`));
+                }
+                if (summaryData.careIndicators.painComplaints > 0) {
+                  console.log(chalk.gray(`        - Pain Complaints: ${summaryData.careIndicators.painComplaints}`));
+                }
+                if (summaryData.careIndicators.staffComplaints > 0) {
+                  console.log(chalk.gray(`        - Staff Complaints: ${summaryData.careIndicators.staffComplaints}`));
+                }
+              }
+            }
+            
+            // Display caregiver insights if present
+            if (summaryData.caregiverInsights && summaryData.caregiverInsights.length > 0) {
+              console.log(chalk.yellow(`      Key Insights:`));
+              summaryData.caregiverInsights.slice(0, 2).forEach(insight => {
+                console.log(chalk.gray(`        • ${insight}`));
+              });
+            }
+            
+          } catch (e) {
+            // If summary_text isn't properly formatted, show what we can
+            console.log(chalk.gray(`      Note: Summary data format unrecognized`));
+          }
+        } else {
+          console.log(chalk.gray(`      No summary data available`));
+        }
+      });
+      
+      // Only show database path in debug mode
+      if (this.debugMode) {
+        console.log(chalk.gray(`\n   Database: ${process.env.SQLITE_DB_PATH || './conversation-summaries.db'}`));
+      }
+    } catch (error) {
+      console.error(chalk.red('❌ Error loading summaries:'), error.message);
+    }
+  }
+
+  /**
    * End the chat session
    */
-  endSession() {
+  async endSession() {
     console.log(chalk.yellow('\n👋 Ending chat session...'));
     
     this.isActive = false;
+    
+    // Generate and save conversation summary and messages (following app.js pattern)
+    if (this.conversationAnalyzer) {
+      try {
+        this.conversationAnalyzer.endTime = new Date();
+        const summary = this.summaryGenerator.generateSummary(this.conversationAnalyzer);
+        
+        const result = await this.storageService.saveSummary(summary);
+        const conversationId = result.conversationId; // String conversation ID
+        const numericId = result.numericId; // Numeric ID for messages
+        
+        console.log(chalk.green(`\n📝 Conversation summary saved to SQLite database`));
+        console.log(chalk.gray(`   Call SID: ${this.callSid}`));
+        console.log(chalk.gray(`   Database: ${process.env.SQLITE_DB_PATH || './conversation-summaries.db'}`));
+        
+        // Extract and save conversation messages
+        const messages = [];
+        
+        // Add user utterances
+        this.conversationAnalyzer.userUtterances.forEach(utterance => {
+          messages.push({
+            role: 'user',
+            content: utterance.text,
+            timestamp: utterance.timestamp.toISOString()
+          });
+        });
+        
+        // Add assistant responses
+        this.conversationAnalyzer.assistantResponses.forEach(response => {
+          messages.push({
+            role: 'assistant',
+            content: response.text,
+            timestamp: response.timestamp.toISOString()
+          });
+        });
+        
+        // Sort messages by timestamp
+        messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        // Save messages to database
+        if (messages.length > 0) {
+          await this.storageService.saveMessages(numericId, messages);
+          console.log(chalk.green(`💬 ${messages.length} conversation messages saved to database`));
+        }
+        
+      } catch (error) {
+        console.error(chalk.red('❌ Error saving conversation summary or messages:'), error);
+      }
+    }
     
     // Close services
     this.transcriptionService.close();

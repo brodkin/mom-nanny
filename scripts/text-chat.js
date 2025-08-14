@@ -164,19 +164,41 @@ class TextChatCLI {
 // Handle uncaught exceptions gracefully
 process.on('uncaughtException', (error) => {
   console.log();
-  console.log(chalk.red.bold('❌ Fatal Error:'));
-  console.log(chalk.red(error.message));
-  console.log();
-  console.log(chalk.gray('Please check your environment configuration and try again.'));
+  
+  // Safely use chalk with fallback to plain console
+  try {
+    console.log(chalk.red.bold('❌ Fatal Error:'));
+    console.log(chalk.red(error.message));
+    console.log();
+    console.log(chalk.gray('Please check your environment configuration and try again.'));
+  } catch (chalkError) {
+    // Fallback to plain console if chalk fails
+    console.log('❌ Fatal Error:');
+    console.log(error.message);
+    console.log();
+    console.log('Please check your environment configuration and try again.');
+  }
+  
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.log();
-  console.log(chalk.red.bold('❌ Unhandled Promise Rejection:'));
-  console.log(chalk.red(reason));
-  console.log();
-  console.log(chalk.gray('Please check your API keys and network connection.'));
+  
+  // Safely use chalk with fallback to plain console
+  try {
+    console.log(chalk.red.bold('❌ Unhandled Promise Rejection:'));
+    console.log(chalk.red(reason));
+    console.log();
+    console.log(chalk.gray('Please check your API keys and network connection.'));
+  } catch (chalkError) {
+    // Fallback to plain console if chalk fails
+    console.log('❌ Unhandled Promise Rejection:');
+    console.log(reason);
+    console.log();
+    console.log('Please check your API keys and network connection.');
+  }
+  
   process.exit(1);
 });
 
@@ -214,7 +236,16 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
 const cli = new TextChatCLI();
 cli.start().catch((error) => {
   console.log();
-  console.log(chalk.red.bold('❌ Failed to start CLI:'));
-  console.log(chalk.red(error.message));
+  
+  // Safely use chalk with fallback to plain console
+  try {
+    console.log(chalk.red.bold('❌ Failed to start CLI:'));
+    console.log(chalk.red(error.message));
+  } catch (chalkError) {
+    // Fallback to plain console if chalk fails
+    console.log('❌ Failed to start CLI:');
+    console.log(error.message);
+  }
+  
   process.exit(1);
 });
