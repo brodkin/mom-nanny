@@ -13,21 +13,48 @@ tools.forEach((tool) => {
 });
 
 class GptService extends EventEmitter {
-  constructor(markCompletionService, conversationAnalyzer = null) {
+  constructor(markCompletionService, conversationAnalyzer = null, memoryService = null) {
     super();
     this.openai = new OpenAI();
     this.markCompletionService = markCompletionService;
     this.conversationAnalyzer = conversationAnalyzer;
+    this.memoryService = memoryService;
     this.templateService = new TemplateService();
 
-    // Get the system prompt from template
-    const systemPrompt = this.templateService.getSystemPrompt();
+    // Store memory service in global context for functions to access
+    if (memoryService) {
+      global.memoryService = memoryService;
+    }
 
+    // Initialize system prompt (will be updated with memory keys)
+    this.systemPrompt = '';
     this.userContext = [
-      { 'role': 'system', 'content': systemPrompt },
+      { 'role': 'system', 'content': 'Initializing...' },
       { 'role': 'assistant', 'content': 'Hi Francine! • How are you doing today?' },
     ],
     this.partialResponseIndex = 0;
+  }
+
+  async initialize() {
+    // Get memory keys if memory service is available
+    let memoryKeys = [];
+    if (this.memoryService) {
+      try {
+        await this.memoryService.initialize();
+        memoryKeys = await this.memoryService.getAllMemoryKeys();
+        if (memoryKeys.length > 0) {
+          console.log(`📂 Memory -> Loaded ${memoryKeys.length} stored memories for Francine`.cyan);
+        }
+      } catch (error) {
+        console.error('Error loading memory keys:', error);
+      }
+    }
+
+    // Get the system prompt with memory keys
+    this.systemPrompt = this.templateService.getSystemPrompt(memoryKeys);
+    
+    // Update the system context with the full prompt
+    this.userContext[0] = { 'role': 'system', 'content': this.systemPrompt };
   }
 
   // Add the callSid to the chat context in case

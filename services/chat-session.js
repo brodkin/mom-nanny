@@ -9,6 +9,7 @@ const ConversationAnalyzer = require('./conversation-analyzer');
 const SqliteStorageService = require('./sqlite-storage-service');
 const DatabaseManager = require('./database-manager');
 const SummaryGenerator = require('./summary-generator');
+const MemoryService = require('./memory-service');
 
 /**
  * Chat Session Manager for text-based conversation testing
@@ -30,6 +31,9 @@ class ChatSession extends EventEmitter {
     this.storageService = new SqliteStorageService(this.databaseManager);
     this.summaryGenerator = new SummaryGenerator();
     
+    // Initialize memory service (following app.js pattern)
+    this.memoryService = new MemoryService(this.databaseManager);
+    
     // Initialize conversation analyzer (following app.js pattern)
     this.conversationAnalyzer = new ConversationAnalyzer(this.callSid, new Date());
     
@@ -37,11 +41,16 @@ class ChatSession extends EventEmitter {
     this.streamService = new StreamService(this.debugMode);
     this.transcriptionService = new TranscriptionService(this.debugMode);
     this.ttsService = new TextToSpeechService(this.debugMode);
-    this.gptService = new GptService(null); // No mark completion service needed for text chat
+    
+    // Pass memory service to GPT service
+    this.gptService = new GptService(null, null, this.memoryService); // Pass memory service
     
     // Set the conversation analyzer in GPT service (following app.js pattern)
     this.gptService.setCallSid(this.callSid);
     this.gptService.setConversationAnalyzer(this.conversationAnalyzer);
+    
+    // Initialize database and memory service asynchronously
+    this.initializeAsync();
     
     // Session state
     this.messageCount = 0;
@@ -62,6 +71,28 @@ class ChatSession extends EventEmitter {
     
     console.log(chalk.cyan('💬 Chat Session initialized'));
     console.log(chalk.gray('Type your messages or use commands: /help, /stats, /context, /debug, /reset, /exit'));
+  }
+
+  /**
+   * Initialize database and memory service asynchronously
+   */
+  async initializeAsync() {
+    try {
+      // Wait for database to be initialized
+      await this.databaseManager.waitForInitialization();
+      
+      // Initialize memory service
+      await this.memoryService.initialize();
+      console.log(chalk.green('✅ Memory service initialized successfully'));
+      
+      // Initialize GPT service with memory keys
+      await this.gptService.initialize();
+      console.log(chalk.green('✅ GPT service initialized with memory keys'));
+      
+    } catch (error) {
+      console.error('Error initializing services:', error);
+      // Continue anyway - services will work without memory
+    }
   }
 
   setupEventHandlers() {
@@ -349,6 +380,9 @@ class ChatSession extends EventEmitter {
       case '/storage':
         await this.showStoredSummaries();
         break;
+      case '/memories':
+        await this.showMemories();
+        break;
       case '/exit':
         this.endSession();
         break;
@@ -366,6 +400,7 @@ class ChatSession extends EventEmitter {
     console.log(chalk.blue('   /help     - Show this help message'));
     console.log(chalk.blue('   /stats    - Show session statistics'));
     console.log(chalk.blue('   /context  - Show conversation context'));
+    console.log(chalk.blue('   /memories - Show all stored memories about Francine'));
     console.log(chalk.blue('   /debug    - Toggle debug mode (show/hide mock service logs)'));
     console.log(chalk.blue('   /reset    - Reset the conversation'));
     console.log(chalk.blue('   /storage  - Show recent stored conversation summaries'));
@@ -561,6 +596,139 @@ class ChatSession extends EventEmitter {
     } catch (error) {
       console.error(chalk.red('❌ Error loading summaries:'), error.message);
     }
+  }
+
+  /**
+   * Show all stored memories about Francine
+   */
+  async showMemories() {
+    console.log(chalk.blue.bold('\n🧠 Stored Memories About Francine:'));
+    console.log(chalk.gray('═══════════════════════════════════════════════════════════'));
+    
+    try {
+      // Check if memory service is available
+      if (!this.memoryService) {
+        console.log(chalk.red('   ❌ Memory service not available'));
+        return;
+      }
+      
+      // Get all memory keys
+      const memoryKeys = await this.memoryService.getAllMemoryKeys();
+      
+      if (!memoryKeys || memoryKeys.length === 0) {
+        console.log(chalk.gray('   No memories stored yet'));
+        console.log(chalk.gray('   Memories will be created as you chat with the AI'));
+        return;
+      }
+      
+      // Get memories organized by category
+      const memoriesByCategory = {
+        family: [],
+        health: [],
+        preferences: [],
+        topics_to_avoid: [],
+        general: []
+      };
+      
+      // Fetch each memory and organize by category
+      for (const key of memoryKeys) {
+        const memory = await this.memoryService.getMemory(key);
+        if (memory) {
+          const category = memory.category || 'general';
+          if (!memoriesByCategory[category]) {
+            memoriesByCategory[category] = [];
+          }
+          memoriesByCategory[category].push({
+            key: memory.key,
+            content: memory.content,
+            lastAccessed: memory.lastAccessed,
+            updatedAt: memory.updatedAt
+          });
+        }
+      }
+      
+      // Display memories by category
+      const categoryEmojis = {
+        family: '👨‍👩‍👧‍👦',
+        health: '🏥',
+        preferences: '❤️',
+        topics_to_avoid: '⚠️',
+        general: '📝'
+      };
+      
+      const categoryColors = {
+        family: chalk.cyan,
+        health: chalk.yellow,
+        preferences: chalk.green,
+        topics_to_avoid: chalk.red,
+        general: chalk.white
+      };
+      
+      let totalMemories = 0;
+      
+      for (const [category, memories] of Object.entries(memoriesByCategory)) {
+        if (memories.length > 0) {
+          const emoji = categoryEmojis[category] || '📝';
+          const color = categoryColors[category] || chalk.white;
+          
+          console.log(color.bold(`\n   ${emoji} ${category.toUpperCase().replace('_', ' ')} (${memories.length}):`));
+          console.log(chalk.gray('   ' + '─'.repeat(55)));
+          
+          memories.forEach((memory, index) => {
+            console.log(color(`   ${index + 1}. Key: "${memory.key}"`));
+            console.log(chalk.white(`      Content: ${memory.content}`));
+            
+            if (memory.updatedAt) {
+              const updated = new Date(memory.updatedAt);
+              const timeAgo = this.getTimeAgo(updated);
+              console.log(chalk.gray(`      Last updated: ${timeAgo}`));
+            }
+            console.log('');
+          });
+          
+          totalMemories += memories.length;
+        }
+      }
+      
+      // Show summary
+      console.log(chalk.gray('═══════════════════════════════════════════════════════════'));
+      console.log(chalk.blue.bold(`   📊 Total Memories: ${totalMemories}`));
+      
+      // Show statistics
+      const stats = await this.memoryService.getStatistics();
+      if (stats) {
+        console.log(chalk.gray(`   📈 Memory Distribution:`));
+        for (const [category, count] of Object.entries(stats.byCategory)) {
+          if (count > 0) {
+            const percentage = Math.round((count / totalMemories) * 100);
+            const emoji = categoryEmojis[category] || '📝';
+            console.log(chalk.gray(`      ${emoji} ${category}: ${count} (${percentage}%)`));
+          }
+        }
+      }
+      
+      console.log(chalk.gray('\n   💡 Tip: Memories are automatically created and updated during conversation'));
+      
+    } catch (error) {
+      console.error(chalk.red('❌ Error loading memories:'), error.message);
+    }
+  }
+  
+  /**
+   * Helper function to get relative time
+   */
+  getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+    const weeks = Math.floor(days / 7);
+    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
   }
 
   /**

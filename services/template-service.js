@@ -59,10 +59,11 @@ class TemplateService {
   }
 
   /**
-   * Get the system prompt with current date/time
+   * Get the system prompt with current date/time and available memories
+   * @param {Array<string>} memoryKeys - Optional array of available memory keys
    * @returns {string} Rendered system prompt
    */
-  getSystemPrompt() {
+  getSystemPrompt(memoryKeys = []) {
     const now = new Date();
     const laTime = now.toLocaleString('en-US', {
       timeZone: 'America/Los_Angeles',
@@ -75,9 +76,31 @@ class TemplateService {
       timeZoneName: 'short'
     });
 
-    return this.render('system-prompt', {
+    // First render the base template
+    let systemPrompt = this.render('system-prompt', {
       currentDateTime: laTime
     });
+
+    // Then append memory section if memories are available
+    if (memoryKeys && memoryKeys.length > 0) {
+      const memorySection = `
+
+## Available Stored Memories
+You have ${memoryKeys.length} stored memories about Francine that you can recall when relevant to the conversation.
+
+**Memory Keys Available:**
+${memoryKeys.join(', ')}
+
+**Important Guidelines:**
+- Do NOT proactively read all memories at the start
+- Only use recallMemory when the specific information becomes relevant
+- Use listAvailableMemories if you need to discover what categories of information are stored
+- When Francine mentions something that contradicts a memory, use forgetMemory then rememberInformation to update it`;
+      
+      systemPrompt += memorySection;
+    }
+
+    return systemPrompt;
   }
 
   /**

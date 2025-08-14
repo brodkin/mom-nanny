@@ -14,6 +14,7 @@ const ConversationAnalyzer = require('./services/conversation-analyzer');
 const SqliteStorageService = require('./services/sqlite-storage-service');
 const DatabaseManager = require('./services/database-manager');
 const SummaryGenerator = require('./services/summary-generator');
+const MemoryService = require('./services/memory-service');
 
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
@@ -39,7 +40,7 @@ app.post('/incoming', (req, res) => {
   }
 });
 
-app.ws('/connection', (ws) => {
+app.ws('/connection', async (ws) => {
   try {
     ws.on('error', console.error);
     // Filled in from start message
@@ -50,11 +51,25 @@ app.ws('/connection', (ws) => {
     // Initialize SQLite storage directly
     const dbPath = process.env.SQLITE_DB_PATH || './conversation-summaries.db';
     const databaseManager = new DatabaseManager(dbPath);
+    
+    // Wait for database to be initialized
+    await databaseManager.waitForInitialization();
+    
     const storageService = new SqliteStorageService(databaseManager);
     const summaryGenerator = new SummaryGenerator();
+    const memoryService = new MemoryService(databaseManager);
     let conversationAnalyzer; // Will be initialized after callSid is available
     
-    const gptService = new GptService(markCompletionService);
+    // Initialize memory service before creating GPT service
+    try {
+      await memoryService.initialize();
+      console.log('Memory service initialized successfully'.cyan);
+    } catch (error) {
+      console.error('Error initializing memory service:', error);
+      // Continue anyway - memory service will be unavailable but the call should still work
+    }
+    
+    const gptService = new GptService(markCompletionService, null, memoryService);
     const streamService = new StreamService(ws);
     const transcriptionService = new TranscriptionService();
     const ttsService = new TextToSpeechService({});
@@ -75,6 +90,13 @@ app.ws('/connection', (ws) => {
         // Initialize conversation analyzer
         conversationAnalyzer = new ConversationAnalyzer(callSid, new Date());
         gptService.setConversationAnalyzer(conversationAnalyzer);
+
+        // Initialize GPT service with memory keys
+        gptService.initialize().then(() => {
+          // Silent initialization - no console output that might leak to chat
+        }).catch(error => {
+          console.error('Error initializing GPT service:', error);
+        });
 
         // Set RECORDING_ENABLED='true' in .env to record calls
         recordingService(ttsService, callSid).then(() => {

@@ -4,13 +4,13 @@ const transferCallDeferred = async function (args) {
   const { callSid, markCompletionService } = args;
 
   console.log('Transfer requested, waiting for audio to complete...');
-  
+
   // If markCompletionService is provided, wait for all audio to complete
   if (markCompletionService) {
     // Wait longer for audio to be processed and sent to Twilio
     // This ensures the TTS service has time to generate and send the audio
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     const activeMarks = markCompletionService.getActiveMarkCount();
     if (activeMarks > 0) {
       console.log(`Waiting for ${activeMarks} audio marks to complete playback before transferring...`);
@@ -34,10 +34,10 @@ const transferCallDeferred = async function (args) {
   return await client.calls(callSid)
     .update({twiml: `<Response><Dial>${process.env.TRANSFER_NUMBER}</Dial></Response>`})
     .then(() => {
-      return 'The call was transferred successfully, say goodbye to the customer.';
+      return 'The call was transferred successfully, say goodbye to the caller.';
     })
     .catch(() => {
-      return 'The call was not transferred successfully, advise customer to call back later.';
+      return 'The call was not transferred successfully, advise caller to call back later.';
     });
 };
 

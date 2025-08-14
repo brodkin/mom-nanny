@@ -66,6 +66,12 @@ class DatabaseManager {
       this.applyInitialSchema();
       this.run('INSERT INTO migrations (version) VALUES (?)', [1]);
     }
+    
+    // Apply memories table migration if needed
+    if (currentVersion < 2) {
+      this.applyMemoriesMigration();
+      this.run('INSERT INTO migrations (version) VALUES (?)', [2]);
+    }
   }
 
   applyInitialSchema() {
@@ -118,6 +124,28 @@ class DatabaseManager {
       CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
       CREATE INDEX idx_messages_timestamp ON messages(timestamp);
       CREATE INDEX idx_analytics_conversation_id ON analytics(conversation_id);
+    `;
+
+    this.exec(migration);
+  }
+
+  applyMemoriesMigration() {
+    const migration = `
+      -- Memories table: Store important information about the caller
+      CREATE TABLE memories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory_key TEXT UNIQUE NOT NULL,
+        memory_content TEXT NOT NULL,
+        category TEXT, -- 'family', 'health', 'preferences', 'topics_to_avoid', 'general'
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_accessed DATETIME
+      );
+
+      -- Indexes for performance
+      CREATE INDEX idx_memories_key ON memories(memory_key);
+      CREATE INDEX idx_memories_category ON memories(category);
+      CREATE INDEX idx_memories_updated ON memories(updated_at);
     `;
 
     this.exec(migration);
