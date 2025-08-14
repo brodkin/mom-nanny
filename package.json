@@ -6,6 +6,7 @@
   "scripts": {
     "inbound": "node ./scripts/inbound-call.js",
     "outbound": "node ./scripts/outbound-call.js",
+    "chat": "node ./scripts/text-chat.js",
     "test": "jest",
     "dev": "nodemon app.js",
     "start": "node app.js"
@@ -15,6 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "@deepgram/sdk": "^3.3.4",
+    "chalk": "^4.1.2",
     "colors": "^1.4.0",
     "dotenv": "^16.3.1",
     "express": "^4.19.2",
