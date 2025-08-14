@@ -1,0 +1,519 @@
+/* UI Fixes for Admin Interface */
+
+/* 1. Fix Welcome Banner - Calm, smooth gradient with subtle animation */
+.dashboard-welcome {
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 50%, #6366f1 100%);
+  background-size: 200% 200%;
+  position: relative;
+  overflow: hidden;
+  animation: calmGradientShift 20s ease-in-out infinite;
+}
+
+/* Remove the busy ::before pseudo-element completely */
+.dashboard-welcome::before {
+  display: none !important;
+}
+
+/* Add a subtle overlay for depth */
+.dashboard-welcome::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  pointer-events: none;
+}
+
+/* Very slow, subtle gradient animation */
+@keyframes calmGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Improve text contrast on the gradient background */
+.dashboard-welcome .welcome-title {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-welcome .welcome-subtitle {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-welcome .btn {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-welcome .btn-secondary {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dashboard-welcome .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* 2. Remove bullets from navigation */
+.nav-menu ul,
+.nav-menu li {
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+.nav-item {
+  list-style: none !important;
+}
+
+.nav-menu ul {
+  padding: 0;
+  margin: 0;
+}
+
+/* 3. Fix circular elements - Proper circles not ovals */
+
+/* Fix avatars to be perfect circles */
+.avatar,
+.avatar-sm,
+.avatar-md,
+.avatar-lg {
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  flex-shrink: 0;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.avatar-md {
+  width: 40px;
+  height: 40px;
+}
+
+.avatar-lg {
+  width: 48px;
+  height: 48px;
+}
+
+/* Fix sentiment indicators/badges */
+.badge {
+  border-radius: 12px !important; /* Pill shape, not stretched circle */
+  padding: 4px 12px !important;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.badge.badge-circle {
+  border-radius: 50% !important;
+  width: 24px;
+  height: 24px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 4. Fix search box */
+.search-input input {
+  border-radius: 22px !important; /* Proper rounded rectangle */
+  height: 44px !important;
+  padding: 0 20px 0 44px !important;
+}
+
+.search-input .search-icon {
+  left: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+/* 5. Fix progress bars */
+.progress {
+  height: 6px !important;
+  border-radius: 3px !important; /* Half of height for proper rounded ends */
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.progress-bar {
+  border-radius: 3px !important;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%) !important;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .progress {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 6. Fix any stretched circles in stats */
+.stat-icon,
+.quick-action-icon {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Ensure all status dots are perfect circles */
+.status-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+}
+
+/* Fix user avatar in header */
+.header-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+
+.header-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Fix notification badge */
+.notification-badge {
+  min-width: 20px !important;
+  height: 20px !important;
+  border-radius: 10px !important; /* Pill shape for numbers */
+  padding: 0 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Ensure activity feed icons are circular */
+.activity-icon {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Fix sidebar brand height consistency */
+.sidebar-brand {
+  min-height: 72px !important;
+  height: 72px !important;
+  padding: var(--space-4) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-3) !important;
+  transition: none !important;
+}
+
+.brand-logo {
+  width: 40px !important;
+  height: 40px !important;
+  flex-shrink: 0 !important;
+}
+
+.brand-text {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  transition: opacity 0.2s ease, width 0.2s ease !important;
+}
+
+.sidebar-collapsed .sidebar-brand {
+  min-height: 72px !important;
+  height: 72px !important;
+  justify-content: center !important;
+  padding: var(--space-4) !important;
+}
+
+.sidebar-collapsed .brand-text {
+  opacity: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+}
+
+.sidebar-collapsed .brand-logo {
+  margin: 0 !important;
+}
+
+/* Fix header height to match sidebar logo area */
+.admin-header {
+  height: 72px !important;
+  min-height: 72px !important;
+  padding: var(--space-3) var(--space-6) !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Ensure user profile fits within header */
+.user-profile {
+  padding: var(--space-1) var(--space-2) !important;
+  gap: var(--space-2) !important;
+}
+
+.user-info {
+  gap: 0 !important;
+}
+
+.user-name {
+  font-size: var(--text-sm) !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.user-role {
+  font-size: var(--text-xs) !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.header-avatar {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* Adjust header elements for proper vertical alignment */
+.header-left,
+.header-right {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Improve text contrast throughout the interface */
+.stat-value {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.stat-label {
+  color: var(--text-secondary) !important;
+  opacity: 1 !important;
+}
+
+/* Ensure proper contrast in cards */
+.card h3,
+.card-title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.card p,
+.card-text {
+  color: var(--text-secondary) !important;
+  opacity: 1 !important;
+}
+
+/* Improve table text contrast */
+.table th {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.table td {
+  color: var(--text-secondary) !important;
+}
+
+/* Ensure badges have good contrast */
+.badge-success {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+.badge-warning {
+  background: #f59e0b !important;
+  color: white !important;
+}
+
+.badge-error {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+/* Light mode specific contrast improvements */
+[data-theme="light"] .text-secondary {
+  color: #4b5563 !important;
+}
+
+[data-theme="light"] .text-primary {
+  color: #111827 !important;
+}
+
+/* Dark mode specific contrast improvements */
+[data-theme="dark"] .text-secondary {
+  color: #d1d5db !important;
+}
+
+[data-theme="dark"] .text-primary {
+  color: #f9fafb !important;
+}
+
+/* Notification Bar Below Header */
+.notification-bar {
+  grid-area: notifications;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  padding: var(--space-3) var(--space-6);
+  overflow-y: auto;
+  max-height: 200px;
+  transition: all var(--transition-normal);
+}
+
+.notification-bar:empty {
+  display: none;
+}
+
+.notification-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.notification-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid;
+  box-shadow: var(--shadow-sm);
+  animation: slideInDown 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-info {
+  border-left-color: var(--color-info);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.notification-success {
+  border-left-color: var(--color-success);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.notification-warning {
+  border-left-color: var(--color-warning);
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.notification-error {
+  border-left-color: var(--color-error);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.notification-icon {
+  flex-shrink: 0;
+}
+
+.notification-info .notification-icon {
+  color: var(--color-info);
+}
+
+.notification-success .notification-icon {
+  color: var(--color-success);
+}
+
+.notification-warning .notification-icon {
+  color: var(--color-warning);
+}
+
+.notification-error .notification-icon {
+  color: var(--color-error);
+}
+
+.notification-message {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.notification-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Adjust layout to accommodate notifications */
+.admin-layout {
+  grid-template-rows: var(--header-height) auto 1fr auto;
+  grid-template-areas: 
+    "sidebar header"
+    "sidebar notifications"
+    "sidebar main"
+    "sidebar footer";
+}
+
+.admin-layout.sidebar-collapsed {
+  grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+
+/* Mobile Layout with Notifications */
+@media (max-width: 768px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--header-height) auto 1fr auto;
+    grid-template-areas: 
+      "header"
+      "notifications"
+      "main"
+      "footer";
+  }
+  
+  .notification-bar {
+    padding: var(--space-2) var(--space-4);
+  }
+  
+  .notification-item {
+    padding: var(--space-2) var(--space-3);
+  }
+}
