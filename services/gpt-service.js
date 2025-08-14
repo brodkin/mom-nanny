@@ -44,12 +44,23 @@ class GptService extends EventEmitter {
 
   validateFunctionArgs (args) {
     try {
-      return JSON.parse(args);
+      // Safe parsing with prototype pollution protection
+      return JSON.parse(args, (key, value) => {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          return undefined;
+        }
+        return value;
+      });
     } catch (error) {
       console.log('Warning: Double function arguments returned by OpenAI:', args);
       // Seeing an error where sometimes we have two sets of args
       if (args.indexOf('{') != args.lastIndexOf('{')) {
-        return JSON.parse(args.substring(args.indexOf(''), args.indexOf('}') + 1));
+        return JSON.parse(args.substring(args.indexOf('{'), args.indexOf('}') + 1), (key, value) => {
+          if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+            return undefined;
+          }
+          return value;
+        });
       }
     }
   }
@@ -62,7 +73,7 @@ class GptService extends EventEmitter {
     }
   }
 
-  async completion(text, interactionCount, role = 'user', name = 'user') {
+  async completion(text, interactionCount, role = 'user', name = 'user', returnUsage = false) {
     this.updateUserContext(name, role, text);
 
     // Step 1: Send user transcription to Chat GPT
@@ -71,6 +82,7 @@ class GptService extends EventEmitter {
       messages: this.userContext,
       tools: tools,
       stream: true,
+      stream_options: returnUsage ? { include_usage: true } : undefined,
     });
 
     let completeResponse = '';
@@ -78,6 +90,7 @@ class GptService extends EventEmitter {
     let functionName = '';
     let functionArgs = '';
     let finishReason = '';
+    let usageData = null;
 
     function collectToolInformation(deltas) {
       let name = deltas.tool_calls[0]?.function?.name || '';
@@ -92,8 +105,18 @@ class GptService extends EventEmitter {
     }
 
     for await (const chunk of stream) {
+      // Collect usage data when available
+      if (chunk.usage && returnUsage) {
+        usageData = chunk.usage;
+      }
+      
+      // Safely access choices array
+      if (!chunk.choices || !chunk.choices[0]) {
+        continue;
+      }
+      
       let content = chunk.choices[0]?.delta?.content || '';
-      let deltas = chunk.choices[0].delta;
+      let deltas = chunk.choices[0]?.delta;
       finishReason = chunk.choices[0].finish_reason;
 
       // Step 2: check if GPT wanted to call a function
@@ -142,7 +165,17 @@ class GptService extends EventEmitter {
         // For other functions, call completion to get GPT's response
         if (functionName !== 'endCallDeferred') {
           // call the completion function again but pass in the function response to have OpenAI generate a new assistant response
-          await this.completion(functionResponse, interactionCount, 'function', functionName);
+          const recursiveResult = await this.completion(functionResponse, interactionCount, 'function', functionName, returnUsage);
+          if (returnUsage && recursiveResult?.usage) {
+            // Accumulate usage from recursive calls
+            if (usageData) {
+              usageData.prompt_tokens += recursiveResult.usage.prompt_tokens || 0;
+              usageData.completion_tokens += recursiveResult.usage.completion_tokens || 0;
+              usageData.total_tokens += recursiveResult.usage.total_tokens || 0;
+            } else {
+              usageData = recursiveResult.usage;
+            }
+          }
         }
       } else {
         // We use completeResponse for userContext
@@ -164,6 +197,14 @@ class GptService extends EventEmitter {
     }
     this.userContext.push({'role': 'assistant', 'content': completeResponse});
     console.log(`GPT -> user context length: ${this.userContext.length}`.green);
+    
+    if (returnUsage) {
+      return {
+        response: completeResponse,
+        usage: usageData,
+        contextLength: this.userContext.length
+      };
+    }
   }
 }
 
