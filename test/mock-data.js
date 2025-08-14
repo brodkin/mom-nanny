@@ -8,15 +8,15 @@ function generateMockConversation() {
     callSid: 'mock-' + Math.random().toString(36).substr(2, 9),
     startTime: Date.now() - 300000, // 5 minutes ago
     interactions: [
-      { type: 'user', text: "Hello? Who is this?", timestamp: Date.now() - 290000 },
-      { type: 'assistant', text: "Hi Francine! It's Jessica. How are you today?", timestamp: Date.now() - 285000 },
-      { type: 'user', text: "I need my medicine. They won't give it to me.", timestamp: Date.now() - 280000 },
-      { type: 'assistant', text: "I understand that's frustrating. The nurses will help with that. Did you have lunch today?", timestamp: Date.now() - 275000 },
-      { type: 'user', text: "I don't know. Where is Ryan?", timestamp: Date.now() - 270000 },
-      { type: 'assistant', text: "Ryan is at work right now. He asked me to call and check on you. Tell me about your dog.", timestamp: Date.now() - 265000 },
-      { type: 'user', text: "I had a dog. A golden retriever. So beautiful.", timestamp: Date.now() - 260000 },
+      { type: 'user', text: 'Hello? Who is this?', timestamp: Date.now() - 290000 },
+      { type: 'assistant', text: 'Hi Francine! It\'s Jessica. How are you today?', timestamp: Date.now() - 285000 },
+      { type: 'user', text: 'I need my medicine. They won\'t give it to me.', timestamp: Date.now() - 280000 },
+      { type: 'assistant', text: 'I understand that\'s frustrating. The nurses will help with that. Did you have lunch today?', timestamp: Date.now() - 275000 },
+      { type: 'user', text: 'I don\'t know. Where is Ryan?', timestamp: Date.now() - 270000 },
+      { type: 'assistant', text: 'Ryan is at work right now. He asked me to call and check on you. Tell me about your dog.', timestamp: Date.now() - 265000 },
+      { type: 'user', text: 'I had a dog. A golden retriever. So beautiful.', timestamp: Date.now() - 260000 },
       { type: 'interruption', timestamp: Date.now() - 255000 },
-      { type: 'user', text: "Where is Ryan? I need to talk to Ryan.", timestamp: Date.now() - 250000 }
+      { type: 'user', text: 'Where is Ryan? I need to talk to Ryan.', timestamp: Date.now() - 250000 }
     ]
   };
 }
@@ -26,14 +26,14 @@ function generateAnxietyConversation() {
     callSid: 'anxiety-' + Math.random().toString(36).substr(2, 9),
     startTime: Date.now() - 600000, // 10 minutes ago
     interactions: [
-      { type: 'user', text: "I'm scared. Something is wrong.", timestamp: Date.now() - 590000 },
-      { type: 'assistant', text: "I hear that you're feeling scared. You're safe. Tell me what's worrying you.", timestamp: Date.now() - 585000 },
-      { type: 'user', text: "The people here are mean to me. I want to go home.", timestamp: Date.now() - 580000 },
-      { type: 'assistant', text: "That sounds really hard. Everyone at your place is trying to help you. Would you like to talk about something nice? How about Hawaii?", timestamp: Date.now() - 575000 },
-      { type: 'user', text: "Hawaii was beautiful. The beaches...", timestamp: Date.now() - 570000 },
-      { type: 'assistant', text: "That sounds wonderful! What was your favorite part about the beaches?", timestamp: Date.now() - 565000 },
-      { type: 'user', text: "I'm still scared though. When will Ryan come?", timestamp: Date.now() - 560000 },
-      { type: 'assistant', text: "Ryan loves you very much. He'll visit when he can. You're safe right now. The sun in Hawaii must have felt so warm.", timestamp: Date.now() - 555000 }
+      { type: 'user', text: 'I\'m scared. Something is wrong.', timestamp: Date.now() - 590000 },
+      { type: 'assistant', text: 'I hear that you\'re feeling scared. You\'re safe. Tell me what\'s worrying you.', timestamp: Date.now() - 585000 },
+      { type: 'user', text: 'The people here are mean to me. I want to go home.', timestamp: Date.now() - 580000 },
+      { type: 'assistant', text: 'That sounds really hard. Everyone at your place is trying to help you. Would you like to talk about something nice? How about Hawaii?', timestamp: Date.now() - 575000 },
+      { type: 'user', text: 'Hawaii was beautiful. The beaches...', timestamp: Date.now() - 570000 },
+      { type: 'assistant', text: 'That sounds wonderful! What was your favorite part about the beaches?', timestamp: Date.now() - 565000 },
+      { type: 'user', text: 'I\'m still scared though. When will Ryan come?', timestamp: Date.now() - 560000 },
+      { type: 'assistant', text: 'Ryan loves you very much. He\'ll visit when he can. You\'re safe right now. The sun in Hawaii must have felt so warm.', timestamp: Date.now() - 555000 }
     ]
   };
 }
@@ -43,14 +43,14 @@ function generateRepetitiveConversation() {
     callSid: 'repetitive-' + Math.random().toString(36).substr(2, 9),
     startTime: Date.now() - 480000, // 8 minutes ago
     interactions: [
-      { type: 'user', text: "Where is Ryan?", timestamp: Date.now() - 470000 },
-      { type: 'assistant', text: "Ryan is at work today. How are you feeling?", timestamp: Date.now() - 465000 },
-      { type: 'user', text: "Where is Ryan? I need him.", timestamp: Date.now() - 460000 },
-      { type: 'assistant', text: "I know you miss Ryan. He's working but thinking of you. Did you eat breakfast?", timestamp: Date.now() - 455000 },
-      { type: 'user', text: "Where is Ryan?", timestamp: Date.now() - 450000 },
-      { type: 'assistant', text: "Ryan will call you later. Would you like to talk about your dog instead?", timestamp: Date.now() - 445000 },
-      { type: 'user', text: "I had a beautiful dog. But where is Ryan?", timestamp: Date.now() - 440000 },
-      { type: 'assistant', text: "Your dog sounds lovely! Ryan is safe at work. Tell me more about your dog.", timestamp: Date.now() - 435000 }
+      { type: 'user', text: 'Where is Ryan?', timestamp: Date.now() - 470000 },
+      { type: 'assistant', text: 'Ryan is at work today. How are you feeling?', timestamp: Date.now() - 465000 },
+      { type: 'user', text: 'Where is Ryan? I need him.', timestamp: Date.now() - 460000 },
+      { type: 'assistant', text: 'I know you miss Ryan. He\'s working but thinking of you. Did you eat breakfast?', timestamp: Date.now() - 455000 },
+      { type: 'user', text: 'Where is Ryan?', timestamp: Date.now() - 450000 },
+      { type: 'assistant', text: 'Ryan will call you later. Would you like to talk about your dog instead?', timestamp: Date.now() - 445000 },
+      { type: 'user', text: 'I had a beautiful dog. But where is Ryan?', timestamp: Date.now() - 440000 },
+      { type: 'assistant', text: 'Your dog sounds lovely! Ryan is safe at work. Tell me more about your dog.', timestamp: Date.now() - 435000 }
     ]
   };
 }
@@ -60,14 +60,14 @@ function generateMedicationConversation() {
     callSid: 'medication-' + Math.random().toString(36).substr(2, 9),
     startTime: Date.now() - 420000, // 7 minutes ago
     interactions: [
-      { type: 'user', text: "I need my pills. They're hiding my medicine.", timestamp: Date.now() - 410000 },
-      { type: 'assistant', text: "That sounds frustrating. The nurses will help make sure you get your medicine on schedule.", timestamp: Date.now() - 405000 },
-      { type: 'user', text: "But I need them now. My head hurts.", timestamp: Date.now() - 400000 },
-      { type: 'assistant', text: "I understand you're not feeling well. Let's call a nurse to help you. While we wait, would you like to talk about something pleasant?", timestamp: Date.now() - 395000 },
-      { type: 'user', text: "I used to grow roses. Beautiful roses.", timestamp: Date.now() - 390000 },
-      { type: 'assistant', text: "Roses sound beautiful! What colors did you grow?", timestamp: Date.now() - 385000 },
-      { type: 'user', text: "Red ones. Pink ones. But I still need my medicine.", timestamp: Date.now() - 380000 },
-      { type: 'assistant', text: "Those roses must have been gorgeous. A nurse will help you with your medicine. Tell me more about your garden.", timestamp: Date.now() - 375000 }
+      { type: 'user', text: 'I need my pills. They\'re hiding my medicine.', timestamp: Date.now() - 410000 },
+      { type: 'assistant', text: 'That sounds frustrating. The nurses will help make sure you get your medicine on schedule.', timestamp: Date.now() - 405000 },
+      { type: 'user', text: 'But I need them now. My head hurts.', timestamp: Date.now() - 400000 },
+      { type: 'assistant', text: 'I understand you\'re not feeling well. Let\'s call a nurse to help you. While we wait, would you like to talk about something pleasant?', timestamp: Date.now() - 395000 },
+      { type: 'user', text: 'I used to grow roses. Beautiful roses.', timestamp: Date.now() - 390000 },
+      { type: 'assistant', text: 'Roses sound beautiful! What colors did you grow?', timestamp: Date.now() - 385000 },
+      { type: 'user', text: 'Red ones. Pink ones. But I still need my medicine.', timestamp: Date.now() - 380000 },
+      { type: 'assistant', text: 'Those roses must have been gorgeous. A nurse will help you with your medicine. Tell me more about your garden.', timestamp: Date.now() - 375000 }
     ]
   };
 }
@@ -77,14 +77,14 @@ function generateConfusionConversation() {
     callSid: 'confusion-' + Math.random().toString(36).substr(2, 9),
     startTime: Date.now() - 360000, // 6 minutes ago
     interactions: [
-      { type: 'user', text: "I don't know where I am. This isn't my house.", timestamp: Date.now() - 350000 },
-      { type: 'assistant', text: "It's okay to feel confused sometimes. You're in a safe place where people care about you.", timestamp: Date.now() - 345000 },
-      { type: 'user', text: "But where are my things? Where is my car?", timestamp: Date.now() - 340000 },
-      { type: 'assistant', text: "Your important things are being taken care of. Would you like to talk about a happy memory?", timestamp: Date.now() - 335000 },
-      { type: 'user', text: "I remember dancing with my husband.", timestamp: Date.now() - 330000 },
-      { type: 'assistant', text: "That sounds like a wonderful memory! What kind of dancing did you do?", timestamp: Date.now() - 325000 },
-      { type: 'user', text: "Swing dancing. But I'm still confused about where I am.", timestamp: Date.now() - 320000 },
-      { type: 'assistant', text: "Swing dancing must have been so much fun! You're somewhere safe now, and that's what matters most.", timestamp: Date.now() - 315000 }
+      { type: 'user', text: 'I don\'t know where I am. This isn\'t my house.', timestamp: Date.now() - 350000 },
+      { type: 'assistant', text: 'It\'s okay to feel confused sometimes. You\'re in a safe place where people care about you.', timestamp: Date.now() - 345000 },
+      { type: 'user', text: 'But where are my things? Where is my car?', timestamp: Date.now() - 340000 },
+      { type: 'assistant', text: 'Your important things are being taken care of. Would you like to talk about a happy memory?', timestamp: Date.now() - 335000 },
+      { type: 'user', text: 'I remember dancing with my husband.', timestamp: Date.now() - 330000 },
+      { type: 'assistant', text: 'That sounds like a wonderful memory! What kind of dancing did you do?', timestamp: Date.now() - 325000 },
+      { type: 'user', text: 'Swing dancing. But I\'m still confused about where I am.', timestamp: Date.now() - 320000 },
+      { type: 'assistant', text: 'Swing dancing must have been so much fun! You\'re somewhere safe now, and that\'s what matters most.', timestamp: Date.now() - 315000 }
     ]
   };
 }
@@ -144,14 +144,14 @@ function generateEmptyConversation() {
 function generateLongConversation() {
   const interactions = [];
   const phrases = [
-    "Where is Ryan?",
-    "I need my medicine",
-    "I'm scared",
-    "Tell me about your dog",
-    "Hawaii was beautiful",
-    "I don't understand",
-    "The nurses are nice",
-    "I want to go home"
+    'Where is Ryan?',
+    'I need my medicine',
+    'I\'m scared',
+    'Tell me about your dog',
+    'Hawaii was beautiful',
+    'I don\'t understand',
+    'The nurses are nice',
+    'I want to go home'
   ];
   
   for (let i = 0; i < 50; i++) {

@@ -8,7 +8,11 @@ class SentimentAnalyzer {
     this.anxietyWords = [
       'worried', 'scared', 'afraid', 'nervous', 'anxious', 'panic', 'frightened',
       'terrified', 'concerned', 'upset', 'stressed', 'overwhelmed', 'helpless',
-      'hospital', 'emergency', 'wrong', 'hurt', 'help me'
+      'hospital', 'emergency', 'wrong', 'hurt', 'help me',
+      // CRITICAL SAFETY: Mental health crisis phrases
+      'want to die', 'wanting to die', 'better off dead', 'end my life',
+      'kill myself', 'suicidal', 'no point in living', 'can\'t go on',
+      'life is meaningless', 'hopeless', 'nothing to live for', 'give up'
     ];
     
     this.agitationWords = [
@@ -17,7 +21,7 @@ class SentimentAnalyzer {
     ];
     
     this.confusionWords = [
-      'confused', 'lost', 'forget', "don't know", "can't remember", 'where am i',
+      'confused', 'lost', 'forget', 'don\'t know', 'can\'t remember', 'where am i',
       'what time', 'who are you', 'mixed up', 'unclear', 'foggy', 'blank'
     ];
     
@@ -76,23 +80,26 @@ class SentimentAnalyzer {
    */
   calculateAnxietyScore(text) {
     let score = 0;
-    let matches = 0;
 
     for (const word of this.anxietyWords) {
       if (text.includes(word)) {
-        matches++;
-        // Weight by word severity
-        if (['terrified', 'panic', 'hospital', 'emergency'].includes(word)) {
-          score += 2;
+        // Weight by word severity - CRITICAL mental health phrases get highest weight
+        if (['want to die', 'wanting to die', 'better off dead', 'end my life', 
+             'kill myself', 'suicidal', 'no point in living', 'can\'t go on', 'give up'].includes(word)) {
+          score += 4; // CRITICAL: Suicidal ideation gets highest weight
+        } else if (['terrified', 'panic', 'hospital', 'emergency', 'hopeless', 
+                   'life is meaningless', 'nothing to live for'].includes(word)) {
+          score += 2; // HIGH: Severe distress
         } else {
-          score += 1;
+          score += 1; // MEDIUM: General anxiety
         }
       }
     }
 
-    // Normalize and apply weight
-    const normalized = Math.min(score / 10, 1);
-    return normalized * this.weights.anxiety;
+    // Normalize and apply weight - adjusted for higher critical scores
+    // Critical phrases should immediately trigger high anxiety (0.8+)
+    const normalized = Math.min(score / 8, 1); // More aggressive normalization for critical detection
+    return Math.min(normalized * this.weights.anxiety, 1);
   }
 
   /**
@@ -102,11 +109,9 @@ class SentimentAnalyzer {
    */
   calculateAgitationScore(text) {
     let score = 0;
-    let matches = 0;
 
     for (const word of this.agitationWords) {
       if (text.includes(word)) {
-        matches++;
         if (['furious', 'hate', 'liar'].includes(word)) {
           score += 2;
         } else {
@@ -126,11 +131,9 @@ class SentimentAnalyzer {
    */
   calculateConfusionScore(text) {
     let score = 0;
-    let matches = 0;
 
     for (const word of this.confusionWords) {
       if (text.includes(word)) {
-        matches++;
         if (['where am i', 'who are you', 'what time'].includes(word)) {
           score += 2;
         } else {

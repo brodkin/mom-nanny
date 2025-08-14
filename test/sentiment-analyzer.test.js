@@ -19,7 +19,7 @@ describe('SentimentAnalyzer', () => {
 
   describe('analyzeSentiment', () => {
     test('should detect anxiety in text', () => {
-      const result = analyzer.analyzeSentiment("I'm so worried and scared about this");
+      const result = analyzer.analyzeSentiment('I\'m so worried and scared about this');
       expect(result.anxiety).toBeGreaterThan(0);
       expect(result).toHaveProperty('agitation');
       expect(result).toHaveProperty('confusion');
@@ -28,22 +28,22 @@ describe('SentimentAnalyzer', () => {
     });
 
     test('should detect agitation markers', () => {
-      const result = analyzer.analyzeSentiment("I'm so angry and frustrated right now");
+      const result = analyzer.analyzeSentiment('I\'m so angry and frustrated right now');
       expect(result.agitation).toBeGreaterThan(0);
     });
 
     test('should detect confusion indicators', () => {
-      const result = analyzer.analyzeSentiment("I'm so confused and can't remember anything");
+      const result = analyzer.analyzeSentiment('I\'m so confused and can\'t remember anything');
       expect(result.confusion).toBeGreaterThan(0);
     });
 
     test('should detect positive emotions', () => {
-      const result = analyzer.analyzeSentiment("I'm happy and having a wonderful day");
+      const result = analyzer.analyzeSentiment('I\'m happy and having a wonderful day');
       expect(result.positivity).toBeGreaterThan(0);
     });
 
     test('should handle empty text', () => {
-      const result = analyzer.analyzeSentiment("");
+      const result = analyzer.analyzeSentiment('');
       expect(result.anxiety).toBe(0);
       expect(result.agitation).toBe(0);
       expect(result.confusion).toBe(0);

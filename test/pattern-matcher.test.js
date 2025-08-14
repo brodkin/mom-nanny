@@ -21,7 +21,7 @@ describe('PatternMatcher', () => {
 
   describe('detectPatterns', () => {
     test('should detect medication concerns', () => {
-      const text = "I need my medication and can't find my pills";
+      const text = 'I need my medication and can\'t find my pills';
       const patterns = matcher.detectPatterns(text);
       const medicationPattern = patterns.find(p => p.type === 'medicationConcern');
       expect(medicationPattern).toBeDefined();
@@ -30,42 +30,42 @@ describe('PatternMatcher', () => {
     });
 
     test('should detect pain complaints', () => {
-      const text = "My back really hurts and the pain is getting worse";
+      const text = 'My back really hurts and the pain is getting worse';
       const patterns = matcher.detectPatterns(text);
       const painPattern = patterns.find(p => p.type === 'painComplaint');
       expect(painPattern).toBeDefined();
     });
 
     test('should detect hospital requests', () => {
-      const text = "I need to go to the hospital or see a doctor";
+      const text = 'I need to go to the hospital or see a doctor';
       const patterns = matcher.detectPatterns(text);
       const hospitalPattern = patterns.find(p => p.type === 'hospitalRequest');
       expect(hospitalPattern).toBeDefined();
     });
 
     test('should detect staff complaints', () => {
-      const text = "The nurses are being mean and won't help me";
+      const text = 'The nurses are being mean and won\'t help me';
       const patterns = matcher.detectPatterns(text);
       const staffPattern = patterns.find(p => p.type === 'staffComplaint');
       expect(staffPattern).toBeDefined();
     });
 
     test('should detect delusional thoughts', () => {
-      const text = "Someone is in my room watching me and stealing my things";
+      const text = 'Someone is in my room watching me and stealing my things';
       const patterns = matcher.detectPatterns(text);
       const delusionalPattern = patterns.find(p => p.type === 'delusional');
       expect(delusionalPattern).toBeDefined();
     });
 
     test('should detect sundowning behavior', () => {
-      const text = "I need to go home now, where am I?";
+      const text = 'I need to go home now, where am I?';
       const patterns = matcher.detectPatterns(text);
       const sundowningPattern = patterns.find(p => p.type === 'sundowning');
       expect(sundowningPattern).toBeDefined();
     });
 
     test('should detect multiple patterns in single text', () => {
-      const text = "The staff are mean and I hurt everywhere and need to go to the hospital";
+      const text = 'The staff are mean and I hurt everywhere and need to go to the hospital';
       const patterns = matcher.detectPatterns(text);
       expect(patterns.length).toBeGreaterThan(1);
       expect(patterns.some(p => p.type === 'staffComplaint')).toBe(true);
@@ -74,7 +74,7 @@ describe('PatternMatcher', () => {
     });
 
     test('should return empty array for normal conversation', () => {
-      const text = "I had a nice day today and enjoyed talking with you";
+      const text = 'I had a nice day today and enjoyed talking with you';
       const patterns = matcher.detectPatterns(text);
       expect(patterns).toEqual([]);
     });
@@ -83,10 +83,10 @@ describe('PatternMatcher', () => {
   describe('calculateRepetitionScore', () => {
     test('should calculate high score for repeated utterances', () => {
       const utterances = [
-        "Where is Ryan?",
-        "Where is Ryan?",
-        "Is Ryan coming?",
-        "Where is Ryan?"
+        'Where is Ryan?',
+        'Where is Ryan?',
+        'Is Ryan coming?',
+        'Where is Ryan?'
       ];
       const score = matcher.calculateRepetitionScore(utterances);
       expect(score).toBeGreaterThan(0.5);
@@ -94,10 +94,10 @@ describe('PatternMatcher', () => {
 
     test('should calculate low score for varied conversation', () => {
       const utterances = [
-        "How are you today?",
-        "I had lunch earlier",
-        "The weather is nice",
-        "I miss my dog"
+        'How are you today?',
+        'I had lunch earlier',
+        'The weather is nice',
+        'I miss my dog'
       ];
       const score = matcher.calculateRepetitionScore(utterances);
       expect(score).toBeLessThan(0.3);

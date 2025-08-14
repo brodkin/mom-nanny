@@ -247,7 +247,7 @@ class ConversationAnalyzer {
     confusionScore += confusionPatterns.length * 0.2; // Increased boost
     
     // Additional boost for specific confusion phrases
-    const confusionPhrases = ["don't know where", "what time", "where am i"];
+    const confusionPhrases = ['don\'t know where', 'what time', 'where am i'];
     for (const phrase of confusionPhrases) {
       if (text.toLowerCase().includes(phrase)) {
         confusionScore += 0.3;
@@ -430,15 +430,15 @@ class ConversationAnalyzer {
   _trackClinicalPatterns(patterns, timestamp) {
     patterns.forEach(pattern => {
       switch (pattern.type) {
-        case 'medicationConcern':
-          this.medicationMentions.push({ ...pattern, timestamp });
-          break;
-        case 'painComplaint':
-          this.painComplaints.push({ ...pattern, timestamp });
-          break;
-        case 'staffComplaint':
-          this.staffComplaints.push({ ...pattern, timestamp });
-          break;
+      case 'medicationConcern':
+        this.medicationMentions.push({ ...pattern, timestamp });
+        break;
+      case 'painComplaint':
+        this.painComplaints.push({ ...pattern, timestamp });
+        break;
+      case 'staffComplaint':
+        this.staffComplaints.push({ ...pattern, timestamp });
+        break;
       }
     });
   }
@@ -713,8 +713,8 @@ class ConversationAnalyzer {
       .map(u => ({
         keywords: this.keywordExtractor.extractKeywords(u.text),
         emotion: u.sentiment.anxiety > 0.5 ? 'anxiety' : 
-                u.sentiment.agitation > 0.5 ? 'agitation' : 
-                u.sentiment.confusion > 0.5 ? 'confusion' : 'general'
+          u.sentiment.agitation > 0.5 ? 'agitation' : 
+            u.sentiment.confusion > 0.5 ? 'confusion' : 'general'
       }));
 
     return this.keywordExtractor.identifyTriggerWords(negativeEvents);

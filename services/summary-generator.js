@@ -90,7 +90,7 @@ class SummaryGenerator {
     
     // Analyze successful topics
     const successfulTopics = Array.from(analyzer.topics.entries())
-      .filter(([topic, data]) => data.sentiment > 0.5)
+      .filter(([, data]) => data.sentiment > 0.5)
       .map(([topic]) => topic);
     
     insights.recommendedConversationStarters = successfulTopics.slice(0, 3).map(topic => 
@@ -99,7 +99,7 @@ class SummaryGenerator {
     
     // Identify triggers to avoid
     const triggers = Array.from(analyzer.topics.entries())
-      .filter(([topic, data]) => data.sentiment < -0.3)
+      .filter(([, data]) => data.sentiment < -0.3)
       .map(([topic]) => topic);
     
     insights.topicsToAvoid = triggers.map(topic => 
@@ -184,8 +184,9 @@ class SummaryGenerator {
     const sleepRelatedTerms = ['tired', 'sleep', 'nap', 'rest', 'sleepy', 'exhausted'];
     
     const sleepMentions = interactions.filter(interaction => 
+      interaction.data && typeof interaction.data === 'string' &&
       sleepRelatedTerms.some(term => 
-        interaction.content.toLowerCase().includes(term)
+        interaction.data.toLowerCase().includes(term)
       )
     ).length;
     
@@ -250,7 +251,7 @@ class SummaryGenerator {
   
   identifyTriggers(analyzer) {
     return Array.from(analyzer.topics.entries())
-      .filter(([topic, data]) => data.sentiment < -0.3)
+      .filter(([, data]) => data.sentiment < -0.3)
       .map(([topic, data]) => ({
         topic: topic,
         sentiment: data.sentiment,
@@ -270,7 +271,7 @@ class SummaryGenerator {
     
     // Add topic-based strategies
     const positiveTopics = Array.from(analyzer.topics.entries())
-      .filter(([topic, data]) => data.sentiment > 0.6)
+      .filter(([, data]) => data.sentiment > 0.6)
       .map(([topic, data]) => ({
         strategy: `Discuss ${topic}`,
         effectiveness: 'high',

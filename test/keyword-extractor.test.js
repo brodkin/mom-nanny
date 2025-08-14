@@ -21,7 +21,7 @@ describe('KeywordExtractor', () => {
 
   describe('extractKeywords', () => {
     test('should extract meaningful keywords from text', () => {
-      const text = "I really miss my dog and want to go home to Hawaii";
+      const text = 'I really miss my dog and want to go home to Hawaii';
       const keywords = extractor.extractKeywords(text);
       
       expect(keywords).toContain('miss');
@@ -34,7 +34,7 @@ describe('KeywordExtractor', () => {
     });
 
     test('should filter out stop words', () => {
-      const text = "The dog is at the house which is on a hill";
+      const text = 'The dog is at the house which is on a hill';
       const keywords = extractor.extractKeywords(text);
       
       expect(keywords).not.toContain('the');
@@ -46,7 +46,7 @@ describe('KeywordExtractor', () => {
     });
 
     test('should filter out words shorter than 3 characters', () => {
-      const text = "I go to my house by car";
+      const text = 'I go to my house by car';
       const keywords = extractor.extractKeywords(text);
       
       expect(keywords).not.toContain('I');
@@ -59,12 +59,12 @@ describe('KeywordExtractor', () => {
     });
 
     test('should handle empty text', () => {
-      const keywords = extractor.extractKeywords("");
+      const keywords = extractor.extractKeywords('');
       expect(keywords).toEqual([]);
     });
 
     test('should convert text to lowercase', () => {
-      const text = "HAWAII Dog FAMILY";
+      const text = 'HAWAII Dog FAMILY';
       const keywords = extractor.extractKeywords(text);
       
       expect(keywords).toContain('hawaii');
