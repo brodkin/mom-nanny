@@ -8,9 +8,9 @@
 @import './variables.css';
 @import './base.css';
 @import './layout.css';
+@import './fixes.css'; /* UI improvements and fixes */
 @import './components.css';
 @import './animations.css';
-@import './fixes.css'; /* UI improvements and fixes */
 
 /* Admin-Specific Styles */
 

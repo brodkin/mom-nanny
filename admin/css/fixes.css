@@ -1,5 +1,114 @@
 /* UI Fixes for Admin Interface */
 
+/* ================================
+   TOAST NOTIFICATION FIXES
+   ================================ */
+
+/* Fix toast notification z-index to appear below header but above content */
+.dashboard-toast {
+  position: fixed;
+  top: 80px; /* Below header (header height is typically 64px + 16px margin) */
+  right: 24px;
+  z-index: 9999; /* High z-index but below modal/overlay levels (10000+) */
+  
+  min-width: 320px;
+  max-width: 480px;
+  
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toast animation states */
+.dashboard-toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.dashboard-toast.hide {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Responsive toast positioning */
+@media (max-width: 768px) {
+  .dashboard-toast {
+    top: 70px;
+    right: 16px;
+    left: 16px;
+    min-width: auto;
+    max-width: none;
+  }
+}
+
+/* ================================
+   SYSTEM HEARTBEAT STATUS
+   ================================ */
+
+/* System heartbeat indicator improvements */
+#system-heartbeat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+#system-heartbeat.status-healthy {
+  color: var(--color-success);
+}
+
+#system-heartbeat.status-degraded {
+  color: var(--color-warning);
+}
+
+#system-heartbeat.status-unhealthy {
+  color: var(--color-error);
+}
+
+#heartbeat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  animation: pulse 2s infinite;
+}
+
+#system-heartbeat.status-degraded #heartbeat-dot {
+  background: var(--color-warning);
+  animation: pulse-warning 1.5s infinite;
+}
+
+#system-heartbeat.status-unhealthy #heartbeat-dot {
+  background: var(--color-error);
+  animation: pulse-error 1s infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes pulse-error {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  25% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+  75% { opacity: 0.5; transform: scale(0.9); }
+}
+
 /* 1. Fix Welcome Banner - Calm, smooth gradient with subtle animation */
 .dashboard-welcome {
   background: linear-gradient(135deg, #6366f1 0%, #7c3aed 50%, #6366f1 100%);

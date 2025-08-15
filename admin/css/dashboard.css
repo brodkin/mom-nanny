@@ -1,0 +1,806 @@
+/**
+ * Compassionate Care Dashboard - Beautiful Visual Styling
+ * 
+ * This CSS provides stunning visual polish for the dashboard including:
+ * - Gradient backgrounds and glass-morphism effects
+ * - Smooth animations and transitions
+ * - Color-coded mental state indicators
+ * - Loading states and interactive elements
+ * - Modern design patterns for a premium feel
+ */
+
+/* ==========================================================================
+   DASHBOARD FOUNDATIONS & LAYOUT
+   ========================================================================== */
+
+.dashboard-section {
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: dashboardFadeIn 0.6s ease-out forwards;
+}
+
+.dashboard-section:nth-child(2) { animation-delay: 0.1s; }
+.dashboard-section:nth-child(3) { animation-delay: 0.2s; }
+.dashboard-section:nth-child(4) { animation-delay: 0.3s; }
+.dashboard-section:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes dashboardFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* ==========================================================================
+   SECTION HEADERS WITH ICONS
+   ========================================================================== */
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-icon {
+  font-size: 1.25rem;
+  opacity: 0.8;
+}
+
+.section-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ==========================================================================
+   BEAUTIFUL CARD COMPONENTS
+   ========================================================================== */
+
+.chart-card,
+.indicators-card,
+.alerts-card,
+.insights-card {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-card:hover,
+.indicators-card:hover,
+.alerts-card:hover,
+.insights-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.chart-card::before,
+.indicators-card::before,
+.alerts-card::before,
+.insights-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chart-card:hover::before,
+.indicators-card:hover::before,
+.alerts-card:hover::before,
+.insights-card:hover::before {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   CHART CONTAINER STYLING
+   ========================================================================== */
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.chart-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.chart-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chart-status {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.75rem;
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin-bottom: 1rem;
+}
+
+.chart-container canvas {
+  border-radius: 8px;
+  transition: opacity 0.3s ease;
+}
+
+/* ==========================================================================
+   BEAUTIFUL LOADING STATES
+   ========================================================================== */
+
+.chart-loading,
+.loading-indicators {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.3s forwards;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(148, 163, 184, 0.2);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+@keyframes spin {
+  0% { 
+    transform: rotate(0deg);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+  }
+  100% { 
+    transform: rotate(360deg);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading skeleton animation */
+.loading-skeleton {
+  background: linear-gradient(90deg, 
+    rgba(148, 163, 184, 0.1) 25%, 
+    rgba(148, 163, 184, 0.2) 50%, 
+    rgba(148, 163, 184, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Pulse loading for dashboard initialization */
+#dashboard-loading {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   MENTAL STATE INDICATORS - COMPASSIONATE COLORS
+   ========================================================================== */
+
+.indicators-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.mental-state-indicator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.mental-state-indicator:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(4px);
+}
+
+.mental-state-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.mental-state-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mental-state-indicator:hover .mental-state-icon::before {
+  opacity: 1;
+}
+
+/* Compassionate color scheme for mental states */
+.mental-state-icon.calm {
+  background: linear-gradient(135deg, 
+    rgba(34, 197, 94, 0.2) 0%, 
+    rgba(59, 130, 246, 0.2) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+.mental-state-icon.elevated {
+  background: linear-gradient(135deg, 
+    rgba(251, 191, 36, 0.2) 0%, 
+    rgba(245, 158, 11, 0.2) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.15);
+}
+
+.mental-state-icon.concerning {
+  background: linear-gradient(135deg, 
+    rgba(239, 68, 68, 0.2) 0%, 
+    rgba(220, 38, 127, 0.2) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.mental-state-info h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.mental-state-info p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================================
+   CARE INDICATORS STATISTICS
+   ========================================================================== */
+
+.care-stats-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.care-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.care-indicator:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.care-indicator-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: countUp 0.8s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.care-indicator-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.care-indicator-trend {
+  font-size: 0.625rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.trend-up {
+  background: rgba(34, 197, 94, 0.1);
+  color: rgb(34, 197, 94);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.trend-down {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(239, 68, 68);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.trend-stable {
+  background: rgba(148, 163, 184, 0.1);
+  color: rgb(148, 163, 184);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* ==========================================================================
+   ALERTS AND INSIGHTS STYLING
+   ========================================================================== */
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.card-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.alert-count {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.insights-icon {
+  font-size: 1.25rem;
+}
+
+.alerts-list,
+.insights-list {
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+.alerts-list::-webkit-scrollbar,
+.insights-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.alerts-list::-webkit-scrollbar-track,
+.insights-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.alerts-list::-webkit-scrollbar-thumb,
+.insights-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 2px;
+}
+
+.alert-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.alert-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(4px);
+}
+
+.alert-item:last-child {
+  margin-bottom: 0;
+}
+
+.alert-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.alert-icon.success {
+  background: linear-gradient(135deg, 
+    rgba(34, 197, 94, 0.2) 0%, 
+    rgba(59, 130, 246, 0.2) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.alert-icon.warning {
+  background: linear-gradient(135deg, 
+    rgba(251, 191, 36, 0.2) 0%, 
+    rgba(245, 158, 11, 0.2) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.alert-icon.info {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.2) 0%, 
+    rgba(147, 51, 234, 0.2) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content h5 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.alert-content p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0 0 0.5rem 0;
+}
+
+.alert-time {
+  font-size: 0.625rem;
+  color: var(--text-tertiary);
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   ANIMATED NUMBER COUNTERS
+   ========================================================================== */
+
+.stat-value {
+  transition: all 0.3s ease;
+}
+
+.stat-value.counting {
+  color: var(--color-primary);
+  transform: scale(1.05);
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATIONS FOR ALERTS
+   ========================================================================== */
+
+.dashboard-toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(255, 255, 255, 0.9) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.dashboard-toast.success {
+  border-left: 4px solid rgb(34, 197, 94);
+}
+
+.dashboard-toast.warning {
+  border-left: 4px solid rgb(251, 191, 36);
+}
+
+.dashboard-toast.error {
+  border-left: 4px solid rgb(239, 68, 68);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .dashboard-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .section-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    height: 250px;
+  }
+  
+  .dashboard-section {
+    margin-bottom: 2rem;
+  }
+  
+  .chart-card,
+  .indicators-card,
+  .alerts-card,
+  .insights-card {
+    padding: 1rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+  }
+  
+  .chart-header h3 {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-row {
+    gap: 1rem;
+  }
+  
+  .dashboard-grid {
+    gap: 1rem;
+  }
+  
+  .mental-state-indicator {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .care-indicator {
+    padding: 1rem;
+  }
+  
+  .alert-item {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .alert-icon {
+    align-self: center;
+  }
+}
+
+/* ==========================================================================
+   DARK MODE ADAPTATIONS
+   ========================================================================== */
+
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .indicators-card,
+[data-theme="dark"] .alerts-card,
+[data-theme="dark"] .insights-card {
+  background: linear-gradient(135deg, 
+    rgba(30, 41, 59, 0.6) 0%, 
+    rgba(15, 23, 42, 0.4) 100%);
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="dark"] .mental-state-indicator,
+[data-theme="dark"] .care-indicator,
+[data-theme="dark"] .alert-item {
+  background: rgba(30, 41, 59, 0.3);
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="dark"] .dashboard-toast {
+  background: linear-gradient(135deg, 
+    rgba(30, 41, 59, 0.95) 0%, 
+    rgba(15, 23, 42, 0.9) 100%);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+/* ==========================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================================================================== */
+
+.chart-card:focus-visible,
+.indicators-card:focus-visible,
+.alerts-card:focus-visible,
+.insights-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.mental-state-indicator:focus-visible,
+.care-indicator:focus-visible,
+.alert-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .loading-spinner {
+    animation: none;
+    border-top-color: var(--color-primary);
+  }
+}
+
+/* ==========================================================================
+   HIGH CONTRAST MODE SUPPORT
+   ========================================================================== */
+
+@media (prefers-contrast: high) {
+  .chart-card,
+  .indicators-card,
+  .alerts-card,
+  .insights-card {
+    border-width: 2px;
+    border-color: var(--text-primary);
+  }
+  
+  .mental-state-icon,
+  .alert-icon {
+    border-width: 2px;
+  }
+  
+  .care-indicator-trend {
+    border-width: 2px;
+  }
+}

@@ -11,6 +11,7 @@
   
   <!-- CSS -->
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/dashboard.css">
   
   <!-- Meta tags -->
   <meta name="description" content="Admin dashboard for Nanny compassionate companion system">
@@ -65,7 +66,7 @@
       <nav class="nav-menu">
         <ul role="list">
           <li class="nav-item">
-            <a href="#dashboard" class="nav-link active" data-page="dashboard">
+            <a href="#dashboard" class="nav-link active" data-page="dashboard" onclick="loadDashboard()">
               <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5v4M16 5v4"/>
@@ -246,7 +247,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="admin-main" role="main">
+    <main class="admin-main" role="main" id="main-content">
       <!-- Welcome Section -->
       <section class="dashboard-welcome animate-fade-in">
         <div class="welcome-content">
@@ -692,6 +693,76 @@
   </div>
 
   <!-- JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/admin.js"></script>
+  <script src="js/dashboard-real.js"></script>
+  
+  <!-- Dashboard Load Function -->
+  <script>
+    function loadDashboard() {
+      const content = document.getElementById('main-content');
+      if (!content) return;
+      
+      // Hide default content and show real dashboard
+      const defaultContent = document.querySelector('.dashboard-welcome');
+      const realDashboard = document.getElementById('real-dashboard-content');
+      
+      if (defaultContent) defaultContent.style.display = 'none';
+      if (realDashboard) {
+        realDashboard.style.display = 'block';
+      } else {
+        // Initialize the dashboard which will create the content
+        if (window.dashboardReal) {
+          window.dashboardReal.createDashboardStructure();
+          window.dashboardReal.loadAllData();
+        } else {
+          // Show loading state until dashboard is ready
+          content.innerHTML = `
+            <div id="dashboard-loading" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+              <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
+              <h2>Initializing Dashboard...</h2>
+              <p>Setting up real-time data visualization for compassionate care monitoring</p>
+            </div>
+          `;
+        }
+      }
+    }
+    
+    // Auto-load dashboard on page load if dashboard is active
+    document.addEventListener('DOMContentLoaded', function() {
+      const activeNavLink = document.querySelector('.nav-link.active');
+      if (activeNavLink && activeNavLink.getAttribute('data-page') === 'dashboard') {
+        // Small delay to ensure all assets are loaded
+        setTimeout(() => {
+          loadDashboard();
+        }, 1000);
+      }
+    });
+    
+    // Add click handlers for all nav links to properly manage active states
+    document.addEventListener('DOMContentLoaded', function() {
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          // Update active states
+          navLinks.forEach(l => l.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Update breadcrumb
+          const breadcrumbCurrent = document.querySelector('.breadcrumb-current');
+          if (breadcrumbCurrent) {
+            const pageTitle = this.querySelector('.nav-text').textContent;
+            breadcrumbCurrent.textContent = pageTitle;
+          }
+          
+          // Handle dashboard loading
+          if (this.getAttribute('data-page') === 'dashboard') {
+            e.preventDefault();
+            loadDashboard();
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>

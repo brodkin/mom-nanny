@@ -24,6 +24,11 @@ class AdminDashboard {
     this.initializeAnimations();
     
     console.log('🚀 Admin Dashboard initialized');
+    
+    // Initialize dashboard-specific features if on dashboard page
+    if (window.location.pathname.includes('dashboard')) {
+      this.initializeDashboardFeatures();
+    }
   }
 
   bindEvents() {
@@ -792,6 +797,58 @@ class AdminDashboard {
   resizeCharts() {
     // Placeholder for chart resize logic
     console.log('Resizing charts...');
+  }
+
+  initializeDashboardFeatures() {
+    // Dashboard-specific initialization
+    console.log('🎯 Initializing dashboard-specific features');
+    
+    // Add keyboard shortcuts for dashboard
+    this.bindDashboardKeyboardShortcuts();
+    
+    // Enable auto-refresh status updates
+    this.updateDashboardStatus();
+  }
+
+  bindDashboardKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Dashboard-specific shortcuts
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'r':
+            e.preventDefault();
+            if (window.dashboardReal && typeof window.dashboardReal.loadAllData === 'function') {
+              window.dashboardReal.loadAllData();
+              this.showToast('Dashboard Refreshed', 'Data has been updated', 'success');
+            }
+            break;
+        }
+      }
+    });
+  }
+
+  updateDashboardStatus() {
+    // Update the real-time status indicator
+    const statusElement = document.getElementById('real-time-status');
+    if (statusElement) {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString();
+      
+      // Update every minute
+      setInterval(() => {
+        const updateElement = document.getElementById('last-update');
+        if (updateElement && window.dashboardReal) {
+          const timeSinceUpdate = Math.floor((new Date() - window.dashboardReal.lastUpdate) / 1000);
+          if (timeSinceUpdate < 60) {
+            updateElement.textContent = 'Just now';
+          } else if (timeSinceUpdate < 3600) {
+            updateElement.textContent = `${Math.floor(timeSinceUpdate / 60)}m ago`;
+          } else {
+            updateElement.textContent = `${Math.floor(timeSinceUpdate / 3600)}h ago`;
+          }
+        }
+      }, 60000);
+    }
   }
 }
 

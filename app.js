@@ -25,6 +25,7 @@ ExpressWs(app);
 const adminRouter = require('./routes/admin');
 const adminStatsRouter = require('./routes/api/admin-stats');
 const adminConfigRouter = require('./routes/api/admin-config');
+const adminDashboardRouter = require('./routes/api/admin-dashboard-real');
 
 const PORT = process.env.PORT || 3000;
 
@@ -32,10 +33,94 @@ const PORT = process.env.PORT || 3000;
 app.use('/admin', express.json());
 app.use('/api/admin', express.json());
 
+// Import dashboard real data router
+const adminDashboardRealRouter = require('./routes/api/admin-dashboard-real');
+
 // Mount admin routes
 app.use('/admin', adminRouter);
 app.use('/api/admin/stats', adminStatsRouter);
 app.use('/api/admin/config', adminConfigRouter);
+app.use('/api/admin/dashboard', adminDashboardRealRouter);
+
+// System heartbeat endpoint (directly on admin API)
+app.get('/api/admin/heartbeat', async (req, res) => {
+  try {
+    const startTime = Date.now();
+    
+    // Test database connectivity
+    let dbStatus = 'healthy';
+    let dbResponseTime = 0;
+    try {
+      const dbStartTime = Date.now();
+      // Simple database connectivity test
+      const dbPath = process.env.SQLITE_DB_PATH || './storage/conversation-summaries.db';
+      const DatabaseManager = require('./services/database-manager');
+      const dbManager = new DatabaseManager(dbPath);
+      await dbManager.initialize();
+      dbResponseTime = Date.now() - dbStartTime;
+    } catch (error) {
+      console.warn('Database health check failed:', error);
+      dbStatus = 'unhealthy';
+      dbResponseTime = Date.now() - startTime;
+    }
+
+    // Check system metrics
+    const systemStatus = {
+      status: 'healthy',
+      uptime: Math.floor(process.uptime()),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        external: Math.round(process.memoryUsage().external / 1024 / 1024)
+      },
+      cpu: process.cpuUsage()
+    };
+
+    // Determine overall health status
+    let overallStatus = 'healthy';
+    if (dbStatus === 'unhealthy') {
+      overallStatus = 'degraded';
+    }
+    if (systemStatus.memory.used > systemStatus.memory.total * 0.9) {
+      overallStatus = overallStatus === 'healthy' ? 'degraded' : 'unhealthy';
+    }
+
+    const responseTime = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      data: {
+        status: overallStatus,
+        timestamp: new Date().toISOString(),
+        responseTime,
+        services: {
+          database: {
+            status: dbStatus,
+            responseTime: dbResponseTime
+          },
+          system: systemStatus
+        }
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Heartbeat check failed:', error);
+    res.json({
+      success: true,
+      data: {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        services: {
+          database: { status: 'unknown', responseTime: 0 },
+          system: { status: 'error', uptime: Math.floor(process.uptime()), memory: {} }
+        },
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Health check failed'
+      },
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 app.post('/incoming', (req, res) => {
   try {
@@ -300,5 +385,10 @@ app.use('/api/admin', (error, req, res, next) => {
   });
 });
 
-app.listen(PORT);
-console.log(`Server running on port ${PORT}`);
+// Only start server if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT);
+  console.log(`Server running on port ${PORT}`);
+}
+
+module.exports = app;
