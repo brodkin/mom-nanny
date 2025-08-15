@@ -1,130 +1,403 @@
-# CLAUDE.md
+# CLAUDE.md - LLM Development Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides comprehensive technical guidance for LLMs working on this compassionate AI companion system.
 
-## Project Overview
+## System Purpose & Design Philosophy
 
-**Purpose**: This is a compassionate AI companion system designed to support elderly individuals with dementia and anxiety, particularly when family members cannot be immediately available.
+**Mission**: Provide compassionate AI companionship for elderly individuals with dementia and anxiety when family members cannot be immediately available.
 
-**Primary Use Case**: This application provides a caring, patient voice assistant that answers phone calls from Ryan's mother, who has severe dementia and chronic anxiety. When Ryan is unavailable, the AI companion engages in calming, supportive conversations to help reduce anxiety and provide comfort through familiar, positive interactions.
+**Core Design Principles**:
+- **Patience Over Efficiency**: Never rush or show frustration with repetition
+- **Validation Over Correction**: Acknowledge feelings rather than correcting confusion  
+- **Comfort Over Accuracy**: Prioritize emotional well-being over factual precision
+- **Familiarity Over Novelty**: Use familiar topics and gentle redirection
+- **Safety Over Features**: All features must consider the user's vulnerable state
 
-**Core Functionality**: The system combines Twilio Media Streams for phone connectivity with OpenAI's GPT for empathetic conversation, using Deepgram for natural speech-to-text and text-to-speech conversion. The AI is designed to:
-- Provide patient, warm responses regardless of repetition
-- Redirect conversations to positive, calming topics
-- Maintain a consistent, reassuring presence
-- Never show frustration with repeated questions or confusion
+**Critical Context for Development**:
+- Users have severe dementia and will not remember previous conversations
+- Users experience high anxiety and need constant reassurance
+- The AI may be their only available companion during distressing moments
+- Every interaction must prioritize dignity and emotional comfort
+- Technical optimizations must never compromise compassionate responses
 
-## Development Commands
+## Communication Flows
 
-### Running the Application
-```bash
-# Install dependencies
-npm install
-
-# Development mode with auto-reload
-npm run dev
-
-# Production mode
-npm start
-
-# Run tests
-npm test
-
-# Run a single test file
-npm test -- test/checkInventory.test.js
+### Production Flow (Phone Calls via Twilio)
+```
+Entry Point: POST /incoming
+Flow: Twilio → WebSocket /connection → Audio Pipeline
+Pipeline: Twilio Media Stream → Deepgram STT → OpenAI GPT → Deepgram TTS → Twilio
+Key Features: Real-time streaming, interruption handling, mark-based audio tracking
 ```
 
-### Testing Phone Calls
-```bash
-# Make an inbound test call (automated script)
-npm run inbound
-
-# Make an outbound test call (connects to your phone)
-npm run outbound
+### Development Flow (Text Chat) 
+```
+Entry Point: npm run chat → scripts/text-chat.js → services/chat-session.js
+Flow: Console Input → Mock Services → GPT → Console Output
+Pipeline: Text → Mock STT → OpenAI GPT → Mock TTS → Formatted Console
+Key Features: Mirrors production flow, usage tracking, debug mode, memory inspection
 ```
 
-## Architecture Overview
+## Event-Driven Service Architecture
 
-### Core Flow
-The application orchestrates real-time communication between multiple services:
+| Event | Payload Schema | Emitted By | Consumed By | Purpose |
+|-------|----------------|------------|-------------|---------|
+| `message` | `{event: 'start/media/mark/stop', ...data}` | Twilio WebSocket | app.js | Raw WebSocket messages from Twilio |
+| `utterance` | `text: string` | TranscriptionService | app.js | User interruption detected |
+| `transcription` | `text: string` | TranscriptionService | GptService | Final user speech transcribed |
+| `gptreply` | `{partialResponse: string, partialResponseIndex: number, isFinal: boolean}` | GptService | TtsService | AI response chunk ready |
+| `speech` | `(responseIndex, audio, label, icount)` | TtsService | StreamService | TTS audio ready for streaming |
+| `audiosent` | `markLabel: string` | StreamService | app.js | Audio chunk sent with mark |
+| `responseComplete` | none | ChatSession | readline prompt | Chat response fully displayed |
+| `sessionEnded` | none | ChatSession | text-chat.js | Chat session terminated |
 
-1. **Twilio Media Streams** → WebSocket connection at `/connection` receives audio from phone calls
-2. **TranscriptionService** → Sends audio to Deepgram for Speech-to-Text
-3. **GptService** → Processes transcriptions through OpenAI GPT with function calling support
-4. **TextToSpeechService** → Converts GPT responses to speech via Deepgram
-5. **StreamService** → Buffers and sends audio back to Twilio
+## Conversation State Machine
 
-### Service Architecture
+```mermaid
+stateDiagram-v2
+    [*] --> GREETING: Connection established
+    GREETING --> LISTENING: Initial greeting sent
+    LISTENING --> PROCESSING: Transcription received
+    PROCESSING --> SPEAKING: GPT response generated
+    SPEAKING --> LISTENING: Response complete
+    SPEAKING --> PROCESSING: User interrupts (marks cleared)
+    LISTENING --> LISTENING: Silence timeout
+    ANY --> ENDED: Connection closed
+```
 
-- **app.js**: Express server with WebSocket handling for Twilio Media Streams
-  - `/incoming` endpoint: Handles incoming calls with TwiML response
-  - `/connection` WebSocket: Manages bidirectional audio streaming
+**State Behaviors**:
+- **GREETING**: Send random warm greeting immediately
+- **LISTENING**: Buffer audio, detect utterances
+- **PROCESSING**: Generate GPT response, handle functions
+- **SPEAKING**: Stream TTS audio, track marks
+- **ENDED**: Save conversation, cleanup services
 
-- **services/**:
-  - `gpt-service.js`: OpenAI integration with streaming responses and function calling orchestration
-  - `transcription-service.js`: Deepgram STT with utterance detection
-  - `tts-service.js`: Deepgram TTS with response chunking (configurable for ElevenLabs)
-  - `stream-service.js`: Audio buffering and mark management for interruption handling
-  - `recording-service.js`: Optional call recording functionality
+## Memory & Persistence Architecture
 
-- **functions/**: GPT function calling implementations
-  - `function-manifest.js`: Defines available functions for GPT
-  - Each function file must match its function name exactly
+### Database Structure (SQLite)
+```sql
+conversations: id, call_sid, start_time, end_time, duration, summary_text
+messages: id, conversation_id, role, content, timestamp
+memories: id, key, content, category, created_at, updated_at, last_accessed
+```
 
-### Key Technical Details
+### Memory Service Operations
+- **Initialize**: Load all memory keys at startup
+- **Store**: Silent operation, categorized storage
+- **Recall**: Pattern matching on keys
+- **Update**: Progressive information building
+- **Forget**: Remove outdated information
 
-- **Interruption Handling**: Uses Twilio marks to track audio playback and clear on user interruption
-- **Response Chunking**: GPT responses are split at `•` symbols for faster TTS processing
-- **Streaming**: All services use event emitters for real-time data flow
-- **Context Management**: Maintains conversation history in `userContext` array
+### Conversation Analyzer Tracking
+- User utterances with timestamps
+- Assistant responses with timestamps
+- Interruption events
+- Mental state indicators (anxiety, agitation, confusion)
+- Care indicators (medication, pain, staff complaints)
+
+## Critical Implementation Patterns
+
+### Response Chunking Pattern
+```javascript
+// MANDATORY: Use bullet points (•) for response chunking
+"Hello Francine! • How are you doing today? • It's so nice to hear from you."
+// Each bullet creates a separate TTS request for faster initial response
+```
+
+### Interruption Handling Pattern
+```javascript
+// 1. Detect interruption via utterance event
+if(marks.length > 0 && text?.length > 5) {
+  // 2. Clear Twilio stream
+  ws.send(JSON.stringify({streamSid, event: 'clear'}));
+  // 3. Clear transcription buffers
+  transcriptionService.clearBuffers();
+  // 4. Track in analyzer
+  conversationAnalyzer.trackInterruption(new Date());
+}
+```
+
+### Context Management Pattern
+```javascript
+// System context structure
+userContext = [
+  {role: 'system', content: systemPrompt}, // With memory keys
+  {role: 'assistant', content: greeting},
+  {role: 'system', content: `callSid: ${callSid}`},
+  // Conversation history follows...
+]
+```
+
+### Template Service Pattern
+```javascript
+// Templates in templates/ directory
+// Loaded via TemplateService with Mustache rendering
+// Memory keys injected into system prompt template
+```
+
+## Function Calling Guidelines
+
+### Emergency Assessment (transferCallDeferred)
+```
+CRITICAL: Francine often exaggerates due to anxiety
+Assessment Required:
+- Actual medical distress (chest pain, inability to breathe)
+- Physical injury (fall with pain)
+- Genuine emergency situations
+Default: Redirect and comfort instead of transfer
+```
+
+### Primary Engagement Tool (getNewsHeadlines)
+```
+Usage: PROACTIVE when conversation becomes circular
+Purpose: Novel topics reduce anxiety through distraction
+Categories: General, health, science, entertainment
+Timing: Use early and often for redirection
+```
+
+### Memory Operations (SILENT - Never Announce)
+```
+rememberInformation: Store new facts naturally
+recallMemory: Retrieve for context
+updateMemory: Build progressive understanding
+forgetMemory: Remove incorrect information
+listAvailableMemories: Discovery operation
+CRITICAL: Never tell user about memory operations
+```
+
+### Call Management
+```
+endCallDeferred: Graceful conversation ending
+Say goodbye naturally before triggering
+```
+
+## Error Recovery Patterns
+
+| Error Type | Recovery Strategy | Implementation | User Experience |
+|------------|------------------|----------------|-----------------|
+| GPT API Timeout | Fallback message | 10-second timeout, pre-recorded comfort | "I'm having trouble thinking, could you repeat that?" |
+| Deepgram STT Failure | Continue listening | Log error, wait for recovery | Silent continuation |
+| Deepgram TTS Failure | Skip response | Log error, continue conversation | Brief pause in responses |
+| Database Write Failure | Continue without persistence | Queue retry, prioritize live conversation | No impact on conversation |
+| WebSocket Disconnect | Log and cleanup | Save partial conversation, close services | Call ends gracefully |
+| Memory Service Failure | Continue without memory | Log error, operate stateless | Reduced personalization |
+| Function Execution Error | Continue conversation | Log error, respond naturally | Natural flow maintained |
 
 ## Environment Configuration
 
-Required environment variables (copy `.env.example` to `.env`):
-- `SERVER`: Your server domain (without https://)
-- `OPENAI_API_KEY`: OpenAI API key for GPT
-- `DEEPGRAM_API_KEY`: Deepgram API key for STT/TTS
-- `VOICE_MODEL`: Deepgram voice model (default: aura-asteria-en)
-- `RECORDING_ENABLED`: Enable call recording (default: false)
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SERVER` | Yes | - | Server domain without https:// |
+| `OPENAI_API_KEY` | Yes | - | OpenAI API key for GPT |
+| `DEEPGRAM_API_KEY` | Yes | - | Deepgram API key for STT/TTS |
+| `VOICE_MODEL` | No | aura-asteria-en | Deepgram voice model |
+| `RECORDING_ENABLED` | No | false | Enable call recording |
+| `SQLITE_DB_PATH` | No | ./conversation-summaries.db | Database location |
+| `PORT` | No | 3000 | Server port |
+| `TWILIO_ACCOUNT_SID` | For testing | - | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | For testing | - | Twilio auth token |
+| `FROM_NUMBER` | For testing | - | Twilio phone number |
+| `APP_NUMBER` | For testing | - | Application phone number |
+| `YOUR_NUMBER` | For testing | - | Your phone for testing |
 
-For testing calls:
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`: Twilio credentials
-- `FROM_NUMBER`: Twilio phone number
-- `APP_NUMBER`: Application phone number for inbound calls
-- `YOUR_NUMBER`: Your phone number for outbound testing
+## Testing & Development Workflows
 
-## GPT Configuration
+### Text Chat Testing (Primary Development Tool)
+```bash
+npm run chat
+# Interactive console with:
+# - Real GPT integration
+# - Mock audio services  
+# - Memory persistence
+# - Usage tracking
+# Commands: /help, /stats, /context, /memories, /debug, /reset, /exit
+```
 
-The GPT assistant personality and behavior are configured in `services/gpt-service.js`:
-- System prompt defines the assistant's role and conversation style
-- The `•` symbol insertion is critical for response chunking
-- Function calling is handled through the manifest in `functions/function-manifest.js`
+### Phone Call Testing
+```bash
+npm run inbound  # Automated test script
+npm run outbound # Calls YOUR_NUMBER
+```
 
-### Key Behavioral Guidelines for Dementia Support
-- **Identity**: Assistant identifies as "Jessica," Ryan's friend
-- **Patience First**: Never express frustration with repetition or confusion
-- **Validation**: Acknowledge feelings without dismissing them
-- **Redirection**: Gently guide to pleasant, familiar topics when anxiety rises
-- **Simplicity**: Use clear, simple language and short sentences
-- **Reassurance**: Consistently provide comfort and safety
+### Development Mode
+```bash
+npm run dev # Nodemon auto-reload
+```
 
-### Conversation Guidelines
-- **Safe Topics**: Dogs, Hawaii, positive memories, asking about her day
-- **Avoid**: Health topics (she has hypochondria tendencies)
-- **Anxiety Response**: It's okay to acknowledge when she sounds worried
-- **Facility Concerns**: If she mentions staff being mean, reassure her that everyone at her assisted living facility is trying to help her
-- **Redirection Strategy**: Try various positive topics to find what interests her in the moment
-- **Call Routing**: The AI only activates when Ryan is unavailable (if available, he answers directly)
+### Unit Testing
+```bash
+npm test # Jest tests for functions
+```
 
-## Adding New Functions
+## File Organization & Dependencies
 
-1. Create a new file in `/functions/` matching the function name
-2. Add the function definition to `function-manifest.js`
-3. Include a `say` property for pre-execution speech
-4. Return values to prevent GPT from repeatedly calling the function
+### Core Application Layer
+```
+app.js                    # Express server, WebSocket handler, service orchestration
+├── Initializes all services
+├── Handles Twilio WebSocket
+├── Manages conversation lifecycle
+└── Saves summaries on close
+```
 
-## Testing Considerations
+### Service Layer (services/)
+```
+gpt-service.js           # OpenAI integration, function calling, context management
+├── Manages userContext array
+├── Handles streaming responses
+└── Executes function calls
 
-- Unit tests in `/test/` directory test function calls without GPT
-- Use `npm run inbound` for automated testing with scripts
-- Monitor console output for color-coded service communication
+transcription-service.js # Deepgram STT with utterance detection
+├── Processes audio chunks
+├── Detects speech endings
+└── Emits transcriptions
+
+tts-service.js          # Deepgram TTS with response chunking
+├── Splits on bullet points
+├── Generates audio chunks
+└── Manages speech queue
+
+stream-service.js       # Audio buffering and mark management
+├── Buffers audio chunks
+├── Sends to Twilio
+└── Tracks marks
+
+memory-service.js       # Persistent memory storage
+├── SQLite backend
+├── Category management
+└── Pattern matching
+
+conversation-analyzer.js # Mental state tracking
+├── Tracks utterances
+├── Analyzes patterns
+└── Generates insights
+
+chat-session.js         # Development chat interface
+├── Mirrors production flow
+├── Mock services
+└── Console UI
+
+template-service.js     # Mustache template rendering
+├── Loads templates
+├── Injects variables
+└── Caches rendered
+```
+
+### Function Layer (functions/)
+```
+function-manifest.js    # GPT tool definitions
+transferCallDeferred.js # Emergency escalation
+getNewsHeadlines.js    # Engagement tool
+rememberInformation.js # Store memory
+recallMemory.js       # Retrieve memory
+updateMemory.js       # Update memory
+forgetMemory.js       # Delete memory
+listAvailableMemories.js # List all memories
+endCallDeferred.js    # End call gracefully
+```
+
+### Mock Services (for chat interface)
+```
+mock-transcription-service.js # Simulates STT
+mock-tts-service.js          # Simulates TTS
+mock-stream-service.js       # Simulates audio streaming
+```
+
+### Admin Interface (routes/)
+```
+admin.js              # Admin dashboard
+api/admin-stats.js   # Statistics API
+api/admin-config.js  # Configuration API
+```
+
+## Service Initialization Sequence
+
+1. **Database Manager** → Ensures SQLite is ready
+2. **Memory Service** → Loads stored memories
+3. **GPT Service** → Initializes with memory keys
+4. **Transcription Service** → Connects to Deepgram
+5. **TTS Service** → Prepares audio generation
+6. **Stream Service** → Sets up buffering
+7. **Conversation Analyzer** → Begins tracking
+
+## Critical Patterns for Modifications
+
+### Adding New Functions
+1. Create function file in `functions/` matching exact name
+2. Add definition to `function-manifest.js`
+3. Include `say` property for pre-execution speech
+4. Return value to prevent repeated calls
+5. Consider silent operation for background tasks
+
+### Modifying GPT Behavior
+1. System prompt in `template-service.js` and `templates/`
+2. Bullet points (•) are MANDATORY for chunking
+3. Context array in `gpt-service.js`
+4. Memory keys injected at initialization
+
+### Adding Service Events
+1. Define event in architecture table above
+2. Emit from service: `this.emit('eventName', data)`
+3. Listen in consumer: `service.on('eventName', handler)`
+4. Update conversation analyzer if tracking needed
+
+### Database Schema Changes
+1. Modify `database-manager.js` initialization
+2. Add migration logic for existing data
+3. Update storage service methods
+4. Test with both new and existing databases
+
+## Performance Considerations
+
+- **Response Time**: First TTS chunk should play within 2 seconds
+- **Interruption**: Clear stream within 100ms of detection
+- **Memory**: Keep context under 128k tokens
+- **Database**: Async operations to prevent blocking
+- **WebSocket**: Handle disconnections gracefully
+
+## Security Considerations
+
+- **No PHI/PII Logging**: Conversation summaries only
+- **Environment Variables**: Never commit .env
+- **Function Validation**: Sanitize all function arguments
+- **Database**: Local SQLite, no external transmission
+- **API Keys**: Rotate regularly, use environment vars
+
+## Debugging Guide
+
+### Common Issues
+
+| Symptom | Likely Cause | Solution |
+|---------|--------------|----------|
+| No greeting on call | Recording service delay | Check RECORDING_ENABLED |
+| Repeated function calls | Missing return value | Ensure functions return data |
+| Slow responses | No bullet points | Add • to GPT responses |
+| Lost context | Context overflow | Implement pruning strategy |
+| No memory persistence | DB initialization failed | Check SQLITE_DB_PATH permissions |
+| Interruptions not working | Mark tracking broken | Verify mark array management |
+
+### Debug Commands (Chat Mode)
+- `/debug` - Toggle verbose logging
+- `/context` - Show GPT context
+- `/memories` - Display all stored memories
+- `/stats` - Show token usage
+- `/storage` - Recent conversation summaries
+
+## Development Best Practices
+
+1. **Test in Chat First**: Use `npm run chat` before phone testing
+2. **Monitor Token Usage**: Watch context size in chat stats
+3. **Test Interruptions**: Speak while AI is responding
+4. **Verify Memory**: Check persistence across sessions
+5. **Test Error Cases**: Disconnect, timeout scenarios
+6. **Maintain Compassion**: Every change must serve the user's emotional needs
+
+## Critical Reminders
+
+- **User Has Dementia**: They won't remember previous calls
+- **Anxiety Is Constant**: Prioritize comfort over efficiency
+- **Repetition Is Expected**: Never show frustration
+- **Emergencies Are Rare**: Most "emergencies" are anxiety
+- **Memory Is Silent**: Never mention storing/recalling
+- **Testing Matters**: Use chat interface extensively
+- **Compassion First**: Technical excellence serves emotional care
