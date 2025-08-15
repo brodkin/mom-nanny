@@ -17,9 +17,9 @@ const router = express.Router();
 const DashboardDataService = require('../../services/dashboard-data-service');
 const DatabaseManager = require('../../services/database-manager');
 
-// Initialize services with correct database path from environment
-const dbPath = process.env.SQLITE_DB_PATH || './storage/conversation-summaries.db';
-const dbManager = new DatabaseManager(dbPath);
+// Initialize services using singleton pattern for consistent database access
+// This ensures SQLITE_DB_PATH environment variable is honored consistently
+const dbManager = DatabaseManager.getInstance();
 const dashboardService = new DashboardDataService(dbManager);
 
 /**
@@ -170,25 +170,28 @@ router.get('/care-indicators', async (req, res) => {
       }
     };
 
-    // Create chart data for care indicators over time
+    // Get daily patterns for chart generation
+    const dailyPatterns = await dashboardService.getDailyCarePatterns(days);
+
+    // Create chart data for care indicators over time using actual daily data
     const chartData = {
-      labels: _generateDateLabels(days),
+      labels: _generateDateLabels(dailyPatterns),
       datasets: [
         {
           label: 'Medication Mentions',
-          data: _generateTrendData(careData.indicators.medicationMentions, days),
+          data: _generateTrendData(dailyPatterns, 'medication'),
           borderColor: 'rgb(75, 192, 192)',
           backgroundColor: 'rgba(75, 192, 192, 0.1)'
         },
         {
           label: 'Pain Complaints',
-          data: _generateTrendData(careData.indicators.painComplaints, days),
+          data: _generateTrendData(dailyPatterns, 'pain'),
           borderColor: 'rgb(255, 99, 132)',
           backgroundColor: 'rgba(255, 99, 132, 0.1)'
         },
         {
           label: 'Hospital Requests',
-          data: _generateTrendData(careData.indicators.hospitalRequests, days),
+          data: _generateTrendData(dailyPatterns, 'hospital'),
           borderColor: 'rgb(255, 159, 64)',
           backgroundColor: 'rgba(255, 159, 64, 0.1)'
         }
@@ -230,11 +233,9 @@ router.get('/conversation-trends', async (req, res) => {
     const days = Math.min(parseInt(req.query.days) || 30, 365);
     const trendsData = await dashboardService.getConversationTrends(days);
     
-    // Format daily patterns for line chart
+    // Format daily patterns for line chart using actual data dates
     const dailyChartData = {
-      labels: trendsData.dailyPatterns.map(day => 
-        new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      ),
+      labels: _generateDateLabels(trendsData.dailyPatterns),
       datasets: [
         {
           label: 'Daily Call Count',
@@ -323,210 +324,36 @@ router.get('/conversation-trends', async (req, res) => {
 });
 
 /**
- * GET /api/admin/heartbeat
- * System health check endpoint
- */
-router.get('/heartbeat', async (req, res) => {
-  try {
-    const startTime = Date.now();
-    
-    // Test database connectivity
-    let dbStatus = 'healthy';
-    let dbResponseTime = 0;
-    try {
-      const dbStartTime = Date.now();
-      await dbManager.initialize();
-      dbResponseTime = Date.now() - dbStartTime;
-    } catch (error) {
-      console.warn('Database health check failed:', error);
-      dbStatus = 'unhealthy';
-      dbResponseTime = Date.now() - startTime;
-    }
-
-    // Check system metrics
-    const systemStatus = {
-      status: 'healthy',
-      uptime: Math.floor(process.uptime()),
-      memory: {
-        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-        external: Math.round(process.memoryUsage().external / 1024 / 1024)
-      },
-      cpu: process.cpuUsage()
-    };
-
-    // Determine overall health status
-    let overallStatus = 'healthy';
-    if (dbStatus === 'unhealthy') {
-      overallStatus = 'degraded';
-    }
-    if (systemStatus.memory.used > systemStatus.memory.total * 0.9) {
-      overallStatus = overallStatus === 'healthy' ? 'degraded' : 'unhealthy';
-    }
-
-    const responseTime = Date.now() - startTime;
-
-    res.json({
-      success: true,
-      data: {
-        status: overallStatus,
-        timestamp: new Date().toISOString(),
-        responseTime,
-        services: {
-          database: {
-            status: dbStatus,
-            responseTime: dbResponseTime
-          },
-          system: systemStatus
-        }
-      },
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('Heartbeat check failed:', error);
-    res.json({
-      success: true,
-      data: {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        services: {
-          database: { status: 'unknown', responseTime: 0 },
-          system: { status: 'error', uptime: Math.floor(process.uptime()), memory: {} }
-        },
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Health check failed'
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-/**
  * GET /api/admin/dashboard/positive-insights
- * Generate positive insights based on real conversation data
+ * Positive insights and engagement patterns from conversation data
+ * Query params:
+ * - days: Number of days to analyze (default: 7, max: 90)
  */
 router.get('/positive-insights', async (req, res) => {
   try {
-    const days = Math.min(parseInt(req.query.days) || 7, 30);
+    const days = Math.min(parseInt(req.query.days) || 7, 90);
+    const positiveInsights = await dashboardService.getPositiveInsights(days);
     
-    // Get conversation data for insights
-    const overviewData = await dashboardService.getOverviewStats();
-    const mentalStateData = await dashboardService.getMentalStateIndicators(days);
-    const careData = await dashboardService.getCareIndicators(days);
-    const conversationData = await dashboardService.getConversationTrends(days);
-
-    const insights = [];
-
-    // Generate engagement insights
-    if (overviewData.conversations.today > 0) {
-      insights.push({
-        type: 'engagement',
-        title: 'Active Communication',
-        message: `${overviewData.conversations.today} conversation${overviewData.conversations.today > 1 ? 's' : ''} today with an average duration of ${Math.round(overviewData.conversations.averageDuration / 60)} minutes, showing consistent engagement.`,
-        timestamp: new Date().toISOString(),
-        icon: '💬',
-        priority: 'high'
-      });
-    }
-
-    // Generate mental state insights
-    if (mentalStateData.summary && mentalStateData.summary.overallStatus === 'calm') {
-      insights.push({
-        type: 'mental_state',
-        title: 'Emotional Well-being',
-        message: 'Mental state indicators show calm and stable patterns over the past week. This suggests the AI companion is providing effective emotional support.',
-        timestamp: new Date().toISOString(),
-        icon: '😌',
-        priority: 'high'
-      });
-    } else if (mentalStateData.summary && mentalStateData.summary.avgAnxietyLevel < 0.3) {
-      insights.push({
-        type: 'mental_state',
-        title: 'Low Anxiety Levels',
-        message: `Anxiety levels remain manageable at ${Math.round(mentalStateData.summary.avgAnxietyLevel * 100)}%, indicating effective comfort and reassurance techniques.`,
-        timestamp: new Date().toISOString(),
-        icon: '🌸',
-        priority: 'medium'
-      });
-    }
-
-    // Generate care insights
-    if (careData.indicators && careData.indicators.hospitalRequests === 0) {
-      insights.push({
-        type: 'care_quality',
-        title: 'Home Comfort',
-        message: `No hospital requests in the past ${days} days, indicating a strong sense of security and comfort in the current environment.`,
-        timestamp: new Date().toISOString(),
-        icon: '🏠',
-        priority: 'medium'
-      });
-    }
-
-    // Generate communication quality insights
-    if (overviewData.conversations.successRate > 90) {
-      insights.push({
-        type: 'communication_quality',
-        title: 'Reliable Connection',
-        message: `${overviewData.conversations.successRate}% call success rate demonstrates consistent technical reliability and uninterrupted support availability.`,
-        timestamp: new Date().toISOString(),
-        icon: '📞',
-        priority: 'medium'
-      });
-    }
-
-    // Generate memory and personalization insights
-    if (overviewData.memories && overviewData.memories.totalMemories > 10) {
-      insights.push({
-        type: 'personalization',
-        title: 'Growing Personal Connection',
-        message: `${overviewData.memories.totalMemories} personal memories stored, enabling increasingly personalized and meaningful conversations.`,
-        timestamp: new Date().toISOString(),
-        icon: '💭',
-        priority: 'medium'
-      });
-    }
-
-    // Default positive insight if none found
-    if (insights.length === 0) {
-      insights.push({
-        type: 'general',
-        title: 'Continuous Care',
-        message: 'AI companion system continues to provide 24/7 availability for emotional support and comfort during needed moments.',
-        timestamp: new Date().toISOString(),
-        icon: '🤖',
-        priority: 'low'
-      });
-    }
-
-    const summary = {
-      totalPositiveIndicators: insights.length,
-      engagementTrend: overviewData.conversations.today > 0 ? 'active' : 'stable',
-      periodAnalyzed: `${days} days`,
-      lastGenerated: new Date().toISOString()
-    };
-
     res.json({
       success: true,
       data: {
-        insights: insights.sort((a, b) => {
-          const priorityOrder = { high: 3, medium: 2, low: 1 };
-          return priorityOrder[b.priority] - priorityOrder[a.priority];
-        }),
-        summary,
         timeRange: {
-          start: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(),
-          end: new Date().toISOString(),
+          startDate: new Date(Date.now() - (days * 24 * 60 * 60 * 1000)).toISOString(),
+          endDate: new Date().toISOString(),
           days
-        }
+        },
+        insights: positiveInsights.insights,
+        systemStatus: positiveInsights.systemStatus,
+        summary: positiveInsights.summary
       },
       timestamp: new Date().toISOString()
     });
     
   } catch (error) {
-    console.error('Error generating positive insights:', error);
+    console.error('Error fetching positive insights:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to generate positive insights',
+      error: 'Failed to fetch positive insights',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined,
       timestamp: new Date().toISOString()
     });
@@ -679,41 +506,30 @@ function _generateCareAlerts(riskAssessment, indicators) {
 }
 
 /**
- * Generate date labels for chart data
+ * Generate date labels from actual conversation data
  * @private
  */
-function _generateDateLabels(days) {
-  const labels = [];
-  const now = new Date();
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
-    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-  }
-  
-  return labels;
+function _generateDateLabels(dailyPatterns) {
+  // Use actual dates from conversation data instead of arbitrary ranges
+  return dailyPatterns.map(day => 
+    new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  );
 }
 
 /**
- * Generate trend data for charts (simplified distribution)
+ * Generate trend data from actual daily patterns
  * @private
  */
-function _generateTrendData(totalCount, days) {
-  if (totalCount === 0) return new Array(days).fill(0);
-  
-  // Distribute the total count across days with some randomness
-  const data = [];
-  let remaining = totalCount;
-  
-  for (let i = 0; i < days; i++) {
-    const isLast = i === days - 1;
-    const maxForThisDay = isLast ? remaining : Math.ceil(remaining / (days - i) * 1.5);
-    const value = Math.floor(Math.random() * maxForThisDay);
-    data.push(value);
-    remaining -= value;
-  }
-  
-  return data;
+function _generateTrendData(dailyPatterns, indicatorType) {
+  // Use actual daily data instead of random distribution
+  return dailyPatterns.map(day => {
+    switch(indicatorType) {
+      case 'medication': return day.medicationMentions || 0;
+      case 'pain': return day.painComplaints || 0;
+      case 'hospital': return day.hospitalRequests || 0;
+      default: return 0;
+    }
+  });
 }
 
 module.exports = router;

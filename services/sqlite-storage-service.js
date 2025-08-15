@@ -11,7 +11,7 @@ class SqliteStorageService {
       // Use transaction for data consistency
       const conversationId = await this.db.transaction(() => {
         // Check if conversation already exists
-        const existingConversation = this.db.get(
+        const existingConversation = this.db._getSync(
           'SELECT id FROM conversations WHERE call_sid = ?',
           [summary.callSid]
         );

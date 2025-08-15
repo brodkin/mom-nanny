@@ -51,6 +51,28 @@ router.get('/dashboard', (req, res) => {
   }
 });
 
+// Conversations page route
+router.get('/conversations', (req, res) => {
+  try {
+    const conversationsPath = path.join(__dirname, '..', 'admin', 'conversations.html');
+    res.sendFile(conversationsPath);
+  } catch (error) {
+    console.error('Error serving conversations page:', error);
+    res.status(500).json({ error: 'Failed to load conversations page' });
+  }
+});
+
+// Memory Management page route
+router.get('/memories', (req, res) => {
+  try {
+    const memoriesPath = path.join(__dirname, '..', 'admin', 'memories.html');
+    res.sendFile(memoriesPath);
+  } catch (error) {
+    console.error('Error serving memories page:', error);
+    res.status(500).json({ error: 'Failed to load memories page' });
+  }
+});
+
 // Admin login route (placeholder)
 router.get('/login', (req, res) => {
   try {

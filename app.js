@@ -47,16 +47,27 @@ app.get('/api/admin/heartbeat', async (req, res) => {
   try {
     const startTime = Date.now();
     
-    // Test database connectivity
+    // Test database connectivity using existing connection pattern
     let dbStatus = 'healthy';
     let dbResponseTime = 0;
     try {
       const dbStartTime = Date.now();
-      // Simple database connectivity test
-      const dbPath = process.env.SQLITE_DB_PATH || './storage/conversation-summaries.db';
-      const DatabaseManager = require('./services/database-manager');
-      const dbManager = new DatabaseManager(dbPath);
-      await dbManager.initialize();
+      
+      // Use singleton instance for database health check
+      const dbManager = DatabaseManager.getInstance();
+      const fs = require('fs');
+      
+      // Check if database file exists and is accessible
+      if (!fs.existsSync(dbManager.dbPath)) {
+        throw new Error('Database file does not exist');
+      }
+      
+      // Verify database is healthy using built-in health check
+      const dbHealthy = await dbManager.isHealthy();
+      if (!dbHealthy) {
+        throw new Error('Database health check failed');
+      }
+      
       dbResponseTime = Date.now() - dbStartTime;
     } catch (error) {
       console.warn('Database health check failed:', error);
@@ -147,9 +158,9 @@ app.ws('/connection', async (ws) => {
     let callSid;
 
     const markCompletionService = new MarkCompletionService();
-    // Initialize SQLite storage directly
-    const dbPath = process.env.SQLITE_DB_PATH || './conversation-summaries.db';
-    const databaseManager = new DatabaseManager(dbPath);
+    // Initialize SQLite storage using singleton pattern
+    // This ensures SQLITE_DB_PATH is honored consistently across all services
+    const databaseManager = DatabaseManager.getInstance();
     
     // Wait for database to be initialized
     await databaseManager.waitForInitialization();

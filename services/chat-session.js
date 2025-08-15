@@ -25,9 +25,9 @@ class ChatSession extends EventEmitter {
     // Generate a simulated call SID for the chat session
     this.callSid = `CHAT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Initialize SQLite storage (following app.js pattern)
-    const dbPath = process.env.SQLITE_DB_PATH || './conversation-summaries.db';
-    this.databaseManager = new DatabaseManager(dbPath);
+    // Initialize SQLite storage using singleton pattern
+    // This ensures consistent database access across all services
+    this.databaseManager = DatabaseManager.getInstance();
     this.storageService = new SqliteStorageService(this.databaseManager);
     this.summaryGenerator = new SummaryGenerator();
     
@@ -591,7 +591,7 @@ class ChatSession extends EventEmitter {
       
       // Only show database path in debug mode
       if (this.debugMode) {
-        console.log(chalk.gray(`\n   Database: ${process.env.SQLITE_DB_PATH || './conversation-summaries.db'}`));
+        console.log(chalk.gray(`\n   Database: ${this.databaseManager.dbPath}`));
       }
     } catch (error) {
       console.error(chalk.red('❌ Error loading summaries:'), error.message);
@@ -751,7 +751,7 @@ class ChatSession extends EventEmitter {
         
         console.log(chalk.green(`\n📝 Conversation summary saved to SQLite database`));
         console.log(chalk.gray(`   Call SID: ${this.callSid}`));
-        console.log(chalk.gray(`   Database: ${process.env.SQLITE_DB_PATH || './conversation-summaries.db'}`));
+        console.log(chalk.gray(`   Database: ${this.databaseManager.dbPath}`));
         
         // Extract and save conversation messages
         const messages = [];

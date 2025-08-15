@@ -2,8 +2,81 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * DatabaseManager implements a singleton pattern to ensure consistent database access
+ * across all services in the compassionate AI companion system.
+ * 
+ * The singleton pattern ensures:
+ * 1. SQLITE_DB_PATH environment variable is honored consistently
+ * 2. Single database connection prevents conflicts
+ * 3. Shared memory cache for better performance
+ * 4. Consistent migration state across all services
+ * 
+ * Usage:
+ *   const dbManager = DatabaseManager.getInstance();
+ *   await dbManager.waitForInitialization();
+ * 
+ * For testing (allows custom path):
+ *   const testDb = new DatabaseManager('./test.db');
+ */
 class DatabaseManager {
+  // Singleton instance storage
+  static _instance = null;
+  static _instancePath = null;
+
+  /**
+   * Get the singleton instance of DatabaseManager
+   * @param {string} dbPath - Optional database path (only used if no instance exists)
+   * @returns {DatabaseManager} The singleton instance
+   */
+  static getInstance(dbPath = null) {
+    // Use environment variable or provided path, defaulting to './conversation-summaries.db'
+    const targetPath = dbPath || process.env.SQLITE_DB_PATH || './conversation-summaries.db';
+    
+    // If no instance exists, create one
+    if (!DatabaseManager._instance) {
+      DatabaseManager._instance = new DatabaseManager(targetPath);
+      DatabaseManager._instancePath = targetPath;
+      console.log(`[DatabaseManager] Creating singleton instance with path: ${targetPath}`);
+    } 
+    // If instance exists but path differs, warn (this shouldn't happen in production)
+    else if (dbPath && dbPath !== DatabaseManager._instancePath) {
+      console.warn(`[DatabaseManager] Warning: Attempted to get instance with different path. Using existing instance with path: ${DatabaseManager._instancePath}`);
+    }
+    
+    return DatabaseManager._instance;
+  }
+
+  /**
+   * Reset the singleton instance (mainly for testing)
+   * CRITICAL: Only use in test environments to allow different test databases
+   */
+  static resetInstance() {
+    if (DatabaseManager._instance) {
+      // Close existing connection if open
+      if (DatabaseManager._instance.db) {
+        try {
+          DatabaseManager._instance.db.close();
+        } catch (err) {
+          console.error('[DatabaseManager] Error closing database during reset:', err);
+        }
+      }
+      DatabaseManager._instance = null;
+      DatabaseManager._instancePath = null;
+      console.log('[DatabaseManager] Singleton instance reset');
+    }
+  }
+
+  /**
+   * Constructor is still public to support testing with custom paths
+   * Production code should use getInstance() instead
+   */
   constructor(dbPath = './conversation-summaries.db') {
+    // Allow direct instantiation for testing, but log if not singleton
+    if (DatabaseManager._instance && this !== DatabaseManager._instance) {
+      console.log(`[DatabaseManager] Direct instantiation detected (likely for testing) with path: ${dbPath}`);
+    }
+    
     this.dbPath = dbPath;
     this.db = null;
     this.isInitialized = false;
@@ -51,7 +124,7 @@ class DatabaseManager {
 
   async applyMigrations() {
     // Create migrations table if it doesn't exist
-    this.exec(`
+    this._execSync(`
       CREATE TABLE IF NOT EXISTS migrations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         version INTEGER UNIQUE,
@@ -64,13 +137,19 @@ class DatabaseManager {
     // Apply initial schema migration if needed
     if (currentVersion < 1) {
       this.applyInitialSchema();
-      this.run('INSERT INTO migrations (version) VALUES (?)', [1]);
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [1]);
     }
     
     // Apply memories table migration if needed
     if (currentVersion < 2) {
       this.applyMemoriesMigration();
-      this.run('INSERT INTO migrations (version) VALUES (?)', [2]);
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [2]);
+    }
+    
+    // Apply settings table migration if needed
+    if (currentVersion < 3) {
+      this.applySettingsMigration();
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [3]);
     }
   }
 
@@ -126,7 +205,7 @@ class DatabaseManager {
       CREATE INDEX idx_analytics_conversation_id ON analytics(conversation_id);
     `;
 
-    this.exec(migration);
+    this._execSync(migration);
   }
 
   applyMemoriesMigration() {
@@ -148,12 +227,34 @@ class DatabaseManager {
       CREATE INDEX idx_memories_updated ON memories(updated_at);
     `;
 
-    this.exec(migration);
+    this._execSync(migration);
+  }
+
+  applySettingsMigration() {
+    const migration = `
+      -- Settings table: Store application configuration settings
+      CREATE TABLE settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT UNIQUE NOT NULL,
+        value TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Insert default timezone setting
+      INSERT INTO settings (key, value) VALUES ('timezone', 'America/New_York');
+
+      -- Indexes for performance
+      CREATE INDEX idx_settings_key ON settings(key);
+      CREATE INDEX idx_settings_updated ON settings(updated_at);
+    `;
+
+    this._execSync(migration);
   }
 
   getCurrentMigrationVersion() {
     try {
-      const result = this.get('SELECT MAX(version) as version FROM migrations');
+      const result = this._getSync('SELECT MAX(version) as version FROM migrations');
       return result?.version || 0;
     } catch (error) {
       // Table doesn't exist yet
@@ -229,10 +330,8 @@ class DatabaseManager {
     }
   }
 
-  get(sql, params = []) {
-    if (this.isClosed) {
-      throw new Error('Database connection is closed');
-    }
+  // PRIVATE: Sync get for internal use during initialization only
+  _getSync(sql, params = []) {
     if (!this.db) {
       throw new Error('Database connection is closed');
     }
@@ -313,7 +412,8 @@ class DatabaseManager {
     }
   }
 
-  exec(sql) {
+  // PRIVATE: Sync exec for internal use during initialization only
+  _execSync(sql) {
     // Don't check _ensureConnection for sync exec - used during initialization
     try {
       this.db.exec(sql);
@@ -337,16 +437,35 @@ class DatabaseManager {
     return this.all(`PRAGMA table_info(${tableName})`);
   }
 
-  // Transaction helper
+  /**
+   * Execute a transaction with synchronous callback
+   * CRITICAL: Callback MUST be synchronous - async callbacks will cause data corruption!
+   * 
+   * better-sqlite3 transactions do not work with async functions. Async functions
+   * always return after the first await, which means the transaction will already
+   * be committed before any async code executes.
+   * 
+   * @param {Function} callback - SYNCHRONOUS callback function
+   * @returns {Promise<any>} Result of the transaction
+   * @example
+   * await db.transaction(() => {
+   *   db.runSync('INSERT INTO table VALUES (?, ?)', [val1, val2]);
+   *   return result;
+   * });
+   */
   async transaction(callback) {
     await this.waitForInitialization();
     this._ensureConnection();
     
     try {
+      // Validate callback is not async to prevent data corruption
+      if (callback.constructor.name === 'AsyncFunction') {
+        throw new Error('Transaction callback cannot be async. Use synchronous callbacks only to prevent data corruption.');
+      }
+      
       // For better-sqlite3, transactions must be synchronous
-      // We'll execute the callback directly but ensure it doesn't return a promise
       const transactionFn = this.db.transaction(() => {
-        // Call the callback synchronously - it cannot be async
+        // Call the callback synchronously
         return callback();
       });
       return transactionFn();

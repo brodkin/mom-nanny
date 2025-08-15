@@ -347,6 +347,31 @@ api/admin-config.js  # Configuration API
 3. Update storage service methods
 4. Test with both new and existing databases
 
+### Database Access Pattern (Singleton)
+**CRITICAL**: DatabaseManager uses a singleton pattern to ensure consistent database access:
+
+```javascript
+// CORRECT - Use getInstance() for production code
+const dbManager = DatabaseManager.getInstance();
+await dbManager.waitForInitialization();
+
+// TESTING ONLY - Direct instantiation allowed for test isolation
+const testDb = new DatabaseManager('./test.db');
+```
+
+**Singleton Benefits**:
+- **Consistent Path**: SQLITE_DB_PATH environment variable honored globally
+- **Single Connection**: Prevents database lock conflicts
+- **Shared Cache**: Better performance through connection pooling
+- **Migration Safety**: Ensures migrations run only once
+
+**Important Notes**:
+- The singleton instance is created on first `getInstance()` call
+- Path is determined by: `process.env.SQLITE_DB_PATH || './conversation-summaries.db'`
+- All services share the same database connection
+- Test files may use direct instantiation for isolation
+- Use `DatabaseManager.resetInstance()` only in test teardown
+
 ## Performance Considerations
 
 - **Response Time**: First TTS chunk should play within 2 seconds

@@ -140,13 +140,16 @@ class CompassionateDashboard {
       // Update copyright year
       this.updateCopyrightYear();
       
+      // Update timezone display
+      await this.updateTimezoneDisplay();
+      
       // Bind refresh controls
       this.bindRefreshControls();
       
       console.log('✅ Dashboard initialized successfully');
       
-      // Show success notification
-      this.showToast('Dashboard Ready', 'Real-time compassionate care monitoring is now active', 'success');
+      // Dashboard initialization complete - notification removed for better UX
+      // this.showToast('Dashboard Ready', 'Real-time compassionate care monitoring is now active', 'success');
       
     } catch (error) {
       console.error('❌ Failed to initialize dashboard:', error);
@@ -379,6 +382,31 @@ class CompassionateDashboard {
             </div>
           </div>
         </section>
+
+        <!-- System Status Footer -->
+        <footer class="dashboard-footer">
+          <div class="footer-content">
+            <div class="footer-left">
+              <span class="footer-text">Compassionate Care Dashboard</span>
+              <span class="footer-separator">•</span>
+              <span class="footer-text" id="current-year">2024</span>
+            </div>
+            <div class="footer-center">
+              <div class="system-status">
+                <div class="status-indicator" id="system-heartbeat">
+                  <div class="status-dot"></div>
+                </div>
+                <span class="status-text" id="heartbeat-status">System Online</span>
+              </div>
+            </div>
+            <div class="footer-right">
+              <div class="timezone-info" id="timezone-info">
+                <span class="timezone-label">Time Zone:</span>
+                <span class="timezone-value" id="timezone-display">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
     `;
 
@@ -924,7 +952,7 @@ class CompassionateDashboard {
 
   updateAlerts(mentalStateData, careIndicatorsData) {
     this.updateActiveAlerts(mentalStateData.alerts, careIndicatorsData.alerts);
-    this.updatePositiveInsights(mentalStateData, careIndicatorsData);
+    // Positive insights are updated separately in loadAllData
   }
 
   updateActiveAlerts(mentalAlerts = [], careAlerts = []) {
@@ -978,66 +1006,6 @@ class CompassionateDashboard {
     }
   }
 
-  updatePositiveInsights(mentalStateData, careIndicatorsData) {
-    const container = document.getElementById('positive-insights');
-    if (!container) return;
-
-    // Generate positive insights based on data
-    const insights = [];
-
-    // Mental state insights
-    if (mentalStateData.summary && mentalStateData.summary.overallStatus === 'calm') {
-      insights.push({
-        icon: '💚',
-        title: 'Emotional Well-being',
-        message: 'Mental state indicators show calm and stable patterns. Great progress!',
-        time: 'Current status'
-      });
-    }
-
-    // Care indicators insights
-    if (careIndicatorsData.summary) {
-      const painTrend = careIndicatorsData.summary.painComplaints?.trend;
-      if (painTrend === 'down') {
-        insights.push({
-          icon: '📈',
-          title: 'Pain Management',
-          message: 'Pain complaints are decreasing, indicating effective comfort measures.',
-          time: 'Weekly trend'
-        });
-      }
-
-      if (careIndicatorsData.summary.hospitalRequests?.count === 0) {
-        insights.push({
-          icon: '🏠',
-          title: 'Home Comfort',
-          message: 'No hospital requests recently - feeling secure and comfortable at home.',
-          time: 'Past 30 days'
-        });
-      }
-    }
-
-    // Default positive message if no specific insights
-    if (insights.length === 0) {
-      insights.push({
-        icon: '🌟',
-        title: 'Compassionate Care',
-        message: 'AI companion is providing consistent emotional support and engagement.',
-        time: 'Ongoing'
-      });
-    }
-
-    container.innerHTML = insights.map(insight => `
-      <div class="alert-item">
-        <div class="alert-icon success">${insight.icon}</div>
-        <div class="alert-content">
-          <h5>${insight.title}</h5>
-          <p>${insight.message}</p>
-          <div class="alert-time">${insight.time}</div>
-        </div>
-      </div>
-    `).join('');
-  }
 
   showErrorStates() {
     // Hide loading states
@@ -1315,17 +1283,44 @@ class CompassionateDashboard {
     }
   }
 
+  // Update timezone display
+  async updateTimezoneDisplay() {
+    try {
+      const response = await fetch('/api/admin/settings/timezone');
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const timezoneElement = document.getElementById('timezone-display');
+        if (timezoneElement) {
+          const { display_name, current_time } = data.data;
+          timezoneElement.textContent = `${display_name} (${current_time.formatted})`;
+          timezoneElement.title = `Current timezone: ${data.data.timezone}`;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to update timezone display:', error);
+      const timezoneElement = document.getElementById('timezone-display');
+      if (timezoneElement) {
+        timezoneElement.textContent = 'UTC';
+      }
+    }
+  }
+
   // Enhanced positive insights integration
   async updatePositiveInsights() {
     try {
-      const response = await fetch('/api/admin/dashboard/positive-insights');
+      const response = await fetch('/api/admin/dashboard/positive-insights?days=7');
       const data = await response.json();
       
       if (data.success && data.data) {
         this.renderPositiveInsights(data.data.insights);
+      } else {
+        console.warn('Failed to load positive insights:', data.error);
+        this.renderFallbackInsights();
       }
     } catch (error) {
       console.error('Error loading positive insights:', error);
+      this.renderFallbackInsights();
     }
   }
 
@@ -1333,13 +1328,51 @@ class CompassionateDashboard {
     const container = document.getElementById('positive-insights');
     if (!container || !insights) return;
 
-    container.innerHTML = insights.map(insight => `
-      <div class="alert-item">
+    container.innerHTML = insights.map((insight, index) => `
+      <div class="alert-item" style="animation-delay: ${index * 0.1}s">
         <div class="alert-icon success">${insight.icon || '✓'}</div>
         <div class="alert-content">
           <h5>${insight.title}</h5>
           <p>${insight.message}</p>
           <div class="alert-time">${this.getTimeAgo(new Date(insight.timestamp))}</div>
+          <div class="insight-priority ${insight.priority}">${insight.priority}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  renderFallbackInsights() {
+    const container = document.getElementById('positive-insights');
+    if (!container) return;
+
+    const fallbackInsights = [
+      {
+        icon: '🤖',
+        title: 'Continuous Care',
+        message: 'AI companion system continues to provide 24/7 availability for emotional support and comfort during needed moments.',
+        time: 'System active'
+      },
+      {
+        icon: '💭',
+        title: 'Memory Building',
+        message: 'Personal memory system is actively learning and storing important information to create more meaningful conversations.',
+        time: 'Ongoing process'
+      },
+      {
+        icon: '📞',
+        title: 'Always Available',
+        message: 'Communication system remains ready to provide immediate comfort and companionship whenever needed.',
+        time: 'Real-time'
+      }
+    ];
+
+    container.innerHTML = fallbackInsights.map((insight, index) => `
+      <div class="alert-item" style="animation-delay: ${index * 0.1}s">
+        <div class="alert-icon success">${insight.icon}</div>
+        <div class="alert-content">
+          <h5>${insight.title}</h5>
+          <p>${insight.message}</p>
+          <div class="alert-time">${insight.time}</div>
         </div>
       </div>
     `).join('');
