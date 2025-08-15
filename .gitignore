@@ -159,4 +159,7 @@ conversation-summaries.db*
 # Storage directory for recordings
 storage/
 
+# Claude configuration directory
+.claude/
+
 # End of https://www.toptal.com/developers/gitignore/api/node
