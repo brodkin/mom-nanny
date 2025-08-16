@@ -230,7 +230,7 @@ export class DataTable extends EventTarget {
       return `
         <tr class="${isSelected ? 'selected' : ''}">
           ${this.options.selectable ? `<td class="select-column"><input type="checkbox" class="row-select" data-index="${actualIndex}" ${isSelected ? 'checked' : ''} /></td>` : ''}
-          ${this.options.columns.map(col => `<td>${this.formatCellValue(row[col.key], col)}</td>`).join('')}
+          ${this.options.columns.map(col => `<td>${this.formatCellValue(row[col.key], col, row)}</td>`).join('')}
         </tr>
       `;
     }).join('');
@@ -243,9 +243,9 @@ export class DataTable extends EventTarget {
    * @param {Object} column - Column definition
    * @returns {string} Formatted value
    */
-  formatCellValue(value, column) {
+  formatCellValue(value, column, row) {
     if (column.formatter && typeof column.formatter === 'function') {
-      return column.formatter(value);
+      return column.formatter(value, row);
     }
     return value != null ? String(value) : '';
   }

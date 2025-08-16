@@ -26,6 +26,8 @@ const adminRouter = require('./routes/admin');
 const adminStatsRouter = require('./routes/api/admin-stats');
 const adminConfigRouter = require('./routes/api/admin-config');
 const adminDashboardRouter = require('./routes/api/admin-dashboard-real');
+const conversationsRouter = require('./routes/api/conversations');
+const searchRouter = require('./routes/api/search');
 
 const PORT = process.env.PORT || 3000;
 
@@ -41,6 +43,12 @@ app.use('/admin', adminRouter);
 app.use('/api/admin/stats', adminStatsRouter);
 app.use('/api/admin/config', adminConfigRouter);
 app.use('/api/admin/dashboard', adminDashboardRealRouter);
+
+// Mount conversations API routes
+app.use('/api/conversations', conversationsRouter);
+
+// Mount search API routes
+app.use('/api/search', searchRouter);
 
 // System heartbeat endpoint (directly on admin API)
 app.get('/api/admin/heartbeat', async (req, res) => {
