@@ -12,6 +12,7 @@
   
   <!-- CSS -->
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/global-search.css">
   
   <!-- Meta tags -->
   <meta name="description" content="Compassionate care dashboard for monitoring mental state and engagement">
@@ -320,6 +321,23 @@
         </nav>
       </div>
 
+      <!-- Global Search Bar -->
+      <div class="global-search-container">
+        <div class="search-input-container">
+          <input 
+            type="text" 
+            id="global-search-input" 
+            class="form-input" 
+            placeholder="Search conversations..."
+            aria-label="Global search"
+          >
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </div>
+      </div>
+
       <div class="header-right">
         <!-- Real-time Status -->
         <div class="real-time-status" id="real-time-status">
@@ -571,6 +589,7 @@
 
   <!-- JavaScript -->
   <script src="js/admin.js"></script>
+  <script type="module" src="js/global-search.js"></script>
   <script src="js/dashboard-real.js"></script>
 </body>
 </html>

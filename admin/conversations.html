@@ -12,6 +12,8 @@
   
   <!-- CSS -->
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/conversations.css">
+  <link rel="stylesheet" href="css/global-search.css">
   
   <!-- Meta tags -->
   <meta name="description" content="Conversation history and transcripts for compassionate AI companion">
@@ -24,102 +26,6 @@
   <style>
     body { visibility: hidden; }
     .js body { visibility: visible; }
-    
-    /* Placeholder specific styles */
-    .placeholder-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 50vh;
-      text-align: center;
-      padding: var(--space-8);
-    }
-    
-    .placeholder-icon {
-      width: 120px;
-      height: 120px;
-      margin-bottom: var(--space-6);
-      padding: var(--space-8);
-      background: var(--bg-secondary);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--border-primary);
-    }
-    
-    .placeholder-icon svg {
-      width: 60px;
-      height: 60px;
-      color: var(--color-primary);
-    }
-    
-    .placeholder-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: var(--space-4);
-    }
-    
-    .placeholder-description {
-      font-size: 1.1rem;
-      color: var(--text-secondary);
-      max-width: 600px;
-      line-height: 1.6;
-      margin-bottom: var(--space-6);
-    }
-    
-    .feature-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: var(--space-4);
-      max-width: 800px;
-      width: 100%;
-      margin-top: var(--space-6);
-    }
-    
-    .feature-item {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-3);
-      padding: var(--space-4);
-      background: var(--bg-secondary);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-primary);
-      text-align: left;
-    }
-    
-    .feature-icon {
-      width: 20px;
-      height: 20px;
-      color: var(--color-primary);
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    
-    .feature-content h4 {
-      margin: 0 0 var(--space-1);
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    
-    .feature-content p {
-      margin: 0;
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-    
-    @media (max-width: 768px) {
-      .placeholder-title {
-        font-size: 1.5rem;
-      }
-      
-      .feature-list {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
   <script>document.documentElement.className = 'js';</script>
 </head>
@@ -217,6 +123,23 @@
         </nav>
       </div>
 
+      <!-- Global Search Bar -->
+      <div class="global-search-container">
+        <div class="search-input-container">
+          <input 
+            type="text" 
+            id="global-search-input" 
+            class="form-input" 
+            placeholder="Search conversations..."
+            aria-label="Global search"
+          >
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </div>
+      </div>
+
       <div class="header-right">
         <!-- Theme Toggle -->
         <button 
@@ -254,81 +177,166 @@
 
     <!-- Main Content -->
     <main class="admin-main" role="main">
-      <!-- Placeholder Content -->
-      <div class="placeholder-container">
-        <div class="placeholder-icon">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-          </svg>
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="header-content">
+          <div class="header-left">
+            <h1 class="page-title">Conversations</h1>
+            <p class="page-description">Track mental health patterns through compassionate AI interactions</p>
+          </div>
+          <div class="header-actions">
+            <button id="refresh-data" class="btn btn-outline" data-tooltip="Refresh conversation data">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters Section -->
+      <div class="filters-section glass-card">
+        <div class="filters-header">
+          <h3 class="filters-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            Filters
+          </h3>
+          <button id="clear-all-filters" class="btn btn-sm btn-ghost">Clear All</button>
         </div>
         
-        <h1 class="placeholder-title">Conversations</h1>
+        <div class="filters-grid">
+          <!-- Date Range Filter -->
+          <div class="filter-group">
+            <label class="filter-label">Date Range</label>
+            <div class="filter-controls">
+              <select id="date-range-filter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 days</option>
+                <option value="month">Last 30 days</option>
+                <option value="custom">Custom Range</option>
+              </select>
+              <div id="custom-date-inputs" class="custom-date-inputs" style="display: none;">
+                <input type="date" id="date-from" class="form-input" placeholder="From">
+                <span class="date-separator">to</span>
+                <input type="date" id="date-to" class="form-input" placeholder="To">
+              </div>
+            </div>
+          </div>
+
+          <!-- Emotional State Filter -->
+          <div class="filter-group">
+            <label class="filter-label">Emotional States</label>
+            <div class="emotional-state-filters">
+              <label class="checkbox-label">
+                <input type="checkbox" value="calm" class="emotional-state-filter">
+                <span class="checkmark calm"></span>
+                <span class="state-badge calm">Calm</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="mild_anxiety" class="emotional-state-filter">
+                <span class="checkmark mild-anxiety"></span>
+                <span class="state-badge mild-anxiety">Mild Anxiety</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="moderate_anxiety" class="emotional-state-filter">
+                <span class="checkmark moderate-anxiety"></span>
+                <span class="state-badge moderate-anxiety">Moderate Anxiety</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="high_anxiety" class="emotional-state-filter">
+                <span class="checkmark high-anxiety"></span>
+                <span class="state-badge high-anxiety">High Anxiety</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Duration Filter -->
+          <div class="filter-group">
+            <label class="filter-label">Duration</label>
+            <select id="duration-filter" class="form-select">
+              <option value="all">All Durations</option>
+              <option value="short">Under 5 minutes</option>
+              <option value="medium">5-15 minutes</option>
+              <option value="long">Over 15 minutes</option>
+            </select>
+          </div>
+
+          <!-- Search -->
+          <div class="filter-group">
+            <label class="filter-label">Search</label>
+            <div class="search-input-container">
+              <input type="text" id="global-search" class="form-input" placeholder="Search conversations...">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table Section -->
+      <div class="table-section glass-card">
+        <div id="table-container">
+          <!-- DataTable will be inserted here -->
+        </div>
         
-        <p class="placeholder-description">
-          This feature will provide comprehensive conversation history and transcripts from the compassionate AI companion system. 
-          Caregivers will be able to review past interactions to better understand care needs and emotional patterns.
-        </p>
+        <!-- Loading State -->
+        <div id="loading-state" class="loading-state" style="display: none;">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading conversations...</p>
+          </div>
+        </div>
         
-        <div class="btn btn-outline btn-disabled">Coming Soon</div>
-        
-        <div class="feature-list">
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
-            <div class="feature-content">
-              <h4>Full Transcripts</h4>
-              <p>Complete conversation transcripts with timestamps and context</p>
-            </div>
           </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          <h3>No conversations found</h3>
+          <p>Try adjusting your filters or check back later for new conversation data.</p>
+          <button id="reset-filters-btn" class="btn btn-primary">Reset Filters</button>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="error-state" style="display: none;">
+          <div class="error-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <div class="feature-content">
-              <h4>Search & Filter</h4>
-              <p>Search conversations by keywords, date range, or emotional state</p>
-            </div>
           </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Conversation Analytics</h4>
-              <p>Insights into conversation patterns, duration, and frequency</p>
-            </div>
+          <h3>Unable to load conversations</h3>
+          <p>There was an error loading the conversation data. Please try refreshing the page.</p>
+          <button id="retry-load-btn" class="btn btn-primary">Try Again</button>
+        </div>
+      </div>
+
+      <!-- Transcript Modal -->
+      <div id="transcript-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-container">
+          <div class="modal-header">
+            <h3 class="modal-title">Conversation Transcript</h3>
+            <button class="modal-close" aria-label="Close modal">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Emotional Context</h4>
-              <p>Track emotional states and anxiety levels throughout conversations</p>
-            </div>
-          </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Export & Reporting</h4>
-              <p>Export conversation data for family members and healthcare providers</p>
-            </div>
-          </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Privacy Protection</h4>
-              <p>Secure, HIPAA-compliant storage with role-based access controls</p>
+          <div class="modal-body">
+            <div id="transcript-content">
+              <!-- Transcript content will be loaded here -->
             </div>
           </div>
         </div>
@@ -354,6 +362,8 @@
 
   <!-- JavaScript -->
   <script src="js/admin.js"></script>
+  <script type="module" src="js/global-search.js"></script>
+  <script type="module" src="js/conversations.js"></script>
   
   <!-- Set current year -->
   <script>
