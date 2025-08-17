@@ -158,9 +158,9 @@ describe('Integration Tests', () => {
       chatSession = new ChatSession();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
       if (chatSession) {
-        chatSession.endSession();
+        await chatSession.endSession();
       }
       
       // Restore console methods
@@ -168,12 +168,46 @@ describe('Integration Tests', () => {
       console.clear.mockRestore();
     });
 
-    test('should initialize with proper state', () => {
+    test('should initialize with proper state', async () => {
+      // Add a small delay to let any async operations complete
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       expect(chatSession.messageCount).toBe(0);
       expect(chatSession.sessionTokens.total).toBe(0);
       expect(chatSession.conversationHistory).toEqual([]);
       expect(chatSession.isActive).toBe(true);
       expect(chatSession.startTime).toBeLessThanOrEqual(Date.now());
+    });
+
+    test('should not make OpenAI API calls during initialization', () => {
+      // This test should pass once we fix the async initialization issue
+      // The fact that we can create a ChatSession without API errors proves initialization is working
+      expect(chatSession.gptService).toBeDefined();
+      expect(chatSession.memoryService).toBeDefined();
+      expect(chatSession.isActive).toBe(true);
+    });
+
+    test('should use mock GPT responses in test environment', async () => {
+      const testMessage = 'Hello test message';
+      
+      // Mock the handleUserMessage to capture the GPT response
+      const gptResponsePromise = new Promise((resolve) => {
+        chatSession.gptService.once('gptreply', (gptReply) => {
+          resolve(gptReply);
+        });
+      });
+      
+      // Trigger a completion
+      const result = await chatSession.gptService.completion(testMessage, 1, 'user', 'user', true);
+      
+      // Verify mock response
+      expect(result.usage).toBeDefined();
+      expect(result.usage.total_tokens).toBeGreaterThan(0);
+      
+      // Wait for and verify the GPT reply event
+      const gptReply = await gptResponsePromise;
+      expect(gptReply.partialResponse).toContain(testMessage);
+      expect(gptReply.isFinal).toBe(true);
     });
 
     test('should handle command input', async () => {

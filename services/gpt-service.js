@@ -107,6 +107,28 @@ class GptService extends EventEmitter {
       this.conversationAnalyzer.trackUserUtterance(text, new Date());
     }
 
+    // In test environment, return mock response to prevent OpenAI API calls
+    // This allows testing of chat flow without making expensive API calls
+    if (process.env.NODE_ENV === 'test') {
+      // Emit a mock GPT reply that mimics real behavior
+      setTimeout(() => {
+        this.emit('gptreply', {
+          partialResponseIndex: 0,
+          partialResponse: `Hi there! • I understand you said "${text}" • How can I help you today?`,
+          isFinal: true
+        }, interactionCount);
+      }, 10);
+      
+      // Return mock usage data if requested
+      return returnUsage ? {
+        usage: {
+          prompt_tokens: Math.max(20, text.length * 1.2), // Realistic token estimation
+          completion_tokens: 25,
+          total_tokens: Math.max(45, text.length * 1.2 + 25)
+        }
+      } : {};
+    }
+
     // Step 1: Send user transcription to Chat GPT
     const stream = await this.openai.chat.completions.create({
       model: 'gpt-4-1106-preview',

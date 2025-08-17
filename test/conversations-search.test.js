@@ -21,17 +21,50 @@ describe('Conversations Search API', () => {
   let testConversationIds = [];
 
   beforeAll(async () => {
+    // Use a unique database path for this test to avoid interference
+    const uniqueDbPath = `./test/test-search-${Date.now()}.db`;
+    process.env.SQLITE_DB_PATH = uniqueDbPath;
+    
+    // Reset the singleton instance to ensure clean state
+    DatabaseManager.resetInstance();
+    
     // Initialize database
     dbManager = DatabaseManager.getInstance();
     await dbManager.waitForInitialization();
     
+    // Clear any existing data to ensure clean test state
+    await cleanupAllData();
+    
     // Create test data
     await createTestData();
+    
+    // Verify data was created
+    const conversations = await dbManager.all('SELECT * FROM conversations');
+    if (conversations.length === 0) {
+      throw new Error('Test data was not created successfully');
+    }
   });
 
   afterAll(async () => {
-    // Cleanup test data
-    await cleanupTestData();
+    // Cleanup test data and close database
+    try {
+      if (dbManager && await dbManager.isHealthy()) {
+        await cleanupTestData();
+        await dbManager.close();
+      }
+    } catch (error) {
+      console.log('Cleanup skipped due to database connection issue:', error.message);
+    }
+    
+    // Clean up the unique database file
+    const fs = require('fs');
+    if (process.env.SQLITE_DB_PATH && fs.existsSync(process.env.SQLITE_DB_PATH)) {
+      try {
+        fs.unlinkSync(process.env.SQLITE_DB_PATH);
+      } catch (error) {
+        console.log('Could not remove test database file:', error.message);
+      }
+    }
   });
 
   async function createTestData() {
@@ -129,6 +162,15 @@ describe('Conversations Search API', () => {
         [conversationId, JSON.stringify(data.summary)]
       );
     }
+  }
+
+  async function cleanupAllData() {
+    // Clear all tables to ensure clean test state
+    await dbManager.run('DELETE FROM messages');
+    await dbManager.run('DELETE FROM summaries');
+    await dbManager.run('DELETE FROM conversations');
+    await dbManager.run('DELETE FROM analytics');
+    await dbManager.run('DELETE FROM memories');
   }
 
   async function cleanupTestData() {
