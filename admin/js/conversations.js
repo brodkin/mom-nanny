@@ -58,10 +58,39 @@ class ConversationsPage {
       this.initializeDataTable();
       this.bindEventListeners();
       this.checkUrlParameters();
+      await this.loadTimezoneInfo();
       await this.loadConversations();
     } catch (error) {
       console.error('Error initializing conversations page:', error);
       this.showErrorState();
+    }
+  }
+  
+  /**
+   * Load and display timezone information
+   */
+  async loadTimezoneInfo() {
+    try {
+      const response = await fetch('/api/admin/dashboard/overview');
+      const result = await response.json();
+      
+      // Timezone data is at the root level of the response
+      if (result.success && result.timezone) {
+        const timezoneDisplay = document.getElementById('timezone-display');
+        if (timezoneDisplay) {
+          const tz = result.timezone;
+          timezoneDisplay.textContent = `${tz.abbreviation} (${tz.configured})`;
+          
+          // Update tooltip with current time
+          const indicator = document.getElementById('timezone-indicator');
+          if (indicator) {
+            indicator.setAttribute('data-tooltip', `Current time: ${tz.currentTime}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading timezone info:', error);
+      // Fail silently - timezone display is not critical
     }
   }
 
@@ -80,7 +109,19 @@ class ConversationsPage {
           key: 'startTime', 
           title: 'Date/Time', 
           sortable: true,
-          formatter: (value) => this.formatDateTime(value)
+          formatter: (value, row) => {
+            // Use server-provided formatted data if available
+            if (row.startTimeFormatted) {
+              const formatted = this.formatDateTime(value, row.startTimeFormatted);
+              // Add timezone abbreviation if available
+              if (row.timezoneAbbr) {
+                return `${formatted} ${row.timezoneAbbr}`;
+              }
+              return formatted;
+            }
+            // Fallback to browser timezone
+            return this.formatDateTime(value);
+          }
         },
         { 
           key: 'duration', 
@@ -418,6 +459,7 @@ class ConversationsPage {
     return conversations.map(conv => ({
       id: conv.id,
       startTime: conv.startTime,
+      startTimeFormatted: conv.startTimeFormatted, // Add formatted timezone data
       duration: conv.duration,
       emotionalState: this.formatEmotionalState(conv.emotionalState, conv.anxietyLevel),
       emotionalStateRaw: conv.emotionalState,
@@ -425,6 +467,8 @@ class ConversationsPage {
       keyTopics: this.extractKeyTopics(conv.careIndicators),
       messageSnippet: conv.messageSnippet || '',
       actions: '', // Will be formatted by column formatter
+      timezone: conv.timezone, // Add timezone info
+      timezoneAbbr: conv.timezoneAbbr, // Add timezone abbreviation
       // Keep original data for actions
       originalData: conv
     }));
@@ -433,9 +477,15 @@ class ConversationsPage {
   /**
    * Format date and time for display
    */
-  formatDateTime(timestamp) {
+  formatDateTime(timestamp, formattedData = null) {
     if (!timestamp) return 'Unknown';
     
+    // If we have pre-formatted timezone data from the server, use it
+    if (formattedData && formattedData.full) {
+      return formattedData.full;
+    }
+    
+    // Fallback to browser's local timezone (for backward compatibility)
     const date = new Date(timestamp);
     const options = {
       year: 'numeric',
@@ -589,7 +639,7 @@ class ConversationsPage {
           <div class="conversation-meta">
             <div class="meta-item">
               <label>Date & Time:</label>
-              <span>${this.formatDateTime(data.startTime)}</span>
+              <span>${this.formatDateTime(data.startTime, data.startTimeFormatted)}${data.timezoneAbbr ? ` ${data.timezoneAbbr}` : ''}</span>
             </div>
             <div class="meta-item">
               <label>Duration:</label>
@@ -616,7 +666,19 @@ class ConversationsPage {
     // Add messages
     if (data.messages && data.messages.length > 0) {
       data.messages.forEach((message, index) => {
-        const timestamp = new Date(message.timestamp).toLocaleTimeString();
+        // Use server-provided formatted timestamp if available
+        let timestamp;
+        if (message.timestampFormatted && message.timestampFormatted.time) {
+          timestamp = message.timestampFormatted.time;
+          // Add timezone abbreviation if available
+          if (data.timezoneAbbr) {
+            timestamp += ` ${data.timezoneAbbr}`;
+          }
+        } else {
+          // Fallback to browser timezone
+          timestamp = new Date(message.timestamp).toLocaleTimeString();
+        }
+        
         const roleClass = message.role === 'user' ? 'user-message' : 'assistant-message';
         const roleLabel = message.role === 'user' ? 'Patient' : 'AI Companion';
         

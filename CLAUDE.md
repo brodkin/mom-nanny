@@ -193,6 +193,7 @@ Say goodbye naturally before triggering
 | `VOICE_MODEL` | No | aura-asteria-en | Deepgram voice model |
 | `RECORDING_ENABLED` | No | false | Enable call recording |
 | `SQLITE_DB_PATH` | No | ./conversation-summaries.db | Database location |
+| `TIMEZONE` | No | America/Los_Angeles | IANA timezone for admin dashboard display |
 | `PORT` | No | 3000 | Server port |
 | `TWILIO_ACCOUNT_SID` | For testing | - | Twilio account SID |
 | `TWILIO_AUTH_TOKEN` | For testing | - | Twilio auth token |

@@ -14,11 +14,15 @@
 const express = require('express');
 const router = express.Router();
 const DatabaseManager = require('../../services/database-manager');
+const TimezoneUtils = require('../../utils/timezone-utils');
 
 // Get database manager instance (will be singleton instance)
 function getDbManager() {
   return DatabaseManager.getInstance();
 }
+
+// Get configured timezone from environment
+const CONFIGURED_TIMEZONE = process.env.TIMEZONE || 'America/Los_Angeles';
 
 /**
  * Input validation and sanitization utilities
@@ -228,11 +232,21 @@ router.get('/', async (req, res) => {
         }
       }
       
+      // Format timestamps in configured timezone
+      const startTimeFormatted = conv.start_time ? 
+        TimezoneUtils.convertUTCToTimezone(conv.start_time, CONFIGURED_TIMEZONE) : null;
+      const endTimeFormatted = conv.end_time ? 
+        TimezoneUtils.convertUTCToTimezone(conv.end_time, CONFIGURED_TIMEZONE) : null;
+      
       return {
         id: conv.id,
         callSid: conv.call_sid,
         startTime: conv.start_time,
         endTime: conv.end_time,
+        startTimeFormatted,
+        endTimeFormatted,
+        timezone: CONFIGURED_TIMEZONE,
+        timezoneAbbr: TimezoneUtils.getTimezoneAbbreviation(CONFIGURED_TIMEZONE),
         duration: conv.duration || (conv.start_time && conv.end_time ? Math.round((new Date(conv.end_time) - new Date(conv.start_time)) / 1000) : 0),
         emotionalState,
         anxietyLevel,
@@ -670,15 +684,32 @@ router.get('/:id', async (req, res) => {
       };
     }
     
+    // Format timestamps in configured timezone
+    const startTimeFormatted = conversation.start_time ? 
+      TimezoneUtils.convertUTCToTimezone(conversation.start_time, CONFIGURED_TIMEZONE) : null;
+    const endTimeFormatted = conversation.end_time ? 
+      TimezoneUtils.convertUTCToTimezone(conversation.end_time, CONFIGURED_TIMEZONE) : null;
+    
+    // Format message timestamps
+    const messagesWithTimezone = messages.map(msg => ({
+      ...msg,
+      timestampFormatted: msg.timestamp ? 
+        TimezoneUtils.convertUTCToTimezone(msg.timestamp, CONFIGURED_TIMEZONE) : null
+    }));
+    
     // Format response
     const responseData = {
       id: conversation.id,
       callSid: conversation.call_sid,
       startTime: conversation.start_time,
       endTime: conversation.end_time,
+      startTimeFormatted,
+      endTimeFormatted,
+      timezone: CONFIGURED_TIMEZONE,
+      timezoneAbbr: TimezoneUtils.getTimezoneAbbreviation(CONFIGURED_TIMEZONE),
       duration: conversation.duration,
       callerInfo: conversation.caller_info ? JSON.parse(conversation.caller_info) : null,
-      messages,
+      messages: messagesWithTimezone,
       analytics: analyticsData,
       emotionalTimeline,
       careIndicators

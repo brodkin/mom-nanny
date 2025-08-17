@@ -16,11 +16,15 @@ const express = require('express');
 const router = express.Router();
 const DashboardDataService = require('../../services/dashboard-data-service');
 const DatabaseManager = require('../../services/database-manager');
+const TimezoneUtils = require('../../utils/timezone-utils');
 
 // Initialize services using singleton pattern for consistent database access
 // This ensures SQLITE_DB_PATH environment variable is honored consistently
 const dbManager = DatabaseManager.getInstance();
 const dashboardService = new DashboardDataService(dbManager);
+
+// Get configured timezone from environment
+const CONFIGURED_TIMEZONE = process.env.TIMEZONE || 'America/Los_Angeles';
 
 /**
  * GET /api/admin/dashboard/overview
@@ -52,6 +56,12 @@ router.get('/overview', async (req, res) => {
           averageTokensPerResponse: overview.performance.avgMessageLength * 4, // Rough token estimate
           sentimentBreakdown: await _getSentimentBreakdown()
         }
+      },
+      timezone: {
+        configured: CONFIGURED_TIMEZONE,
+        abbreviation: TimezoneUtils.getTimezoneAbbreviation(CONFIGURED_TIMEZONE),
+        currentTime: TimezoneUtils.getCurrentTimeInTimezone(CONFIGURED_TIMEZONE),
+        offset: TimezoneUtils.getTimezoneOffset(CONFIGURED_TIMEZONE)
       },
       timestamp: overview.timestamp
     });

@@ -132,4 +132,20 @@ router.get('/health', (req, res) => {
   }
 });
 
+// Catch-all route for .html files in admin directory
+router.get('/*.html', (req, res) => {
+  try {
+    const fileName = req.params[0] + '.html';
+    const filePath = path.join(__dirname, '..', 'admin', fileName);
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error(`Error serving admin file ${req.params[0]}.html:`, error);
+    res.status(404).json({ 
+      success: false,
+      error: 'Admin page not found',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 module.exports = router;
