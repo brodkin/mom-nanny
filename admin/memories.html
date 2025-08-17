@@ -26,99 +26,381 @@
     body { visibility: hidden; }
     .js body { visibility: visible; }
     
-    /* Placeholder specific styles */
-    .placeholder-container {
+    /* Memory management page styles */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-8);
+      gap: var(--space-6);
+    }
+    
+    .page-title-section {
+      flex: 1;
+    }
+    
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 var(--space-2);
+    }
+    
+    .page-icon {
+      width: 32px;
+      height: 32px;
+      color: var(--color-primary);
+    }
+    
+    .page-description {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+    
+    .page-actions {
+      display: flex;
+      gap: var(--space-3);
+      flex-shrink: 0;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-8);
+    }
+    
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-6);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-primary);
+    }
+    
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      padding: var(--space-3);
+      background: var(--color-primary-light);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+    
+    .stat-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+    
+    .stat-content {
+      flex: 1;
+    }
+    
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: var(--space-1);
+    }
+    
+    .search-filter-container {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+    }
+    
+    .search-input-wrapper {
+      position: relative;
+    }
+    
+    .search-input-wrapper .search-icon {
+      position: absolute;
+      left: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      pointer-events: none;
+    }
+    
+    .search-input-wrapper .form-input {
+      padding-left: calc(var(--space-3) + 16px + var(--space-2));
+      min-width: 250px;
+    }
+    
+    .memory-table-container {
+      overflow-x: auto;
+    }
+    
+    .category-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+    
+    .category-badge.family { background: rgba(34, 197, 94, 0.1); color: rgb(34, 197, 94); }
+    .category-badge.preferences { background: rgba(59, 130, 246, 0.1); color: rgb(59, 130, 246); }
+    .category-badge.medical { background: rgba(239, 68, 68, 0.1); color: rgb(239, 68, 68); }
+    .category-badge.personal { background: rgba(168, 85, 247, 0.1); color: rgb(168, 85, 247); }
+    .category-badge.activities { background: rgba(251, 191, 36, 0.1); color: rgb(251, 191, 36); }
+    .category-badge.other { background: rgba(107, 114, 128, 0.1); color: rgb(107, 114, 128); }
+    
+    .content-preview {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-secondary);
+    }
+    
+    /* Memory form styles */
+    .memory-form .form-group {
+      margin-bottom: var(--space-6);
+    }
+    
+    .memory-form .form-help {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: var(--space-1);
+    }
+    
+    .memory-details .detail-group {
+      margin-bottom: var(--space-4);
+    }
+    
+    .memory-details .detail-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-1);
+    }
+    
+    .memory-details .detail-value {
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+    
+    /* Table action buttons */
+    .action-buttons {
+      display: flex;
+      gap: var(--space-1);
+    }
+    
+    .action-buttons .btn {
+      padding: var(--space-1) var(--space-2);
+    }
+    
+    /* Loading and error states */
+    .loading-container, .error-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 50vh;
+      padding: var(--space-8);
       text-align: center;
-      padding: var(--space-8);
     }
     
-    .placeholder-icon {
-      width: 120px;
-      height: 120px;
-      margin-bottom: var(--space-6);
-      padding: var(--space-8);
-      background: var(--bg-secondary);
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border-primary);
+      border-top: 3px solid var(--color-primary);
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--border-primary);
-    }
-    
-    .placeholder-icon svg {
-      width: 60px;
-      height: 60px;
-      color: var(--color-primary);
-    }
-    
-    .placeholder-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-primary);
+      animation: spin 1s linear infinite;
       margin-bottom: var(--space-4);
     }
     
-    .placeholder-description {
-      font-size: 1.1rem;
-      color: var(--text-secondary);
-      max-width: 600px;
-      line-height: 1.6;
-      margin-bottom: var(--space-6);
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
     
-    .feature-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: var(--space-4);
-      max-width: 800px;
+    .loading-text, .error-text {
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+    }
+    
+    .error-icon {
+      width: 48px;
+      height: 48px;
+      color: var(--color-danger);
+      margin-bottom: var(--space-4);
+    }
+    
+    .error-icon svg {
       width: 100%;
+      height: 100%;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8);
+      text-align: center;
+    }
+    
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+    }
+    
+    .empty-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .empty-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    
+    .empty-description {
+      color: var(--text-secondary);
+      margin-bottom: var(--space-6);
+      max-width: 400px;
+    }
+    
+    /* Pagination styles */
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-6) 0;
+      border-top: 1px solid var(--border-primary);
       margin-top: var(--space-6);
     }
     
-    .feature-item {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-3);
-      padding: var(--space-4);
-      background: var(--bg-secondary);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-primary);
-      text-align: left;
-    }
-    
-    .feature-icon {
-      width: 20px;
-      height: 20px;
-      color: var(--color-primary);
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    
-    .feature-content h4 {
-      margin: 0 0 var(--space-1);
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    
-    .feature-content p {
-      margin: 0;
-      font-size: 13px;
+    .pagination-info {
       color: var(--text-secondary);
+      font-size: 0.875rem;
     }
     
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .page-numbers {
+      display: flex;
+      gap: var(--space-1);
+    }
+    
+    .page-number {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 var(--space-2);
+      border: 1px solid var(--border-primary);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .page-number:hover:not(:disabled) {
+      background: var(--bg-secondary);
+      border-color: var(--color-primary);
+    }
+    
+    .page-number.active {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+    
+    .page-number:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* Sort table headers */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    
+    th.sortable:hover {
+      background: var(--bg-secondary);
+    }
+    
+    th.sortable .sort-icon {
+      opacity: 0.3;
+      transition: opacity 0.2s ease;
+    }
+    
+    th.sortable:hover .sort-icon,
+    th.sortable.sorted-asc .sort-icon,
+    th.sortable.sorted-desc .sort-icon {
+      opacity: 1;
+    }
+    
+    th.sortable.sorted-desc .sort-icon {
+      transform: rotate(180deg);
+    }
+
     @media (max-width: 768px) {
-      .placeholder-title {
-        font-size: 1.5rem;
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
       }
       
-      .feature-list {
+      .page-actions {
+        justify-content: flex-start;
+      }
+      
+      .stats-grid {
         grid-template-columns: 1fr;
+      }
+      
+      .search-filter-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .search-input-wrapper .form-input {
+        min-width: auto;
+      }
+      
+      .pagination-container {
+        flex-direction: column;
+        gap: var(--space-4);
+        align-items: center;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
       }
     }
   </style>
@@ -272,102 +554,210 @@
 
     <!-- Main Content -->
     <main class="admin-main" role="main">
-      <!-- Placeholder Content -->
-      <div class="placeholder-container">
-        <div class="placeholder-icon">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-          </svg>
+        <!-- Memory Management Content -->
+      <div class="page-header">
+        <div class="page-title-section">
+          <h1 class="page-title">
+            <svg class="page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            Memory Management
+          </h1>
+          <p class="page-description">
+            Manage the AI companion's memory system to ensure personalized and compassionate interactions
+          </p>
         </div>
         
-        <h1 class="placeholder-title">Memory Management</h1>
-        
-        <p class="placeholder-description">
-          This feature will provide comprehensive management of the AI companion's memory system. 
-          Caregivers will be able to view, edit, and organize memories to ensure personalized and meaningful interactions 
-          that honor each individual's unique life story and preferences.
-        </p>
-        
-        <div class="btn btn-outline btn-disabled">Coming Soon</div>
-        
-        <div class="feature-list">
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="page-actions">
+          <button id="add-memory-btn" class="btn btn-primary">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Memory
+          </button>
+          <button id="refresh-memories" class="btn btn-outline">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
             </svg>
-            <div class="feature-content">
-              <h4>Memory Categories</h4>
-              <p>Organized storage for family, preferences, medical info, and personal history</p>
-            </div>
           </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          <div class="stat-content">
+            <div class="stat-value" id="total-memories">--</div>
+            <div class="stat-label">Total Memories</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
             </svg>
-            <div class="feature-content">
-              <h4>Memory Editing</h4>
-              <p>Add, update, or correct stored memories to ensure accuracy and relevance</p>
-            </div>
           </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Smart Search</h4>
-              <p>Quickly find specific memories using intelligent search and filtering</p>
-            </div>
+          <div class="stat-content">
+            <div class="stat-value" id="memory-categories">--</div>
+            <div class="stat-label">Categories Used</div>
           </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Memory Validation</h4>
-              <p>Verify and validate stored information with family members and caregivers</p>
-            </div>
-          </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <div class="feature-content">
-              <h4>Memory Timeline</h4>
-              <p>Track when memories were created, updated, and last accessed</p>
-            </div>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value" id="last-updated">--</div>
+            <div class="stat-label">Last Updated</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value" id="recent-access">--</div>
+            <div class="stat-label">Recently Accessed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory Table Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-section">
+            <h2 class="card-title">Stored Memories</h2>
+            <p class="card-description">View and manage all memories that help personalize conversations</p>
           </div>
           
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Personalized Care</h4>
-              <p>Enable more compassionate, familiar conversations through rich context</p>
+          <div class="card-actions">
+            <!-- Search and Filter Controls -->
+            <div class="search-filter-container">
+              <div class="search-input-wrapper">
+                <input 
+                  type="text" 
+                  id="memory-search" 
+                  class="form-input" 
+                  placeholder="Search memories..."
+                  aria-label="Search memories"
+                >
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+              </div>
+              
+              <select id="category-filter" class="form-select" aria-label="Filter by category">
+                <option value="">All Categories</option>
+                <option value="family">Family</option>
+                <option value="preferences">Preferences</option>
+                <option value="medical">Medical</option>
+                <option value="personal">Personal</option>
+                <option value="activities">Activities</option>
+                <option value="other">Other</option>
+              </select>
             </div>
           </div>
-          
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Family Collaboration</h4>
-              <p>Allow family members to contribute memories and important details</p>
-            </div>
+        </div>
+        
+        <div class="card-content">
+          <!-- Loading State -->
+          <div id="memories-loading" class="loading-container" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading memories...</div>
           </div>
           
-          <div class="feature-item">
-            <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-            <div class="feature-content">
-              <h4>Privacy Controls</h4>
-              <p>Secure handling of sensitive personal information with access controls</p>
+          <!-- Error State -->
+          <div id="memories-error" class="error-container" style="display: none;">
+            <div class="error-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 19c-.77.833.192 2.5 1.732 2.5z"/>
+              </svg>
+            </div>
+            <div class="error-text">Failed to load memories</div>
+            <button id="retry-loading" class="btn btn-outline btn-sm">Try Again</button>
+          </div>
+          
+          <!-- Empty State -->
+          <div id="memories-empty" class="empty-state" style="display: none;">
+            <div class="empty-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+            </div>
+            <div class="empty-title">No memories stored</div>
+            <div class="empty-description">Start building the AI's memory by adding personal information and preferences</div>
+            <button id="add-first-memory" class="btn btn-primary">Add First Memory</button>
+          </div>
+          
+          <!-- Memory Table -->
+          <div id="memory-table-container" class="table-container">
+            <table id="memory-table" class="data-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="key">
+                    Memory Key
+                    <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                    </svg>
+                  </th>
+                  <th class="sortable" data-sort="category">
+                    Category
+                    <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                    </svg>
+                  </th>
+                  <th>Content Preview</th>
+                  <th class="sortable" data-sort="last_accessed">
+                    Last Accessed
+                    <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                    </svg>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="memory-table-body">
+                <!-- Dynamic content -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div id="memory-pagination" class="pagination-container" style="display: none;">
+            <div class="pagination-info">
+              <span id="pagination-text">Showing 1-10 of 0 memories</span>
+            </div>
+            <div class="pagination-controls">
+              <button id="prev-page" class="btn btn-outline btn-sm" disabled>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Previous
+              </button>
+              <div id="page-numbers" class="page-numbers">
+                <!-- Dynamic page numbers -->
+              </div>
+              <button id="next-page" class="btn btn-outline btn-sm" disabled>
+                Next
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -394,6 +784,7 @@
   <!-- JavaScript -->
   <script src="js/admin.js"></script>
   <script type="module" src="js/global-search.js"></script>
+  <script type="module" src="js/memories.js"></script>
   
   <!-- Set current year -->
   <script>
