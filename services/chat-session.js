@@ -745,42 +745,48 @@ class ChatSession extends EventEmitter {
         this.conversationAnalyzer.endTime = new Date();
         const summary = this.summaryGenerator.generateSummary(this.conversationAnalyzer);
         
-        const result = await this.storageService.saveSummary(summary);
-        const conversationId = result.conversationId; // String conversation ID
-        const numericId = result.numericId; // Numeric ID for messages
-        
-        console.log(chalk.green(`\n📝 Conversation summary saved to SQLite database`));
-        console.log(chalk.gray(`   Call SID: ${this.callSid}`));
-        console.log(chalk.gray(`   Database: ${this.databaseManager.dbPath}`));
-        
-        // Extract and save conversation messages
-        const messages = [];
-        
-        // Add user utterances
-        this.conversationAnalyzer.userUtterances.forEach(utterance => {
-          messages.push({
-            role: 'user',
-            content: utterance.text,
-            timestamp: utterance.timestamp.toISOString()
+        // Check duration and skip save if under 2 seconds (test chat sessions)
+        if (summary.callMetadata && summary.callMetadata.duration < 2) {
+          console.log(chalk.yellow(`Skipping save: test chat session under 2 seconds (${summary.callMetadata.duration}s)`));
+        } else {
+          // Proceed with normal save for sessions >= 2 seconds
+          const result = await this.storageService.saveSummary(summary);
+          const conversationId = result.conversationId; // String conversation ID
+          const numericId = result.numericId; // Numeric ID for messages
+          
+          console.log(chalk.green(`\n📝 Conversation summary saved to SQLite database`));
+          console.log(chalk.gray(`   Call SID: ${this.callSid}`));
+          console.log(chalk.gray(`   Database: ${this.databaseManager.dbPath}`));
+          
+          // Extract and save conversation messages
+          const messages = [];
+          
+          // Add user utterances
+          this.conversationAnalyzer.userUtterances.forEach(utterance => {
+            messages.push({
+              role: 'user',
+              content: utterance.text,
+              timestamp: utterance.timestamp.toISOString()
+            });
           });
-        });
-        
-        // Add assistant responses
-        this.conversationAnalyzer.assistantResponses.forEach(response => {
-          messages.push({
-            role: 'assistant',
-            content: response.text,
-            timestamp: response.timestamp.toISOString()
+          
+          // Add assistant responses
+          this.conversationAnalyzer.assistantResponses.forEach(response => {
+            messages.push({
+              role: 'assistant',
+              content: response.text,
+              timestamp: response.timestamp.toISOString()
+            });
           });
-        });
-        
-        // Sort messages by timestamp
-        messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
-        // Save messages to database
-        if (messages.length > 0) {
-          await this.storageService.saveMessages(numericId, messages);
-          console.log(chalk.green(`💬 ${messages.length} conversation messages saved to database`));
+          
+          // Sort messages by timestamp
+          messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          
+          // Save messages to database
+          if (messages.length > 0) {
+            await this.storageService.saveMessages(numericId, messages);
+            console.log(chalk.green(`💬 ${messages.length} conversation messages saved to database`));
+          }
         }
         
       } catch (error) {

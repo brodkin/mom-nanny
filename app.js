@@ -317,6 +317,14 @@ app.ws('/connection', async (ws) => {
       if (conversationAnalyzer) {
         try {
           conversationAnalyzer.endTime = new Date();
+          
+          // Calculate duration and skip save for test calls under 2 seconds
+          const duration = (conversationAnalyzer.endTime - conversationAnalyzer.startTime) / 1000;
+          if (duration < 2) {
+            console.log(`Skipping save: test call under 2 seconds (${duration}s)`.yellow);
+            return;
+          }
+          
           const summary = summaryGenerator.generateSummary(conversationAnalyzer);
           
           const result = await storageService.saveSummary(summary);
