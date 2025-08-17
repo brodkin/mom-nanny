@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Components Demo</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/memory-components.css">
+  
+  <style>
+    body {
+      padding: var(--space-6);
+      background: var(--bg-secondary);
+    }
+    
+    .demo-section {
+      margin-bottom: var(--space-8);
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .demo-title {
+      margin: 0 0 var(--space-4);
+      font-size: 1.5rem;
+      color: var(--text-primary);
+    }
+    
+    .demo-description {
+      margin: 0 0 var(--space-6);
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    
+    .component-container {
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    
+    .demo-controls {
+      display: flex;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+    
+    .demo-output {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      margin-top: var(--space-4);
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .badges-demo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    
+    .badges-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+    
+    .badges-row-title {
+      min-width: 120px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .badges-row-content {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- Category Badge Demo -->
+  <div class="demo-section">
+    <h2 class="demo-title">Category Badge Component</h2>
+    <p class="demo-description">
+      Color-coded badges for memory categories with support for different sizes, interactive states, and remove functionality.
+    </p>
+    
+    <div class="badges-demo">
+      <div class="badges-row">
+        <div class="badges-row-title">Basic Badges:</div>
+        <div class="badges-row-content" id="basic-badges"></div>
+      </div>
+      
+      <div class="badges-row">
+        <div class="badges-row-title">Sizes:</div>
+        <div class="badges-row-content" id="size-badges"></div>
+      </div>
+      
+      <div class="badges-row">
+        <div class="badges-row-title">Interactive:</div>
+        <div class="badges-row-content" id="interactive-badges"></div>
+      </div>
+      
+      <div class="badges-row">
+        <div class="badges-row-title">Removable:</div>
+        <div class="badges-row-content" id="removable-badges"></div>
+      </div>
+    </div>
+    
+    <div class="demo-output" id="badge-output">Click badges to see events...</div>
+  </div>
+
+  <!-- Memory Filters Demo -->
+  <div class="demo-section">
+    <h2 class="demo-title">Memory Filters Component</h2>
+    <p class="demo-description">
+      Filter bar with search input and category chips for filtering memories.
+    </p>
+    
+    <div class="demo-controls">
+      <button class="btn btn-secondary" onclick="setMockCounts()">Set Mock Counts</button>
+      <button class="btn btn-secondary" onclick="clearFilters()">Clear All Filters</button>
+    </div>
+    
+    <div class="component-container">
+      <div id="filters-container"></div>
+    </div>
+    
+    <div class="demo-output" id="filters-output">Filter events will appear here...</div>
+  </div>
+
+  <!-- Memory Table Demo -->
+  <div class="demo-section">
+    <h2 class="demo-title">Memory Table Component</h2>
+    <p class="demo-description">
+      Sortable, paginated table for displaying memory data with edit/delete actions and selection.
+    </p>
+    
+    <div class="demo-controls">
+      <button class="btn btn-secondary" onclick="loadMockData()">Load Mock Data</button>
+      <button class="btn btn-secondary" onclick="clearTableData()">Clear Data</button>
+      <button class="btn btn-secondary" onclick="getSelectedMemories()">Get Selected</button>
+    </div>
+    
+    <div class="component-container">
+      <div id="table-container"></div>
+    </div>
+    
+    <div class="demo-output" id="table-output">Table events will appear here...</div>
+  </div>
+
+  <!-- Memory Modal Demo -->
+  <div class="demo-section">
+    <h2 class="demo-title">Memory Modal Component</h2>
+    <p class="demo-description">
+      Modal dialog for creating and editing memories with validation and loading states.
+    </p>
+    
+    <div class="demo-controls">
+      <button class="btn btn-primary" onclick="showAddModal()">Add Memory</button>
+      <button class="btn btn-secondary" onclick="showEditModal()">Edit Sample Memory</button>
+    </div>
+    
+    <div class="demo-output" id="modal-output">Modal events will appear here...</div>
+  </div>
+
+  <!-- Complete Memory Manager Demo -->
+  <div class="demo-section">
+    <h2 class="demo-title">Complete Memory Manager</h2>
+    <p class="demo-description">
+      Fully integrated memory management interface combining all components.
+    </p>
+    
+    <div class="demo-controls">
+      <button class="btn btn-primary" onclick="initMemoryManager()">Initialize Manager</button>
+      <button class="btn btn-secondary" onclick="destroyMemoryManager()">Destroy Manager</button>
+    </div>
+    
+    <div class="component-container">
+      <div id="manager-container"></div>
+    </div>
+    
+    <div class="demo-output" id="manager-output">Memory manager events will appear here...</div>
+  </div>
+
+  <!-- JavaScript -->
+  <script type="module">
+    import { 
+      MemoryTable, 
+      MemoryModal, 
+      MemoryFilters, 
+      CategoryBadge, 
+      MemoryManager 
+    } from './js/components/memory-components.js';
+
+    // Global variables for demo
+    window.memoryTable = null;
+    window.memoryModal = null;
+    window.memoryFilters = null;
+    window.memoryManager = null;
+
+    // Helper function to log events
+    function logEvent(containerId, message) {
+      const output = document.getElementById(containerId);
+      const timestamp = new Date().toLocaleTimeString();
+      output.innerHTML += `[${timestamp}] ${message}\n`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // Mock data
+    const mockMemories = [
+      {
+        id: 1,
+        key: 'daughter_name',
+        content: 'Her daughter Sarah visits every Tuesday and brings homemade cookies',
+        category: 'family',
+        created_at: '2024-01-15T10:00:00Z',
+        updated_at: '2024-01-20T14:30:00Z'
+      },
+      {
+        id: 2,
+        key: 'favorite_music',
+        content: 'Loves classical music, especially Mozart and Beethoven. Calms her anxiety.',
+        category: 'preferences',
+        created_at: '2024-01-16T09:15:00Z',
+        updated_at: '2024-01-18T16:45:00Z'
+      },
+      {
+        id: 3,
+        key: 'blood_pressure_medication',
+        content: 'Takes Lisinopril 10mg every morning with breakfast. Important to monitor.',
+        category: 'health',
+        created_at: '2024-01-17T11:30:00Z',
+        updated_at: '2024-01-17T11:30:00Z'
+      },
+      {
+        id: 4,
+        key: 'avoid_war_topics',
+        content: 'Do not discuss wars or violence. Lost her brother in Vietnam.',
+        category: 'topics_to_avoid',
+        created_at: '2024-01-18T13:00:00Z',
+        updated_at: '2024-01-19T10:15:00Z'
+      },
+      {
+        id: 5,
+        key: 'former_teacher',
+        content: 'Was an elementary school teacher for 35 years. Very proud of this.',
+        category: 'general',
+        created_at: '2024-01-19T15:20:00Z',
+        updated_at: '2024-01-19T15:20:00Z'
+      }
+    ];
+
+    // Initialize Category Badge Demo
+    function initCategoryBadgeDemo() {
+      const categories = ['family', 'health', 'preferences', 'topics_to_avoid', 'general'];
+      
+      // Basic badges
+      const basicContainer = document.getElementById('basic-badges');
+      categories.forEach(category => {
+        const badge = CategoryBadge.create(category);
+        basicContainer.appendChild(badge);
+      });
+      
+      // Size badges
+      const sizeContainer = document.getElementById('size-badges');
+      const sizes = ['small', 'medium', 'large'];
+      sizes.forEach(size => {
+        const badge = CategoryBadge.create('family', `${size.charAt(0).toUpperCase() + size.slice(1)}`, { size });
+        sizeContainer.appendChild(badge);
+      });
+      
+      // Interactive badges
+      const interactiveContainer = document.getElementById('interactive-badges');
+      categories.forEach(category => {
+        const badge = CategoryBadge.create(category, null, {
+          interactive: true,
+          onClick: (cat, element) => {
+            logEvent('badge-output', `Clicked ${cat} badge`);
+            element.classList.toggle('selected');
+          }
+        });
+        interactiveContainer.appendChild(badge);
+      });
+      
+      // Removable badges
+      const removableContainer = document.getElementById('removable-badges');
+      categories.forEach(category => {
+        const badge = CategoryBadge.create(category, null, {
+          removable: true,
+          onRemove: (cat, element) => {
+            logEvent('badge-output', `Removed ${cat} badge`);
+            element.remove();
+          }
+        });
+        removableContainer.appendChild(badge);
+      });
+    }
+
+    // Initialize Memory Filters Demo
+    function initMemoryFiltersDemo() {
+      window.memoryFilters = new MemoryFilters({
+        categories: ['family', 'health', 'preferences', 'topics_to_avoid', 'general'],
+        placeholder: 'Search memories...'
+      });
+
+      document.getElementById('filters-container').appendChild(window.memoryFilters.element);
+
+      window.memoryFilters.on('filter', (e) => {
+        const { searchTerm, selectedCategories } = e.detail;
+        logEvent('filters-output', `Filter: search="${searchTerm}", categories=[${selectedCategories.join(', ')}]`);
+      });
+
+      window.memoryFilters.on('clear', () => {
+        logEvent('filters-output', 'All filters cleared');
+      });
+    }
+
+    // Initialize Memory Table Demo
+    function initMemoryTableDemo() {
+      window.memoryTable = new MemoryTable({
+        data: [],
+        selectable: true,
+        pageSize: 3, // Small for demo
+        onEdit: (memory) => {
+          logEvent('table-output', `Edit requested for: ${memory.key}`);
+        },
+        onDelete: (memory) => {
+          logEvent('table-output', `Delete requested for: ${memory.key}`);
+        }
+      });
+
+      document.getElementById('table-container').appendChild(window.memoryTable.element);
+
+      window.memoryTable.on('rowSelect', (e) => {
+        logEvent('table-output', `Selected ${e.detail.selectedMemories.length} memories`);
+      });
+
+      window.memoryTable.on('sort', (e) => {
+        logEvent('table-output', `Sorted by ${e.detail.column} (${e.detail.direction})`);
+      });
+    }
+
+    // Initialize Memory Modal Demo
+    function initMemoryModalDemo() {
+      window.memoryModal = new MemoryModal();
+
+      window.memoryModal.on('save', (e) => {
+        const { memory, isEdit } = e.detail;
+        logEvent('modal-output', `${isEdit ? 'Updated' : 'Created'} memory: ${memory.key}`);
+        
+        // Simulate API call
+        setTimeout(() => {
+          logEvent('modal-output', 'Memory saved successfully');
+          window.memoryModal.hide();
+        }, 1000);
+      });
+
+      window.memoryModal.on('show', () => {
+        logEvent('modal-output', 'Modal opened');
+      });
+
+      window.memoryModal.on('hide', () => {
+        logEvent('modal-output', 'Modal closed');
+      });
+    }
+
+    // Global functions for demo controls
+    window.setMockCounts = function() {
+      if (window.memoryFilters) {
+        window.memoryFilters.setCategoryCounts({
+          family: 5,
+          health: 3,
+          preferences: 8,
+          topics_to_avoid: 2,
+          general: 12
+        });
+        logEvent('filters-output', 'Set mock category counts');
+      }
+    };
+
+    window.clearFilters = function() {
+      if (window.memoryFilters) {
+        window.memoryFilters.clearAll();
+      }
+    };
+
+    window.loadMockData = function() {
+      if (window.memoryTable) {
+        window.memoryTable.setData(mockMemories);
+        logEvent('table-output', `Loaded ${mockMemories.length} mock memories`);
+      }
+    };
+
+    window.clearTableData = function() {
+      if (window.memoryTable) {
+        window.memoryTable.setData([]);
+        logEvent('table-output', 'Cleared all table data');
+      }
+    };
+
+    window.getSelectedMemories = function() {
+      if (window.memoryTable) {
+        const selected = window.memoryTable.getSelectedMemories();
+        logEvent('table-output', `Selected memories: ${selected.map(m => m.key).join(', ') || 'none'}`);
+      }
+    };
+
+    window.showAddModal = function() {
+      if (window.memoryModal) {
+        window.memoryModal.show();
+      }
+    };
+
+    window.showEditModal = function() {
+      if (window.memoryModal) {
+        window.memoryModal.show(mockMemories[0]);
+      }
+    };
+
+    window.initMemoryManager = function() {
+      if (window.memoryManager) {
+        window.memoryManager.destroy();
+      }
+
+      // Mock API for demo
+      window.mockApi = {
+        memories: [...mockMemories],
+        nextId: 6
+      };
+
+      // Override fetch for demo
+      const originalFetch = window.fetch;
+      window.fetch = async function(url, options) {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (url.includes('/api/memories')) {
+          if (!options || options.method === 'GET') {
+            // GET /api/memories
+            return {
+              ok: true,
+              json: async () => window.mockApi.memories
+            };
+          } else if (options.method === 'POST') {
+            // POST /api/memories
+            const memory = JSON.parse(options.body);
+            memory.id = window.mockApi.nextId++;
+            memory.created_at = new Date().toISOString();
+            memory.updated_at = new Date().toISOString();
+            window.mockApi.memories.push(memory);
+            return {
+              ok: true,
+              json: async () => memory
+            };
+          } else if (options.method === 'PUT') {
+            // PUT /api/memories/:id
+            const memory = JSON.parse(options.body);
+            memory.updated_at = new Date().toISOString();
+            const index = window.mockApi.memories.findIndex(m => m.id === memory.id);
+            if (index !== -1) {
+              window.mockApi.memories[index] = memory;
+            }
+            return {
+              ok: true,
+              json: async () => memory
+            };
+          } else if (options.method === 'DELETE') {
+            // DELETE /api/memories/:id
+            const id = parseInt(url.split('/').pop());
+            window.mockApi.memories = window.mockApi.memories.filter(m => m.id !== id);
+            return {
+              ok: true,
+              json: async () => ({ success: true })
+            };
+          }
+        }
+
+        return originalFetch(url, options);
+      };
+
+      window.memoryManager = new MemoryManager({
+        container: document.getElementById('manager-container'),
+        apiEndpoint: '/api/memories',
+        selectable: true,
+        pageSize: 5
+      });
+
+      window.memoryManager.on('memoriesLoaded', (e) => {
+        logEvent('manager-output', `Loaded ${e.detail.memories.length} memories`);
+      });
+
+      window.memoryManager.on('memoryCreated', (e) => {
+        logEvent('manager-output', `Created memory: ${e.detail.memory.key}`);
+      });
+
+      window.memoryManager.on('memoryUpdated', (e) => {
+        logEvent('manager-output', `Updated memory: ${e.detail.memory.key}`);
+      });
+
+      window.memoryManager.on('memoryDeleted', (e) => {
+        logEvent('manager-output', `Deleted memory: ${e.detail.memory.key}`);
+      });
+
+      window.memoryManager.on('notification', (e) => {
+        logEvent('manager-output', `${e.detail.type.toUpperCase()}: ${e.detail.message}`);
+      });
+
+      logEvent('manager-output', 'Memory manager initialized with mock API');
+    };
+
+    window.destroyMemoryManager = function() {
+      if (window.memoryManager) {
+        window.memoryManager.destroy();
+        window.memoryManager = null;
+        document.getElementById('manager-container').innerHTML = '';
+        logEvent('manager-output', 'Memory manager destroyed');
+      }
+    };
+
+    // Initialize all demos on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      initCategoryBadgeDemo();
+      initMemoryFiltersDemo();
+      initMemoryTableDemo();
+      initMemoryModalDemo();
+    });
+  </script>
+</body>
+</html>
