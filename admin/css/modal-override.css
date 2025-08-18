@@ -1,28 +1,74 @@
-/* Modal Override CSS - Fixes modal positioning to display as centered overlay */
+/* Modal Override CSS - Full viewport coverage for #transcript-modal */
 
-/* Modal backdrop - full viewport dark overlay */
-.modal-backdrop {
+/* CRITICAL FIX: #transcript-modal must cover exact viewport dimensions */
+/* This overrides any conflicting styles from conversations.css */
+#transcript-modal {
+  /* Fixed positioning to break out of any parent constraints */
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
+  
+  /* Explicit dimensions for exact viewport coverage */
   width: 100vw !important;
   height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  
+  /* Reset any spacing that could create gaps */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  
+  /* High z-index to ensure it covers everything */
+  z-index: 1050 !important;
+  
+  /* Flex layout for centering content */
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  /* Box model and overflow */
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  
+  /* Remove any transforms that might cause positioning issues */
+  transform: none !important;
+}
+
+#transcript-modal[style*="display: flex"] {
+  display: flex !important;
+}
+
+/* Modal overlay - MUST fill entire viewport */
+#transcript-modal .modal-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  
+  /* Visual styling */
   background: rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: blur(4px);
-  z-index: 9998 !important;
-  display: block !important;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  z-index: 1040 !important;
+  
+  /* Reset all spacing */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
 }
 
-.modal-backdrop.show {
-  opacity: 1 !important;
-}
-
-/* Modal container - centered on screen */
-.modal {
+/* Other modals can use centered approach */
+.modal:not(#transcript-modal) {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
@@ -35,8 +81,18 @@
   height: auto !important;
 }
 
-.modal.show {
+.modal:not(#transcript-modal).show {
   display: block !important;
+}
+
+/* Dark theme support */
+[data-theme="dark"] #transcript-modal .modal-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Prevent body scrolling when modal is open */
+body.modal-open {
+  overflow: hidden !important;
 }
 
 /* Modal dialog - the actual content box */

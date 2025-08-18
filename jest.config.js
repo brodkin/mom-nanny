@@ -1,20 +1,29 @@
 module.exports = {
-  testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
+  // Use different test environments based on test name pattern
+  projects: [
+    {
+      displayName: 'server',
+      testEnvironment: 'node',
+      testMatch: ['**/test/**/*.test.js'],
+      testPathIgnorePatterns: ['<rootDir>/test/modal-viewport.test.js'],
+      setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
+      globalSetup: '<rootDir>/test/jest-global-setup.js',
+      globalTeardown: '<rootDir>/test/jest-global-teardown.js',
+      maxWorkers: 1
+    },
+    {
+      displayName: 'dom',
+      testEnvironment: 'jsdom',
+      testMatch: ['<rootDir>/test/modal-viewport.test.js']
+    }
+  ],
   collectCoverageFrom: [
     'services/**/*.js',
     'functions/**/*.js',
     'routes/**/*.js',
+    'admin/**/*.{js,css}',
     '!**/node_modules/**',
     '!**/test/**'
   ],
-  testMatch: ['**/test/**/*.test.js'],
-  verbose: true,
-  // Set NODE_ENV to test for all Jest runs
-  globalSetup: '<rootDir>/test/jest-global-setup.js',
-  globalTeardown: '<rootDir>/test/jest-global-teardown.js',
-  // Run tests serially to avoid database conflicts
-  maxWorkers: 1,
-  // Increase timeout for database operations
-  testTimeout: 10000
+  verbose: true
 };
