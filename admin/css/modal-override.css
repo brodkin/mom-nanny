@@ -1,5 +1,12 @@
 /* Modal Override CSS - Full viewport coverage for #transcript-modal */
 
+/* Reset box-sizing for modal elements */
+.modal,
+.modal *,
+.modal-overlay {
+  box-sizing: border-box !important;
+}
+
 /* CRITICAL FIX: #transcript-modal must cover exact viewport dimensions */
 /* This overrides any conflicting styles from conversations.css */
 #transcript-modal {
@@ -40,12 +47,15 @@
   transform: none !important;
 }
 
+.modal.show,
 #transcript-modal[style*="display: flex"] {
   display: flex !important;
 }
 
 /* Modal overlay - MUST fill entire viewport */
+.modal-overlay,
 #transcript-modal .modal-overlay {
+  /* Absolute positioning within the fixed modal container */
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
@@ -59,12 +69,18 @@
   backdrop-filter: blur(4px);
   z-index: 1040 !important;
   
-  /* Reset all spacing */
+  /* Reset all spacing and potential interfering styles */
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
   box-sizing: border-box !important;
+  
+  /* Ensure no overflow or scrolling */
+  overflow: hidden !important;
 }
 
 /* Other modals can use centered approach */
@@ -85,14 +101,19 @@
   display: block !important;
 }
 
-/* Dark theme support */
-[data-theme="dark"] #transcript-modal .modal-overlay {
-  background: rgba(0, 0, 0, 0.7) !important;
-}
-
-/* Prevent body scrolling when modal is open */
-body.modal-open {
-  overflow: hidden !important;
+/* Modal container - the actual content box (centered) */
+.modal-container,
+#transcript-modal .modal-container {
+  position: relative !important;
+  z-index: 1051 !important;
+  width: 93%;
+  max-width: 900px;
+  max-height: 93vh;
+  border: none !important;
+  outline: none !important;
+  background: var(--bg-primary, #fff);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 /* Modal dialog - the actual content box */
@@ -119,7 +140,7 @@ body.modal-open {
 /* Modal body scrolling */
 .modal-body {
   overflow-y: auto !important;
-  max-height: calc(85vh - 120px) !important; /* Account for header and footer */
+  max-height: calc(85vh - 120px) !important;
   padding: var(--space-4, 1rem) !important;
 }
 
@@ -129,7 +150,13 @@ body.modal-open {
   flex-shrink: 0 !important;
 }
 
-/* Ensure modals are above everything else */
+/* Prevent body scrolling when modal is open */
 body.modal-open {
   overflow: hidden !important;
+}
+
+/* Dark theme support */
+[data-theme="dark"] .modal-overlay,
+[data-theme="dark"] #transcript-modal .modal-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
 }

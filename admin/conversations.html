@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/admin.css">
   <link rel="stylesheet" href="css/conversations.css">
   <link rel="stylesheet" href="css/global-search.css">
+  <link rel="stylesheet" href="css/modal-override.css">
   
   <!-- Meta tags -->
   <meta name="description" content="Conversation history and transcripts for compassionate AI companion">
@@ -26,6 +27,8 @@
   <style>
     body { visibility: hidden; }
     .js body { visibility: visible; }
+    
+    /* Modal positioning handled by modal-override.css - removed redundant inline styles */
   </style>
   <script>document.documentElement.className = 'js';</script>
 </head>
@@ -330,26 +333,6 @@
         </div>
       </div>
 
-      <!-- Transcript Modal -->
-      <div id="transcript-modal" class="modal" style="display: none;">
-        <div class="modal-overlay"></div>
-        <div class="modal-container">
-          <div class="modal-header">
-            <h3 class="modal-title">Conversation Transcript</h3>
-            <button class="modal-close" aria-label="Close modal">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div id="transcript-content">
-              <!-- Transcript content will be loaded here -->
-            </div>
-          </div>
-        </div>
-      </div>
     </main>
 
     <!-- Footer -->
@@ -367,6 +350,27 @@
 
     <!-- Mobile Sidebar Overlay -->
     <div class="layout-overlay"></div>
+  </div>
+
+  <!-- Transcript Modal - MOVED TO BODY LEVEL FOR PROPER FULL-VIEWPORT COVERAGE -->
+  <div id="transcript-modal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Conversation Transcript</h3>
+        <button class="modal-close" aria-label="Close modal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="transcript-content">
+          <!-- Transcript content will be loaded here -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- JavaScript -->
