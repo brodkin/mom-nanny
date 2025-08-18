@@ -351,6 +351,7 @@
   padding: var(--space-6);
   min-height: 400px;
   position: relative;
+  border: 1px solid var(--color-primary, #6366f1);
 }
 
 /* Emotional State Badges in Table */
