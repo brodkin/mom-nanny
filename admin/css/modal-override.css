@@ -109,7 +109,7 @@
   width: 93%;
   max-width: 900px;
   max-height: 93vh;
-  border: none !important;
+  border: 2px solid var(--color-primary, #6366f1) !important;
   outline: none !important;
   background: var(--bg-primary, #fff);
   border-radius: var(--radius-lg, 8px);
