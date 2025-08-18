@@ -73,6 +73,34 @@ class MemoryManager {
         this.sortTable(field);
       });
     });
+
+    // Table action buttons (using event delegation)
+    document.getElementById('memory-table-body')?.addEventListener('click', (e) => {
+      const button = e.target.closest('button');
+      if (!button) return;
+      
+      const row = button.closest('tr');
+      const memoryKey = row?.dataset.memoryKey;
+      
+      if (!memoryKey) return;
+      
+      if (button.classList.contains('btn-view')) {
+        this.viewMemory(memoryKey);
+      } else if (button.classList.contains('btn-edit')) {
+        this.editMemory(memoryKey);
+      } else if (button.classList.contains('btn-delete')) {
+        this.deleteMemory(memoryKey);
+      }
+    });
+
+    // Page number clicks (using event delegation)
+    document.getElementById('page-numbers')?.addEventListener('click', (e) => {
+      const button = e.target.closest('.page-number');
+      if (button && !button.disabled) {
+        const page = parseInt(button.dataset.page);
+        if (page) this.goToPage(page);
+      }
+    });
   }
 
   /**
@@ -286,18 +314,18 @@ class MemoryManager {
         </td>
         <td>
           <div class="action-buttons">
-            <button class="btn btn-outline btn-sm" onclick="memoryManager.viewMemory('${this.escapeHtml(memory.key)}')" title="View details">
+            <button class="btn btn-outline btn-sm btn-view" title="View details">
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
               </svg>
             </button>
-            <button class="btn btn-outline btn-sm" onclick="memoryManager.editMemory('${this.escapeHtml(memory.key)}')" title="Edit memory">
+            <button class="btn btn-outline btn-sm btn-edit" title="Edit memory">
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
             </button>
-            <button class="btn btn-outline btn-sm btn-danger" onclick="memoryManager.deleteMemory('${this.escapeHtml(memory.key)}')" title="Delete memory">
+            <button class="btn btn-outline btn-sm btn-danger btn-delete" title="Delete memory">
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
@@ -371,7 +399,7 @@ class MemoryManager {
       pages.push(`
         <button 
           class="page-number ${isActive ? 'active' : ''}" 
-          onclick="memoryManager.goToPage(${i})"
+          data-page="${i}"
           ${isActive ? 'disabled' : ''}
         >
           ${i}
@@ -424,7 +452,7 @@ class MemoryManager {
    * Show add memory modal
    */
   async showAddMemoryModal() {
-    const modal = await Modal.create({
+    const modal = new Modal({
       title: 'Add New Memory',
       size: 'lg',
       content: `
@@ -467,19 +495,22 @@ class MemoryManager {
           </div>
         </form>
       `,
-      actions: [
+      buttons: [
         {
           text: 'Cancel',
-          variant: 'outline',
-          action: () => modal.close()
+          style: 'secondary',
+          action: 'cancel'
         },
         {
           text: 'Add Memory',
-          variant: 'primary',
-          action: () => this.handleAddMemory(modal)
+          style: 'primary',
+          action: 'add'
         }
       ]
     });
+    
+    modal.on('add', () => this.handleAddMemory(modal));
+    modal.on('cancel', () => modal.close());
     
     modal.show();
   }
@@ -541,9 +572,9 @@ class MemoryManager {
       const data = await response.json();
       const memory = data.data;
       
-      const modal = await Modal.create({
+      const modal = new Modal({
         title: `Memory: ${memory.key}`,
-        size: 'lg',
+        size: 'large',
         content: `
           <div class="memory-details">
             <div class="detail-group">
@@ -581,22 +612,25 @@ class MemoryManager {
             </div>
           </div>
         `,
-        actions: [
+        buttons: [
           {
             text: 'Edit',
-            variant: 'outline',
-            action: () => {
-              modal.close();
-              this.editMemory(key);
-            }
+            style: 'secondary',
+            action: 'edit'
           },
           {
             text: 'Close',
-            variant: 'primary',
-            action: () => modal.close()
+            style: 'primary',
+            action: 'close'
           }
         ]
       });
+      
+      modal.on('edit', () => {
+        modal.close();
+        this.editMemory(key);
+      });
+      modal.on('close', () => modal.close());
       
       modal.show();
       
@@ -622,9 +656,9 @@ class MemoryManager {
       const data = await response.json();
       const memory = data.data;
       
-      const modal = await Modal.create({
+      const modal = new Modal({
         title: `Edit Memory: ${memory.key}`,
-        size: 'lg',
+        size: 'large',
         content: `
           <form id="edit-memory-form" class="memory-form">
             <div class="form-group">
@@ -664,19 +698,22 @@ class MemoryManager {
             </div>
           </form>
         `,
-        actions: [
+        buttons: [
           {
             text: 'Cancel',
-            variant: 'outline',
-            action: () => modal.close()
+            style: 'secondary',
+            action: 'cancel'
           },
           {
             text: 'Save Changes',
-            variant: 'primary',
-            action: () => this.handleEditMemory(modal, key)
+            style: 'primary',
+            action: 'save'
           }
         ]
       });
+      
+      modal.on('save', () => this.handleEditMemory(modal, key));
+      modal.on('cancel', () => modal.close());
       
       modal.show();
       
@@ -736,10 +773,9 @@ class MemoryManager {
   async deleteMemory(key) {
     const confirmed = await Modal.confirm({
       title: 'Delete Memory',
-      message: `Are you sure you want to delete the memory "${key}"?`,
-      description: 'This action cannot be undone. The AI will no longer have access to this information.',
+      message: `Are you sure you want to delete the memory "${key}"? This action cannot be undone. The AI will no longer have access to this information.`,
       confirmText: 'Delete',
-      confirmVariant: 'danger'
+      cancelText: 'Cancel'
     });
     
     if (!confirmed) return;
