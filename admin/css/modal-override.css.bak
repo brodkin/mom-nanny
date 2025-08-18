@@ -1,0 +1,212 @@
+/* Modal Override Styles - Fix modal positioning */
+
+/* Reset any parent container constraints */
+body.modal-open {
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Main modal container - full viewport coverage */
+.modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;  /* Ensure no rounded corners */
+  z-index: 99999 !important;  /* Increased z-index */
+  display: none;
+  /* Remove any max-width or transforms from parent */
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+}
+
+.modal.show {
+  display: flex !important;  /* Use flex to help with centering */
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Modal backdrop - full viewport coverage */
+.modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;  /* Ensure no rounded corners */
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1 !important;  /* Behind dialog but within modal container */
+  box-sizing: border-box !important;
+}
+
+.modal.show .modal-backdrop {
+  opacity: 1;
+}
+
+/* Modal dialog - centered positioning */
+.modal-dialog {
+  position: relative !important;  /* Relative to flex parent */
+  max-width: 90vw;
+  max-height: 90vh;
+  opacity: 0;
+  transition: all 0.3s ease;
+  transform: scale(0.95);
+  margin: auto !important;  /* Center in flex container */
+}
+
+.modal.show .modal-dialog {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Modal content container */
+.modal-content {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal sizes */
+.modal-small .modal-dialog {
+  width: 400px;
+}
+
+.modal-medium .modal-dialog {
+  width: 600px;
+}
+
+.modal-large .modal-dialog {
+  width: 800px;
+}
+
+.modal-full .modal-dialog {
+  width: calc(100vw - 2rem);
+  height: calc(100vh - 2rem);
+  max-width: none;
+  max-height: none;
+}
+
+/* Modal header */
+.modal-header {
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Modal body */
+.modal-body {
+  padding: var(--space-6);
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Modal footer */
+.modal-footer {
+  padding: var(--space-6);
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* Modal buttons */
+.modal-btn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .modal-content {
+  background: rgba(17, 24, 39, 0.95);
+}
+
+[data-theme="dark"] .modal-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .modal-dialog {
+    width: calc(100vw - 1rem);
+    max-width: none;
+  }
+  
+  .modal-large .modal-dialog {
+    width: calc(100vw - 1rem);
+  }
+}
