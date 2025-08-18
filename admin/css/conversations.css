@@ -353,11 +353,6 @@
   position: relative;
 }
 
-/* Override glass-card border for table-section */
-.table-section.glass-card {
-  border: 1px solid var(--color-primary, #6366f1) !important;
-}
-
 /* Emotional State Badges in Table */
 .emotional-state-badge {
   display: inline-flex;
