@@ -75,11 +75,33 @@ stateDiagram-v2
 ## Memory & Persistence Architecture
 
 ### Database Structure (SQLite)
+
+**IMPORTANT**: Database schema is managed through migrations. Current version: 4
+
+#### Tables (Created by Migrations)
 ```sql
-conversations: id, call_sid, start_time, end_time, duration, summary_text
+-- Migration 1: Core tables
+conversations: id, call_sid, start_time, end_time, duration, caller_info, created_at
+summaries: id, conversation_id, summary_text, created_at
 messages: id, conversation_id, role, content, timestamp
-memories: id, key, content, category, created_at, updated_at, last_accessed
+analytics: id, conversation_id, sentiment_scores, keywords, patterns, created_at
+
+-- Migration 2: Memory storage
+memories: id, memory_key, memory_content, category, created_at, updated_at, last_accessed
+
+-- Migration 3: Configuration
+settings: id, key, value, created_at, updated_at
+
+-- System table (auto-created)
+migrations: id, version, applied_at
 ```
+
+#### Performance Indexes (Migration 4)
+- `idx_conversations_created_at` - Admin dashboard queries
+- `idx_summaries_created_at` - Recent summaries pagination  
+- `idx_analytics_created_at` - Analytics reporting
+- `idx_messages_role_timestamp` - Conversation analysis
+- `idx_memories_category_updated` - Memory retrieval optimization
 
 ### Memory Service Operations
 - **Initialize**: Load all memory keys at startup
@@ -342,11 +364,78 @@ api/admin-config.js  # Configuration API
 3. Listen in consumer: `service.on('eventName', handler)`
 4. Update conversation analyzer if tracking needed
 
-### Database Schema Changes
-1. Modify `database-manager.js` initialization
-2. Add migration logic for existing data
-3. Update storage service methods
-4. Test with both new and existing databases
+### Database Schema Changes (Migration-Only Policy)
+
+**CRITICAL**: ALL database schema changes MUST be implemented through migration scripts. Direct schema modifications are strictly prohibited.
+
+#### Migration System Overview
+- **Automatic Execution**: Migrations run automatically when DatabaseManager initializes
+- **Version Tracking**: Each migration has a version number stored in the `migrations` table
+- **Idempotent**: Migrations can safely run multiple times (use IF NOT EXISTS clauses)
+- **Sequential**: Migrations always execute in order (1, 2, 3, 4, etc.)
+- **No Manual Commands**: No separate migration command needed - they run on app startup
+
+#### Current Migration Versions
+```javascript
+// Applied automatically in database-manager.js:
+Migration 1: Initial schema (conversations, summaries, messages, analytics)
+Migration 2: Memories table
+Migration 3: Settings table  
+Migration 4: Performance indexes
+```
+
+#### Adding New Migrations
+1. **Create Migration Method** in `database-manager.js`:
+   ```javascript
+   applyYourMigrationName() {
+     const migration = `
+       CREATE TABLE IF NOT EXISTS ...
+       CREATE INDEX IF NOT EXISTS ...
+     `;
+     this._execSync(migration);
+   }
+   ```
+
+2. **Update applyMigrations()** method:
+   ```javascript
+   if (currentVersion < 5) {
+     this.applyYourMigrationName();
+     this.runSync('INSERT INTO migrations (version) VALUES (?)', [5]);
+   }
+   ```
+
+3. **Test Migration Path**:
+   ```bash
+   # Use the comprehensive test script
+   node test-database-reset.js
+   ```
+
+4. **Verify with verifySchema()** method:
+   - Add expected tables/indexes to verifySchema()
+   - Ensures migration creates correct schema
+
+#### Migration Best Practices
+- **Never modify existing migrations** - only add new ones
+- **Always use IF NOT EXISTS** for idempotency
+- **Test with fresh database** to ensure migrations work from scratch
+- **Test with existing database** to ensure upgrades work
+- **Document migration purpose** in code comments
+- **Include rollback strategy** in complex migrations
+
+#### Testing Database Changes
+```bash
+# Comprehensive migration testing
+node test-database-reset.js
+
+# Manual testing with fresh database
+sqlite3 test.db < database-schema-backup.sql
+
+# Verify schema after changes
+const db = DatabaseManager.getInstance();
+await db.waitForInitialization();
+const result = await db.verifySchema();
+console.log(result); // {isValid: true, missingTables: [], missingIndexes: []}
+```
 
 ### Database Access Pattern (Singleton)
 **CRITICAL**: DatabaseManager uses a singleton pattern to ensure consistent database access:
