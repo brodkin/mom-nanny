@@ -23,6 +23,9 @@ class AdminDashboard {
     // Initialize animations
     this.initializeAnimations();
     
+    // Initialize collapsible components
+    this.initializeCollapsibles();
+    
     console.log('🚀 Admin Dashboard initialized');
     
     // Initialize dashboard-specific features if on dashboard page
@@ -506,6 +509,41 @@ class AdminDashboard {
 
     // Initialize scroll animations
     this.handleScroll();
+  }
+
+  initializeCollapsibles() {
+    // Auto-initialize all elements with data-collapsible attribute
+    const collapsibleElements = document.querySelectorAll('[data-collapsible]');
+    
+    collapsibleElements.forEach(element => {
+      // Skip if already initialized
+      if (element._collapsible) return;
+      
+      // Get options from data attributes
+      const options = {
+        element,
+        collapsed: element.dataset.collapsed === 'true',
+        persist: element.dataset.persist || null,
+        animation: element.dataset.animation || 'smooth',
+        closeOthers: element.dataset.closeOthers === 'true',
+        group: element.dataset.group || null
+      };
+      
+      // Create the collapsible instance
+      // We'll use dynamic import for better module loading
+      if (window.Collapsible) {
+        new window.Collapsible(options);
+      } else {
+        // If Collapsible isn't loaded globally, try to load it
+        import('./components/collapsible.js').then(module => {
+          new module.default(options);
+        }).catch(err => {
+          console.warn('Collapsible component not available:', err);
+        });
+      }
+    });
+    
+    console.log(`🔄 Initialized ${collapsibleElements.length} collapsible sections`);
   }
 
   animateCounters(elements) {

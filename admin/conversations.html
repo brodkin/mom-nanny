@@ -209,8 +209,8 @@
       </div>
 
       <!-- Filters Section -->
-      <div class="filters-section glass-card">
-        <div class="filters-header">
+      <div class="filters-section glass-card" data-collapsible="true" data-collapsed="true" data-persist="conversation-filters">
+        <div class="filters-header collapsible-header">
           <h3 class="filters-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
@@ -220,7 +220,7 @@
           <button id="clear-all-filters" class="btn btn-sm btn-ghost">Clear All</button>
         </div>
         
-        <div class="filters-grid">
+        <div class="filters-grid collapsible-content">
           <!-- Date Range Filter -->
           <div class="filter-group">
             <label class="filter-label">Date Range</label>

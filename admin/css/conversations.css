@@ -82,6 +82,12 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Ensure Clear All button is positioned properly */
+.filters-header #clear-all-filters {
+  margin-left: auto;
+  z-index: 1;
+}
+
 .filters-title {
   font-size: 1.25rem;
   font-weight: 600;

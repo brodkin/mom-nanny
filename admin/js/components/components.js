@@ -30,6 +30,7 @@ import DataTable from './table.js';
 import Chart from './chart.js';
 import Modal from './modal.js';
 import Notification from './notification.js';
+import Collapsible from './collapsible.js';
 
 /**
  * Component registry for dynamic component creation
@@ -39,7 +40,8 @@ const ComponentRegistry = {
   DataTable,
   Chart,
   Modal,
-  Notification
+  Notification,
+  Collapsible
 };
 
 /**
@@ -272,6 +274,7 @@ export {
   Chart,
   Modal,
   Notification,
+  Collapsible,
   ComponentRegistry,
   ComponentUtils,
   createComponent,
@@ -285,6 +288,7 @@ export default {
   Chart,
   Modal,
   Notification,
+  Collapsible,
   ComponentRegistry,
   ComponentUtils,
   createComponent,

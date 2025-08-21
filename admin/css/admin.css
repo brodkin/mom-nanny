@@ -1230,3 +1230,177 @@
     margin: 0 auto;
   }
 }
+
+/* ============================================================
+   Collapsible Component Styles
+   Global styles for collapsible/expandable sections
+   ============================================================ */
+
+.collapsible-section {
+  position: relative;
+  transition: margin 0.3s ease;
+}
+
+.collapsible-header {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.collapsible-header:focus {
+  outline: none;
+}
+
+.collapsible-header:hover .collapsible-toggle {
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.collapsible-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.collapsible-toggle:hover {
+  background-color: rgba(99, 102, 241, 0.1);
+  color: var(--color-primary);
+}
+
+.collapsible-toggle:focus {
+  outline: 1px solid rgba(99, 102, 241, 0.3);
+  outline-offset: 1px;
+}
+
+.collapsible-toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+/* Wrapper for heading and toggle to keep them together */
+.collapsible-heading-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Ensure headings in collapsible headers display inline with toggle */
+.collapsible-header h1,
+.collapsible-header h2,
+.collapsible-header h3,
+.collapsible-header h4,
+.collapsible-header h5,
+.collapsible-header h6 {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+}
+
+/* Collapsed state */
+.collapsible-section.collapsed .collapsible-toggle svg {
+  transform: rotate(-90deg);
+}
+
+.collapsible-section.collapsed .collapsible-content {
+  display: none;
+}
+
+/* Content animation classes */
+.collapsible-content {
+  overflow: hidden;
+}
+
+.collapsible-content.collapsible-smooth {
+  transition: height 0.3s ease-in-out;
+}
+
+.collapsible-content.collapsible-fast {
+  transition: height 0.15s ease-in-out;
+}
+
+/* When collapsed, add some visual indication */
+.collapsible-section.collapsed {
+  margin-bottom: 0;
+}
+
+.collapsible-section.collapsed .collapsible-header {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* For glass card collapsibles */
+.glass-card.collapsible-section.collapsed {
+  padding-bottom: var(--space-4);
+}
+
+.glass-card .collapsible-header {
+  margin-bottom: 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card.collapsed .collapsible-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.glass-card .collapsible-content {
+  padding-top: var(--space-4);
+}
+
+/* Nested collapsibles */
+.collapsible-section .collapsible-section {
+  margin-top: var(--space-3);
+}
+
+.collapsible-section .collapsible-section .collapsible-header {
+  font-size: 0.95em;
+}
+
+/* Accessibility improvements */
+.collapsible-header[aria-expanded="false"] + .collapsible-content {
+  visibility: hidden;
+}
+
+.collapsible-header[aria-expanded="true"] + .collapsible-content {
+  visibility: visible;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .collapsible-toggle {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .collapsible-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .glass-card .collapsible-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .collapsible-header {
+    padding-right: 2rem;
+  }
+  
+  .collapsible-toggle {
+    width: 28px;
+    height: 28px;
+  }
+}
