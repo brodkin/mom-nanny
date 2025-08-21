@@ -59,6 +59,7 @@ class ConversationsPage {
       this.bindEventListeners();
       this.checkUrlParameters();
       await this.loadTimezoneInfo();
+      await this.loadStats();
       await this.loadConversations();
     } catch (error) {
       console.error('Error initializing conversations page:', error);
@@ -91,6 +92,98 @@ class ConversationsPage {
     } catch (error) {
       console.error('Error loading timezone info:', error);
       // Fail silently - timezone display is not critical
+    }
+  }
+
+  /**
+   * Load and display statistics cards
+   */
+  async loadStats() {
+    try {
+      // Fetch overview data for conversations today
+      const overviewResponse = await fetch('/api/admin/dashboard/overview');
+      const overviewResult = await overviewResponse.json();
+      
+      // Fetch analytics data for average anxiety
+      const analyticsResponse = await fetch('/api/conversations/analytics?dateFrom=' + 
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      const analyticsResult = await analyticsResponse.json();
+      
+      if (overviewResult.success) {
+        // Update Conversations Today
+        const conversationsToday = document.getElementById('conversations-today');
+        if (conversationsToday) {
+          conversationsToday.textContent = overviewResult.data.conversations.today || '0';
+        }
+        
+        // Calculate engagement time today from conversations data
+        // We'll need to fetch today's conversations to sum their durations
+        // Use local date to match the server's date comparison
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
+        const todayConversationsResponse = await fetch(`/api/conversations?dateFrom=${today}&dateTo=${today}`);
+        const todayConversationsResult = await todayConversationsResponse.json();
+        
+        if (todayConversationsResult.success) {
+          // Calculate total engagement time
+          let totalDuration = 0;
+          if (todayConversationsResult.data && todayConversationsResult.data.conversations) {
+            todayConversationsResult.data.conversations.forEach(conv => {
+              if (conv.duration) {
+                totalDuration += conv.duration;
+              }
+            });
+          }
+          
+          // Format duration as human-readable
+          const engagementTime = document.getElementById('engagement-time');
+          if (engagementTime) {
+            engagementTime.textContent = this.formatDuration(totalDuration);
+          }
+        }
+      }
+      
+      if (analyticsResult.success) {
+        // Update Average Anxiety Level
+        const averageAnxiety = document.getElementById('average-anxiety');
+        if (averageAnxiety && analyticsResult.data) {
+          const anxietyLevel = analyticsResult.data.emotionalTrends?.averageAnxiety || 0;
+          // Format as percentage (0-100 scale)
+          const anxietyPercentage = Math.round(anxietyLevel * 100);
+          averageAnxiety.textContent = anxietyPercentage + '%';
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      // Set defaults on error
+      document.getElementById('conversations-today').textContent = '--';
+      document.getElementById('average-anxiety').textContent = '--';
+      document.getElementById('engagement-time').textContent = '--';
+    }
+  }
+  
+  /**
+   * Format duration in seconds to human-readable format
+   * @param {number} seconds - Duration in seconds
+   * @returns {string} Formatted duration (e.g., "2h 15m", "45m", "30s")
+   */
+  formatDuration(seconds) {
+    if (!seconds || seconds === 0) return '0m';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs > 0 ? secs + 's' : ''}`.trim();
+    } else {
+      return `${secs}s`;
     }
   }
 
@@ -373,6 +466,7 @@ class ConversationsPage {
    * Refresh data (same as load conversations)
    */
   refreshData() {
+    this.loadStats();
     this.loadConversations();
   }
 

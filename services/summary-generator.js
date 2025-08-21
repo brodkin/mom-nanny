@@ -33,9 +33,9 @@ class SummaryGenerator {
       // Mental State Indicators
       mentalStateIndicators: {
         moodProgression: analyzer.moodProgression,
-        anxietyLevel: this.calculateAnxietyLevel(analyzer.anxietyEvents),
+        anxietyLevel: this.calculateAnxietyLevel(analyzer.moodProgression),
         confusionIndicators: analyzer.confusionIndicators,
-        agitationLevel: this.calculateAgitationLevel(analyzer.agitationMarkers),
+        agitationLevel: this.calculateAgitationLevel(analyzer.moodProgression),
         positiveEngagement: this.assessPositiveEngagement(analyzer.engagementMetrics),
         overallMoodTrend: this.calculateMoodTrend(analyzer.moodProgression)
       },
@@ -154,12 +154,30 @@ class SummaryGenerator {
     return Math.round(sum / array.length * 100) / 100;
   }
   
-  calculateAnxietyLevel(events) {
-    return events ? events.length : 0;
+  calculateAnxietyLevel(moodProgression) {
+    if (!moodProgression || moodProgression.length === 0) return 0;
+    
+    const anxietyValues = moodProgression
+      .map(mood => mood.anxiety || 0)
+      .filter(val => val >= 0);
+    
+    if (anxietyValues.length === 0) return 0;
+    
+    const avgAnxiety = anxietyValues.reduce((sum, val) => sum + val, 0) / anxietyValues.length;
+    return Math.round(avgAnxiety * 100) / 100; // Round to 2 decimal places
   }
   
-  calculateAgitationLevel(markers) {
-    return markers ? markers.length : 0;
+  calculateAgitationLevel(moodProgression) {
+    if (!moodProgression || moodProgression.length === 0) return 0;
+    
+    const agitationValues = moodProgression
+      .map(mood => mood.agitation || 0)
+      .filter(val => val >= 0);
+    
+    if (agitationValues.length === 0) return 0;
+    
+    const avgAgitation = agitationValues.reduce((sum, val) => sum + val, 0) / agitationValues.length;
+    return Math.round(avgAgitation * 100) / 100; // Round to 2 decimal places
   }
   
   assessPositiveEngagement(metrics) {

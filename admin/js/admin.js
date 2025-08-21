@@ -563,7 +563,18 @@ class AdminDashboard {
   }
 
   animateNumber(element) {
+    // Skip animation if content is not numeric or is placeholder
+    const textContent = element.textContent.trim();
+    if (textContent === '--' || textContent === '') {
+      return;
+    }
+    
     const target = parseInt(element.textContent.replace(/[^0-9]/g, ''));
+    // Skip if target is NaN
+    if (isNaN(target)) {
+      return;
+    }
+    
     const duration = 2000;
     const start = Date.now();
     const startValue = 0;

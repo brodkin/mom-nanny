@@ -75,7 +75,16 @@ class DashboardDataService {
 
     try {
       const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      
+      // Get the configured timezone (defaults to America/Los_Angeles)
+      const timezone = process.env.TIMEZONE || 'America/Los_Angeles';
+      
+      // Calculate "today" in the configured timezone
+      // This creates a date at midnight in the specified timezone
+      const todayInTimezone = new Date(now.toLocaleString("en-US", { timeZone: timezone }));
+      todayInTimezone.setHours(0, 0, 0, 0);
+      const today = todayInTimezone.toISOString();
+      
       const weekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString();
       const monthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString();
 
@@ -334,7 +343,8 @@ class DashboardDataService {
    */
   async _getConversationStats(today, weekAgo, monthAgo) {
     const totalQuery = 'SELECT COUNT(*) as total FROM conversations';
-    const todayQuery = 'SELECT COUNT(*) as today FROM conversations WHERE created_at >= ?';
+    // Use DATE() to compare just the date portion in local time
+    const todayQuery = "SELECT COUNT(*) as today FROM conversations WHERE DATE(created_at) = DATE('now', 'localtime')";
     const weekQuery = 'SELECT COUNT(*) as week FROM conversations WHERE created_at >= ?';
     const monthQuery = 'SELECT COUNT(*) as month FROM conversations WHERE created_at >= ?';
     const avgDurationQuery = 'SELECT AVG(duration) as avg_duration FROM conversations WHERE duration IS NOT NULL';
@@ -348,7 +358,7 @@ class DashboardDataService {
 
     const [total, todayCount, weekCount, monthCount, avgDuration, successData] = await Promise.all([
       this.db.get(totalQuery),
-      this.db.get(todayQuery, [today]),
+      this.db.get(todayQuery), // No parameter needed for today query
       this.db.get(weekQuery, [weekAgo]),
       this.db.get(monthQuery, [monthAgo]),
       this.db.get(avgDurationQuery),
