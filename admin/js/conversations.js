@@ -730,6 +730,7 @@ class ConversationsPage {
 
   /**
    * Format emotional timeline section
+   * FIXED: Ensures only emotional metrics are displayed, never message content
    */
   formatEmotionalTimeline(timeline) {
     let html = `
@@ -754,23 +755,31 @@ class ConversationsPage {
     `;
 
     // Create simple timeline visualization
+    // FIXED: Explicitly filter out any non-metric properties to prevent 
+    // message content from being displayed even if erroneously included in data
     timeline.forEach((point, index) => {
       const timestamp = new Date(point.timestamp).toLocaleTimeString();
+      
+      // FIXED: Only extract and use emotional metrics, ignore any other properties
+      const anxietyLevel = Math.max(0, Math.min(10, Number(point.anxietyLevel) || 0));
+      const agitationLevel = Math.max(0, Math.min(10, Number(point.agitationLevel) || 0));
+      const positiveEngagement = Math.max(0, Math.min(10, Number(point.positiveEngagement) || 0));
+      
       html += `
         <div class="timeline-point">
           <div class="point-time">${timestamp}</div>
           <div class="point-metrics">
-            <div class="metric anxiety" title="Anxiety: ${point.anxietyLevel}/10">
-              <div class="metric-bar" style="width: ${(point.anxietyLevel / 10) * 100}%"></div>
-              <span class="metric-value">${point.anxietyLevel}</span>
+            <div class="metric anxiety" title="Anxiety: ${anxietyLevel}/10">
+              <div class="metric-bar" style="width: ${(anxietyLevel / 10) * 100}%"></div>
+              <span class="metric-value">${anxietyLevel}</span>
             </div>
-            <div class="metric agitation" title="Agitation: ${point.agitationLevel}/10">
-              <div class="metric-bar" style="width: ${(point.agitationLevel / 10) * 100}%"></div>
-              <span class="metric-value">${point.agitationLevel}</span>
+            <div class="metric agitation" title="Agitation: ${agitationLevel}/10">
+              <div class="metric-bar" style="width: ${(agitationLevel / 10) * 100}%"></div>
+              <span class="metric-value">${agitationLevel}</span>
             </div>
-            <div class="metric engagement" title="Positive Engagement: ${point.positiveEngagement}/10">
-              <div class="metric-bar" style="width: ${(point.positiveEngagement / 10) * 100}%"></div>
-              <span class="metric-value">${point.positiveEngagement}</span>
+            <div class="metric engagement" title="Positive Engagement: ${positiveEngagement}/10">
+              <div class="metric-bar" style="width: ${(positiveEngagement / 10) * 100}%"></div>
+              <span class="metric-value">${positiveEngagement}</span>
             </div>
           </div>
         </div>
