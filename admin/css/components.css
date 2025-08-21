@@ -223,35 +223,116 @@
   border: none;
 }
 
-/* Stat Cards */
+/* Stat Cards - Glass Morphism with Purple Glow */
 .stat-card {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-6);
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border-primary);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.05), 
+    0 10px 20px rgba(0, 0, 0, 0.1),
+    0 0 20px rgba(99, 102, 241, 0.15);
   transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  animation: subtle-glow 4s ease-in-out infinite alternate;
+}
+
+/* Subtle pulsing glow animation */
+@keyframes subtle-glow {
+  0% {
+    box-shadow: 
+      0 4px 6px rgba(0, 0, 0, 0.05), 
+      0 10px 20px rgba(0, 0, 0, 0.1),
+      0 0 20px rgba(99, 102, 241, 0.15);
+  }
+  100% {
+    box-shadow: 
+      0 4px 6px rgba(0, 0, 0, 0.05), 
+      0 10px 20px rgba(0, 0, 0, 0.1),
+      0 0 25px rgba(99, 102, 241, 0.25);
+  }
+}
+
+/* Add subtle gradient overlay */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 
+    0 8px 12px rgba(0, 0, 0, 0.1), 
+    0 16px 32px rgba(0, 0, 0, 0.15),
+    0 0 30px rgba(99, 102, 241, 0.3),
+    inset 0 0 20px rgba(99, 102, 241, 0.05);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .stat-card {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.1), 
+    0 10px 20px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+[data-theme="dark"] .stat-card:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 
+    0 8px 12px rgba(0, 0, 0, 0.15), 
+    0 16px 32px rgba(0, 0, 0, 0.25),
+    0 0 40px rgba(99, 102, 241, 0.4),
+    inset 0 0 20px rgba(99, 102, 241, 0.08);
 }
 
 .stat-icon {
   width: 48px;
   height: 48px;
   padding: var(--space-3);
-  background: var(--color-primary-light);
+  background: linear-gradient(135deg, 
+    rgba(99, 102, 241, 0.15) 0%, 
+    rgba(99, 102, 241, 0.05) 100%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-primary);
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Add shimmer effect on hover */
+.stat-card:hover .stat-icon {
+  background: linear-gradient(135deg, 
+    rgba(99, 102, 241, 0.2) 0%, 
+    rgba(99, 102, 241, 0.08) 100%);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: scale(1.05);
 }
 
 .stat-icon svg {
