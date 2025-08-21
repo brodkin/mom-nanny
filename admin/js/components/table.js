@@ -112,22 +112,19 @@ export class DataTable extends EventTarget {
         </table>
       </div>
       
-      ${this.options.exportable ? `
-        <div class="table-footer-actions" style="display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--border-color, #e5e7eb);">
-          <button class="btn btn-outline export-btn">Export CSV</button>
-        </div>
-      ` : ''}
-      
       ${this.options.pagination ? `
         <div class="table-pagination">
-          <div class="pagination-info">
-            <span class="current-range"></span>
-            <select class="page-size-select">
-              <option value="10">10 per page</option>
-              <option value="25">25 per page</option>
-              <option value="50">50 per page</option>
-              <option value="100">100 per page</option>
-            </select>
+          <div class="pagination-info" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="current-range"></span>
+              <select class="page-size-select">
+                <option value="10">10 per page</option>
+                <option value="25">25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
+              </select>
+            </div>
+            ${this.options.exportable ? '<button class="btn btn-outline export-btn">Export CSV</button>' : ''}
           </div>
           <div class="pagination-controls">
             <button class="page-btn" data-action="first">First</button>
