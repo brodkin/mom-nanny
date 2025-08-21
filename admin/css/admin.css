@@ -1239,6 +1239,7 @@
 .collapsible-section {
   position: relative;
   transition: margin 0.3s ease;
+  margin-bottom: var(--space-4);
 }
 
 .collapsible-header {
@@ -1329,11 +1330,6 @@
 
 .collapsible-content.collapsible-fast {
   transition: height 0.15s ease-in-out;
-}
-
-/* When collapsed, add some visual indication */
-.collapsible-section.collapsed {
-  margin-bottom: 0;
 }
 
 .collapsible-section.collapsed .collapsible-header {
