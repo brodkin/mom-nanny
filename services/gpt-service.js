@@ -102,10 +102,8 @@ class GptService extends EventEmitter {
   async completion(text, interactionCount, role = 'user', name = 'user', returnUsage = false) {
     this.updateUserContext(name, role, text);
 
-    // Track user utterances in conversation analyzer (CRITICAL for mental state detection)
-    if (this.conversationAnalyzer && role === 'user' && name === 'user') {
-      this.conversationAnalyzer.trackUserUtterance(text, new Date());
-    }
+    // NOTE: User utterances are tracked in chat-session.js or app.js
+    // to avoid duplicates. This was causing messages to be saved twice.
 
     // In test environment, return mock response to prevent OpenAI API calls
     // This allows testing of chat flow without making expensive API calls
