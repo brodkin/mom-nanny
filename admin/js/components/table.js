@@ -90,8 +90,7 @@ export class DataTable extends EventTarget {
           </div>
         ` : ''}
         <div class="table-actions">
-          ${this.options.exportable ? '<button class="export-btn">Export CSV</button>' : ''}
-          ${this.options.selectable ? '<button class="clear-selection-btn" style="display: none;">Clear Selection</button>' : ''}
+          ${this.options.selectable ? '<button class="btn btn-outline clear-selection-btn" style="display: none;">Clear Selection</button>' : ''}
         </div>
       </div>
       
@@ -112,6 +111,12 @@ export class DataTable extends EventTarget {
           </tbody>
         </table>
       </div>
+      
+      ${this.options.exportable ? `
+        <div class="table-footer-actions" style="display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--border-color, #e5e7eb);">
+          <button class="btn btn-outline export-btn">Export CSV</button>
+        </div>
+      ` : ''}
       
       ${this.options.pagination ? `
         <div class="table-pagination">
