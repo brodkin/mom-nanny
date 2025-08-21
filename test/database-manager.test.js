@@ -165,7 +165,139 @@ describe('DatabaseManager', () => {
       expect(tables.length).toBeGreaterThan(0);
       
       const version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(3); // Should be at latest version (3) after initial setup
+      expect(version).toBe(4); // Should be at latest version (4) after initial setup
+    });
+
+    test('should apply Migration 4 performance indexes', async () => {
+      const version = await dbManager.getCurrentMigrationVersion();
+      expect(version).toBeGreaterThanOrEqual(4);
+
+      // Verify that Migration 4 indexes exist
+      const indexes = await dbManager.all(`
+        SELECT name FROM sqlite_master 
+        WHERE type='index' AND sql NOT NULL
+        ORDER BY name
+      `);
+      
+      const indexNames = indexes.map(idx => idx.name);
+      
+      expect(indexNames).toContain('idx_conversations_created_at');
+      expect(indexNames).toContain('idx_summaries_created_at');
+      expect(indexNames).toContain('idx_analytics_created_at');
+      expect(indexNames).toContain('idx_messages_role_timestamp');
+      expect(indexNames).toContain('idx_memories_category_updated');
+    });
+
+    test('should skip Migration 4 if already applied', async () => {
+      // First, verify we're at version 4
+      let version = await dbManager.getCurrentMigrationVersion();
+      expect(version).toBe(4);
+
+      // Count current indexes
+      const initialIndexes = await dbManager.all(`
+        SELECT COUNT(*) as count FROM sqlite_master 
+        WHERE type='index' AND sql NOT NULL
+      `);
+
+      // Apply migrations again - should be idempotent
+      await dbManager.applyMigrations();
+      
+      // Version should still be 4
+      version = await dbManager.getCurrentMigrationVersion();
+      expect(version).toBe(4);
+
+      // Index count should be unchanged
+      const finalIndexes = await dbManager.all(`
+        SELECT COUNT(*) as count FROM sqlite_master 
+        WHERE type='index' AND sql NOT NULL
+      `);
+      
+      expect(finalIndexes[0].count).toBe(initialIndexes[0].count);
+    });
+  });
+
+  describe('schema verification', () => {
+    test('should verify complete schema is valid', async () => {
+      const verification = await dbManager.verifySchema();
+      
+      expect(verification).toHaveProperty('isValid');
+      expect(verification).toHaveProperty('missingTables');
+      expect(verification).toHaveProperty('missingIndexes');
+      
+      expect(verification.isValid).toBe(true);
+      expect(verification.missingTables).toEqual([]);
+      expect(verification.missingIndexes).toEqual([]);
+    });
+
+    test('should detect missing tables', async () => {
+      // Drop a table to test detection
+      await dbManager.exec('DROP TABLE IF EXISTS settings');
+      
+      const verification = await dbManager.verifySchema();
+      
+      expect(verification.isValid).toBe(false);
+      expect(verification.missingTables).toContain('settings');
+    });
+
+    test('should detect missing indexes', async () => {
+      // Drop an index to test detection
+      await dbManager.exec('DROP INDEX IF EXISTS idx_conversations_created_at');
+      
+      const verification = await dbManager.verifySchema();
+      
+      expect(verification.isValid).toBe(false);
+      expect(verification.missingIndexes).toContain('idx_conversations_created_at');
+    });
+
+    test('should handle verification on empty database', async () => {
+      // Create a fresh database manager with no migrations
+      const emptyDbPath = './test-empty.db';
+      
+      try {
+        // Create empty database with just the better-sqlite3 instance
+        const Database = require('better-sqlite3');
+        const emptyDb = new Database(emptyDbPath);
+        
+        // Create a bare-bones database manager instance to avoid constructor initialization
+        const emptyDbManager = Object.create(DatabaseManager.prototype);
+        emptyDbManager.dbPath = emptyDbPath;
+        emptyDbManager.db = emptyDb;
+        emptyDbManager.isInitialized = true; // Mark as initialized to skip waiting
+        emptyDbManager.isClosed = false;
+        emptyDbManager._initPromise = Promise.resolve(); // Fake resolved promise
+        
+        // Verify the database is truly empty (no tables)
+        const tables = await emptyDbManager.all(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'migrations'
+        `);
+        expect(tables).toEqual([]); // Should be empty
+        
+        const verification = await emptyDbManager.verifySchema();
+        
+        expect(verification.isValid).toBe(false);
+        expect(verification.missingTables.length).toBeGreaterThan(0);
+        expect(verification.missingIndexes.length).toBeGreaterThan(0);
+        
+        // Verify it detected all expected missing items
+        expect(verification.missingTables).toContain('conversations');
+        expect(verification.missingTables).toContain('summaries');
+        expect(verification.missingIndexes).toContain('idx_conversations_call_sid');
+        
+        await emptyDbManager.close();
+      } finally {
+        // Clean up
+        const fs = require('fs');
+        [emptyDbPath, `${emptyDbPath}-wal`, `${emptyDbPath}-shm`].forEach(file => {
+          if (fs.existsSync(file)) {
+            try {
+              fs.unlinkSync(file);
+            } catch (err) {
+              // Ignore cleanup errors
+            }
+          }
+        });
+      }
     });
   });
 

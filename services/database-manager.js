@@ -162,6 +162,12 @@ class DatabaseManager {
       this.applySettingsMigration();
       this.runSync('INSERT INTO migrations (version) VALUES (?)', [3]);
     }
+    
+    // Apply performance indexes migration if needed
+    if (currentVersion < 4) {
+      this.applyPerformanceIndexesMigration();
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [4]);
+    }
   }
 
   applyInitialSchema() {
@@ -258,6 +264,42 @@ class DatabaseManager {
       -- Indexes for performance
       CREATE INDEX idx_settings_key ON settings(key);
       CREATE INDEX idx_settings_updated ON settings(updated_at);
+    `;
+
+    this._execSync(migration);
+  }
+
+  /**
+   * Migration 4: Add performance indexes for common query patterns
+   * 
+   * This migration adds missing indexes that improve performance for:
+   * - Admin dashboard queries (conversations by created_at)
+   * - Recent summaries and pagination (summaries by created_at) 
+   * - Analytics reporting (analytics by created_at)
+   * - Conversation analysis (messages by role and timestamp)
+   * - Memory retrieval and management (memories by category and updated_at)
+   * 
+   * Uses IF NOT EXISTS to safely apply to existing databases.
+   */
+  applyPerformanceIndexesMigration() {
+    const migration = `
+      -- Migration 4: Add missing performance indexes
+      -- These indexes improve query performance for common access patterns
+      
+      -- Index for conversations by created_at (admin dashboard, recent conversations)
+      CREATE INDEX IF NOT EXISTS idx_conversations_created_at ON conversations(created_at);
+      
+      -- Index for summaries by created_at (recent summaries, pagination)
+      CREATE INDEX IF NOT EXISTS idx_summaries_created_at ON summaries(created_at);
+      
+      -- Index for analytics by created_at (analytics queries, reporting)
+      CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON analytics(created_at);
+      
+      -- Composite index for messages by role and timestamp (conversation analysis)
+      CREATE INDEX IF NOT EXISTS idx_messages_role_timestamp ON messages(role, timestamp);
+      
+      -- Composite index for memories by category and updated_at (memory retrieval and management)
+      CREATE INDEX IF NOT EXISTS idx_memories_category_updated ON memories(category, updated_at);
     `;
 
     this._execSync(migration);
@@ -446,6 +488,91 @@ class DatabaseManager {
 
   async getTableSchema(tableName) {
     return this.all(`PRAGMA table_info(${tableName})`);
+  }
+
+  /**
+   * Verify that all expected tables and indexes exist in the database
+   * @returns {Promise<{isValid: boolean, missingTables: string[], missingIndexes: string[]}>}
+   */
+  async verifySchema() {
+    await this.waitForInitialization();
+    this._ensureConnection();
+
+    const expectedTables = [
+      'conversations',
+      'summaries',
+      'messages',
+      'analytics',
+      'memories',
+      'settings'
+    ];
+
+    const expectedIndexes = [
+      // Initial schema indexes
+      'idx_conversations_call_sid',
+      'idx_conversations_start_time',
+      'idx_summaries_conversation_id',
+      'idx_messages_conversation_id',
+      'idx_messages_timestamp',
+      'idx_analytics_conversation_id',
+      // Memories migration indexes
+      'idx_memories_key',
+      'idx_memories_category',
+      'idx_memories_updated',
+      // Settings migration indexes
+      'idx_settings_key',
+      'idx_settings_updated',
+      // Performance migration indexes (Migration 4)
+      'idx_conversations_created_at',
+      'idx_summaries_created_at',
+      'idx_analytics_created_at',
+      'idx_messages_role_timestamp',
+      'idx_memories_category_updated'
+    ];
+
+    try {
+      // Check for existing tables
+      const existingTables = await this.all(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'migrations'
+        ORDER BY name
+      `);
+      const existingTableNames = existingTables.map(row => row.name);
+
+      // Check for existing indexes
+      const existingIndexes = await this.all(`
+        SELECT name FROM sqlite_master 
+        WHERE type='index' AND sql NOT NULL
+        ORDER BY name
+      `);
+      const existingIndexNames = existingIndexes.map(row => row.name);
+
+      // Find missing tables
+      const missingTables = expectedTables.filter(table => 
+        !existingTableNames.includes(table)
+      );
+
+      // Find missing indexes
+      const missingIndexes = expectedIndexes.filter(index => 
+        !existingIndexNames.includes(index)
+      );
+
+      const isValid = missingTables.length === 0 && missingIndexes.length === 0;
+
+      return {
+        isValid,
+        missingTables,
+        missingIndexes
+      };
+
+    } catch (error) {
+      console.error('Error verifying schema:', error);
+      return {
+        isValid: false,
+        missingTables: expectedTables,
+        missingIndexes: expectedIndexes
+      };
+    }
   }
 
   /**

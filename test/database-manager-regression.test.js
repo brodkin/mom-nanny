@@ -111,7 +111,7 @@ describe('DatabaseManager Regression Tests', () => {
   });
 
   describe('migration consistency', () => {
-    test('should always reach migration version 3', async () => {
+    test('should always reach migration version 4', async () => {
       // Test multiple database creations to ensure consistent migration
       for (let i = 0; i < 5; i++) {
         const testPath = `./test-migration-${i}.db`;
@@ -119,7 +119,7 @@ describe('DatabaseManager Regression Tests', () => {
         await db.waitForInitialization();
         
         const version = await db.getCurrentMigrationVersion();
-        expect(version).toBe(3);
+        expect(version).toBe(4);
         
         const tables = await db.getTables();
         expect(tables).toEqual(
@@ -159,7 +159,7 @@ describe('DatabaseManager Regression Tests', () => {
       // Verify all are properly initialized
       for (let i = 0; i < instances.length; i++) {
         const version = await instances[i].getCurrentMigrationVersion();
-        expect(version).toBe(3);
+        expect(version).toBe(4);
         
         const tables = await instances[i].getTables();
         expect(tables).toHaveLength(6); // conversations, summaries, messages, analytics, memories, settings
