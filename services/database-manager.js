@@ -81,9 +81,11 @@ class DatabaseManager {
       console.log(`[DatabaseManager] Direct instantiation detected (likely for testing) with path: ${dbPath}`);
     }
     
-    // Resolve path to absolute path if it's relative
-    // For constructor calls, resolve relative to project root (one level up from services/)
-    if (!path.isAbsolute(dbPath)) {
+    // Special handling for SQLite in-memory database
+    if (dbPath === ':memory:') {
+      this.dbPath = ':memory:';  // Keep as-is for SQLite to create in-memory database
+    } else if (!path.isAbsolute(dbPath)) {
+      // Resolve relative paths to absolute path relative to project root
       const projectRoot = path.resolve(__dirname, '..');
       this.dbPath = path.resolve(projectRoot, dbPath);
     } else {
