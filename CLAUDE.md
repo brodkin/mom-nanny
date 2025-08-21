@@ -192,7 +192,7 @@ Say goodbye naturally before triggering
 | `DEEPGRAM_API_KEY` | Yes | - | Deepgram API key for STT/TTS |
 | `VOICE_MODEL` | No | aura-asteria-en | Deepgram voice model |
 | `RECORDING_ENABLED` | No | false | Enable call recording |
-| `SQLITE_DB_PATH` | No | ./conversation-summaries.db | Database location |
+| `SQLITE_DB_PATH` | No | ./storage/conversation-summaries.db | Database location (relative to project root) |
 | `TIMEZONE` | No | America/Los_Angeles | IANA timezone for admin dashboard display |
 | `PORT` | No | 3000 | Server port |
 | `TWILIO_ACCOUNT_SID` | For testing | - | Twilio account SID |
@@ -368,10 +368,12 @@ const testDb = new DatabaseManager('./test.db');
 
 **Important Notes**:
 - The singleton instance is created on first `getInstance()` call
-- Path is determined by: `process.env.SQLITE_DB_PATH || './conversation-summaries.db'`
+- Path is determined by: `process.env.SQLITE_DB_PATH || './storage/conversation-summaries.db'`
+- Relative paths are resolved to absolute paths from project root
 - All services share the same database connection
 - Test files may use direct instantiation for isolation
 - Use `DatabaseManager.resetInstance()` only in test teardown
+- Minimum conversation duration: 2 seconds (shorter calls are not saved)
 
 ## Performance Considerations
 
