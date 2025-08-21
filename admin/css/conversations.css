@@ -1135,11 +1135,7 @@
 
 /* Modern Pagination Styles */
 .table-pagination {
-  padding: 20px;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-primary);
-  border-bottom-left-radius: var(--radius-md);
-  border-bottom-right-radius: var(--radius-md);
+  /* Removed background, borders, and padding for cleaner appearance */
 }
 
 .pagination-controls {
