@@ -148,7 +148,7 @@ class ConversationsPage {
         }
       ],
       pagination: true,
-      pageSize: 20,
+      pageSize: 10,
       searchable: false, // We handle global search separately
       exportable: true,
       className: 'conversations-table'
