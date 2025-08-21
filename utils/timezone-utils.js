@@ -15,18 +15,31 @@ class TimezoneUtils {
     try {
       const dateObj = typeof date === 'string' ? new Date(date) : date;
       
-      // Default formatting options
-      const defaultOptions = {
-        timeZone: timezone,
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      };
+      // Check if style options are being used
+      const hasStyleOptions = options.timeStyle || options.dateStyle;
       
-      const formatOptions = { ...defaultOptions, ...options };
+      let formatOptions;
+      if (hasStyleOptions) {
+        // If style options are provided, use only those with timezone
+        // Don't mix with individual component options
+        formatOptions = {
+          timeZone: timezone,
+          ...options
+        };
+      } else {
+        // Otherwise, use individual component options
+        const defaultOptions = {
+          timeZone: timezone,
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        };
+        formatOptions = { ...defaultOptions, ...options };
+      }
+      
       return new Intl.DateTimeFormat('en-US', formatOptions).format(dateObj);
     } catch (error) {
       console.error('Error formatting date in timezone:', error);
