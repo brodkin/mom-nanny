@@ -502,12 +502,27 @@ class ConversationsPage {
    * Format duration in seconds to friendly format
    */
   formatDuration(seconds) {
-    // Handle null, undefined, or invalid values
-    if (seconds === null || seconds === undefined || seconds <= 0) {
+    // Handle null and undefined
+    if (seconds === null || seconds === undefined) {
       return 'No duration';
     }
     
-    // Handle fractional seconds by rounding
+    // Handle exactly 0
+    if (seconds === 0) {
+      return '0 seconds';
+    }
+    
+    // Handle negative values
+    if (seconds < 0) {
+      return 'No duration';
+    }
+    
+    // Handle fractional seconds less than 1
+    if (seconds < 1) {
+      return '< 1 second';
+    }
+    
+    // Round to whole seconds for display
     const totalSeconds = Math.round(seconds);
     
     if (totalSeconds < 60) {

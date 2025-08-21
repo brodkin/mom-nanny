@@ -55,10 +55,10 @@ describe('DatabaseManager Regression Tests', () => {
       const singletonInstance = DatabaseManager.getInstance('./test-singleton-isolation.db');
       await singletonInstance.waitForInitialization();
       
-      // Verify they are different instances with different paths
+      // Verify they are different instances with different paths (now absolute)
       expect(directInstance).not.toBe(singletonInstance);
-      expect(directInstance.dbPath).toBe('./test-direct-isolation.db');
-      expect(singletonInstance.dbPath).toBe('./test-singleton-isolation.db');
+      expect(directInstance.dbPath).toBe(path.resolve(__dirname, '..', 'test-direct-isolation.db'));
+      expect(singletonInstance.dbPath).toBe(path.resolve(__dirname, '..', 'test-singleton-isolation.db'));
       
       // Verify both work independently
       const directResult = await directInstance.query('SELECT COUNT(*) as count FROM conversations');
@@ -92,10 +92,10 @@ describe('DatabaseManager Regression Tests', () => {
       const instance2 = DatabaseManager.getInstance('./test-reset2.db');
       await instance2.waitForInitialization();
       
-      // Verify they are different instances
+      // Verify they are different instances (paths now absolute)
       expect(instance1).not.toBe(instance2);
-      expect(instance1.dbPath).toBe('./test-reset.db');
-      expect(instance2.dbPath).toBe('./test-reset2.db');
+      expect(instance1.dbPath).toBe(path.resolve(__dirname, '..', 'test-reset.db'));
+      expect(instance2.dbPath).toBe(path.resolve(__dirname, '..', 'test-reset2.db'));
       
       // Clean up
       await instance2.close();

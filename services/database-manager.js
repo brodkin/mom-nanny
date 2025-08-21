@@ -31,7 +31,11 @@ class DatabaseManager {
    */
   static getInstance(dbPath = null) {
     // Use environment variable or provided path, defaulting to './conversation-summaries.db'
-    const targetPath = dbPath || process.env.SQLITE_DB_PATH || './conversation-summaries.db';
+    const relativePath = dbPath || process.env.SQLITE_DB_PATH || './conversation-summaries.db';
+    
+    // Resolve to absolute path relative to project root (one level up from services/)
+    const projectRoot = path.resolve(__dirname, '..');
+    const targetPath = path.resolve(projectRoot, relativePath);
     
     // If no instance exists, create one
     if (!DatabaseManager._instance) {
@@ -77,7 +81,14 @@ class DatabaseManager {
       console.log(`[DatabaseManager] Direct instantiation detected (likely for testing) with path: ${dbPath}`);
     }
     
-    this.dbPath = dbPath;
+    // Resolve path to absolute path if it's relative
+    // For constructor calls, resolve relative to project root (one level up from services/)
+    if (!path.isAbsolute(dbPath)) {
+      const projectRoot = path.resolve(__dirname, '..');
+      this.dbPath = path.resolve(projectRoot, dbPath);
+    } else {
+      this.dbPath = dbPath;
+    }
     this.db = null;
     this.isInitialized = false;
     this.isClosed = false;
