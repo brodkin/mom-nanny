@@ -31,7 +31,8 @@ class MemoryService {
       this.cacheLoaded = true;
       console.log(`Loaded ${memories.length} memories into cache`);
     } catch (error) {
-      console.error('Error loading memories into cache:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error loading memories into cache:', error.message);
       this.cacheLoaded = false;
     }
   }
@@ -87,7 +88,8 @@ class MemoryService {
       };
       
     } catch (error) {
-      console.error('Error saving memory:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error saving memory:', error.message);
       return {
         status: 'error',
         message: error.message
@@ -148,7 +150,8 @@ class MemoryService {
       return null;
       
     } catch (error) {
-      console.error('Error retrieving memory:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error retrieving memory:', error.message);
       return null;
     }
   }
@@ -171,7 +174,8 @@ class MemoryService {
       return memories.map(m => m.memory_key);
       
     } catch (error) {
-      console.error('Error getting memory keys:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error getting memory keys:', error.message);
       return [];
     }
   }
@@ -213,7 +217,8 @@ class MemoryService {
       };
       
     } catch (error) {
-      console.error('Error removing memory:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error removing memory:', error.message);
       return {
         status: 'error',
         message: error.message
@@ -246,7 +251,8 @@ class MemoryService {
       }));
       
     } catch (error) {
-      console.error('Error searching memories:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error searching memories:', error.message);
       return [];
     }
   }
@@ -273,7 +279,8 @@ class MemoryService {
       }));
       
     } catch (error) {
-      console.error('Error getting memories by category:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error getting memories by category:', error.message);
       return [];
     }
   }
@@ -313,7 +320,8 @@ class MemoryService {
       };
       
     } catch (error) {
-      console.error('Error getting memory statistics:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error getting memory statistics:', error.message);
       return {
         totalMemories: 0,
         categoriesUsed: 0,

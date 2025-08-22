@@ -130,7 +130,8 @@ class DatabaseManager {
       return Promise.resolve();
 
     } catch (error) {
-      console.error('Failed to initialize database:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain database query data with PHI
+      console.error('Failed to initialize database:', error.message);
       throw error;
     }
   }
@@ -169,6 +170,12 @@ class DatabaseManager {
     if (currentVersion < 4) {
       this.applyPerformanceIndexesMigration();
       this.runSync('INSERT INTO migrations (version) VALUES (?)', [4]);
+    }
+    
+    // Apply emotional metrics migration if needed
+    if (currentVersion < 5) {
+      this.applyEmotionalMetricsMigration();
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [5]);
     }
   }
 
@@ -302,6 +309,81 @@ class DatabaseManager {
       
       -- Composite index for memories by category and updated_at (memory retrieval and management)
       CREATE INDEX IF NOT EXISTS idx_memories_category_updated ON memories(category, updated_at);
+    `;
+
+    this._execSync(migration);
+  }
+
+  /**
+   * Migration 5: Add emotional_metrics table for tracking user emotional states
+   * 
+   * This migration creates the emotional_metrics table to store:
+   * - User emotional indicators (anxiety, agitation, confusion levels)
+   * - Care indicators (pain, medication, staff complaints)
+   * - Conversation sentiment analysis
+   * - Temporal patterns and triggers
+   * 
+   * This enables:
+   * - Mental state tracking over time
+   * - Care plan optimization
+   * - Early intervention for emotional distress
+   * - Family member awareness of emotional patterns
+   */
+  applyEmotionalMetricsMigration() {
+    const migration = `
+      -- Migration 5: Create emotional_metrics table
+      -- Tracks user emotional states and care indicators during conversations
+      
+      CREATE TABLE IF NOT EXISTS emotional_metrics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id INTEGER NOT NULL,
+        
+        -- Emotional state indicators (0-10 scale)
+        anxiety_level INTEGER CHECK (anxiety_level >= 0 AND anxiety_level <= 10),
+        agitation_level INTEGER CHECK (agitation_level >= 0 AND agitation_level <= 10),
+        confusion_level INTEGER CHECK (confusion_level >= 0 AND confusion_level <= 10),
+        comfort_level INTEGER CHECK (comfort_level >= 0 AND comfort_level <= 10),
+        
+        -- Care indicators (boolean flags)
+        mentions_pain BOOLEAN DEFAULT FALSE,
+        mentions_medication BOOLEAN DEFAULT FALSE,
+        mentions_staff_complaint BOOLEAN DEFAULT FALSE,
+        mentions_family BOOLEAN DEFAULT FALSE,
+        
+        -- Conversation quality metrics
+        interruption_count INTEGER DEFAULT 0,
+        repetition_count INTEGER DEFAULT 0,
+        topic_changes INTEGER DEFAULT 0,
+        
+        -- Sentiment analysis
+        overall_sentiment TEXT CHECK (overall_sentiment IN ('positive', 'neutral', 'negative')),
+        sentiment_score REAL CHECK (sentiment_score >= -1.0 AND sentiment_score <= 1.0),
+        
+        -- Temporal information
+        call_duration_seconds INTEGER,
+        time_of_day TEXT, -- 'morning', 'afternoon', 'evening', 'night'
+        day_of_week TEXT CHECK (day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')),
+        
+        -- Detection flags for specific concerns
+        emergency_indicators TEXT, -- JSON array of emergency keywords detected
+        memory_triggers TEXT, -- JSON array of memory-related topics mentioned
+        
+        -- Metadata
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+      );
+      
+      -- Indexes for efficient querying
+      CREATE INDEX IF NOT EXISTS idx_emotional_metrics_conversation_id ON emotional_metrics(conversation_id);
+      CREATE INDEX IF NOT EXISTS idx_emotional_metrics_created_at ON emotional_metrics(created_at);
+      CREATE INDEX IF NOT EXISTS idx_emotional_metrics_anxiety_level ON emotional_metrics(anxiety_level);
+      CREATE INDEX IF NOT EXISTS idx_emotional_metrics_overall_sentiment ON emotional_metrics(overall_sentiment);
+      CREATE INDEX IF NOT EXISTS idx_emotional_metrics_time_patterns ON emotional_metrics(time_of_day, day_of_week);
+      
+      -- Composite index for trend analysis
+      CREATE INDEX IF NOT EXISTS idx_emotional_metrics_trends ON emotional_metrics(created_at, anxiety_level, agitation_level, comfort_level);
     `;
 
     this._execSync(migration);
@@ -506,7 +588,8 @@ class DatabaseManager {
       'messages',
       'analytics',
       'memories',
-      'settings'
+      'settings',
+      'emotional_metrics'
     ];
 
     const expectedIndexes = [
@@ -529,7 +612,14 @@ class DatabaseManager {
       'idx_summaries_created_at',
       'idx_analytics_created_at',
       'idx_messages_role_timestamp',
-      'idx_memories_category_updated'
+      'idx_memories_category_updated',
+      // Emotional metrics migration indexes (Migration 5)
+      'idx_emotional_metrics_conversation_id',
+      'idx_emotional_metrics_created_at',
+      'idx_emotional_metrics_anxiety_level',
+      'idx_emotional_metrics_overall_sentiment',
+      'idx_emotional_metrics_time_patterns',
+      'idx_emotional_metrics_trends'
     ];
 
     try {
@@ -630,6 +720,122 @@ class DatabaseManager {
     }
     this.isClosed = true;
     return Promise.resolve();
+  }
+
+  /**
+   * Save emotional metrics for a conversation
+   * 
+   * @param {number} conversationId - The conversation ID to associate metrics with
+   * @param {Object} metrics - Emotional metrics data
+   * @param {number} [metrics.anxietyLevel] - Anxiety level (0-10)
+   * @param {number} [metrics.agitationLevel] - Agitation level (0-10)
+   * @param {number} [metrics.confusionLevel] - Confusion level (0-10)
+   * @param {number} [metrics.comfortLevel] - Comfort level (0-10)
+   * @param {boolean} [metrics.mentionsPain] - Whether pain was mentioned
+   * @param {boolean} [metrics.mentionsMedication] - Whether medication was mentioned
+   * @param {boolean} [metrics.mentionsStaffComplaint] - Whether staff complaints were mentioned
+   * @param {boolean} [metrics.mentionsFamily] - Whether family was mentioned
+   * @param {number} [metrics.interruptionCount] - Number of interruptions
+   * @param {number} [metrics.repetitionCount] - Number of repetitions
+   * @param {number} [metrics.topicChanges] - Number of topic changes
+   * @param {string} [metrics.overallSentiment] - Overall sentiment ('positive', 'neutral', 'negative')
+   * @param {number} [metrics.sentimentScore] - Sentiment score (-1.0 to 1.0)
+   * @param {number} [metrics.callDurationSeconds] - Call duration in seconds
+   * @param {string} [metrics.timeOfDay] - Time of day ('morning', 'afternoon', 'evening', 'night')
+   * @param {string} [metrics.dayOfWeek] - Day of week ('monday', 'tuesday', etc.)
+   * @param {Array} [metrics.emergencyIndicators] - Array of emergency keywords detected
+   * @param {Array} [metrics.memoryTriggers] - Array of memory-related topics mentioned
+   * @returns {Promise<{lastID: number, changes: number}>} Database operation result
+   */
+  async saveEmotionalMetrics(conversationId, metrics) {
+    await this.waitForInitialization();
+    this._ensureConnection();
+
+    // Validate required parameter
+    if (!conversationId) {
+      throw new Error('conversationId is required for saveEmotionalMetrics');
+    }
+
+    // Validate metric ranges
+    const validateRange = (value, name, min = 0, max = 10) => {
+      if (value !== undefined && value !== null && (value < min || value > max)) {
+        throw new Error(`${name} must be between ${min} and ${max}, got ${value}`);
+      }
+    };
+
+    validateRange(metrics.anxietyLevel, 'anxietyLevel');
+    validateRange(metrics.agitationLevel, 'agitationLevel');
+    validateRange(metrics.confusionLevel, 'confusionLevel');
+    validateRange(metrics.comfortLevel, 'comfortLevel');
+    validateRange(metrics.sentimentScore, 'sentimentScore', -1.0, 1.0);
+
+    // Validate sentiment values
+    if (metrics.overallSentiment && !['positive', 'neutral', 'negative'].includes(metrics.overallSentiment)) {
+      throw new Error('overallSentiment must be one of: positive, neutral, negative');
+    }
+
+    // Validate day of week
+    const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    if (metrics.dayOfWeek && !validDays.includes(metrics.dayOfWeek.toLowerCase())) {
+      throw new Error('dayOfWeek must be one of: ' + validDays.join(', '));
+    }
+
+    try {
+      const sql = `
+        INSERT INTO emotional_metrics (
+          conversation_id,
+          anxiety_level,
+          agitation_level,
+          confusion_level,
+          comfort_level,
+          mentions_pain,
+          mentions_medication,
+          mentions_staff_complaint,
+          mentions_family,
+          interruption_count,
+          repetition_count,
+          topic_changes,
+          overall_sentiment,
+          sentiment_score,
+          call_duration_seconds,
+          time_of_day,
+          day_of_week,
+          emergency_indicators,
+          memory_triggers
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const params = [
+        conversationId,
+        metrics.anxietyLevel || null,
+        metrics.agitationLevel || null,
+        metrics.confusionLevel || null,
+        metrics.comfortLevel || null,
+        metrics.mentionsPain ? 1 : 0,
+        metrics.mentionsMedication ? 1 : 0,
+        metrics.mentionsStaffComplaint ? 1 : 0,
+        metrics.mentionsFamily ? 1 : 0,
+        metrics.interruptionCount || 0,
+        metrics.repetitionCount || 0,
+        metrics.topicChanges || 0,
+        metrics.overallSentiment || null,
+        metrics.sentimentScore || null,
+        metrics.callDurationSeconds || null,
+        metrics.timeOfDay || null,
+        metrics.dayOfWeek ? metrics.dayOfWeek.toLowerCase() : null,
+        metrics.emergencyIndicators ? JSON.stringify(metrics.emergencyIndicators) : null,
+        metrics.memoryTriggers ? JSON.stringify(metrics.memoryTriggers) : null
+      ];
+
+      return await this.run(sql, params);
+
+    } catch (error) {
+      console.error('Error saving emotional metrics:', error.message);
+      console.error('ConversationId:', conversationId);
+      // HIPAA COMPLIANCE: Never log full metrics object as it contains PHI (patient emotional data)
+      console.error('Metrics validation failed - check input parameters');
+      throw error;
+    }
   }
 
   // Health check

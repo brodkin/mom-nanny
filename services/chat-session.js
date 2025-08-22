@@ -90,7 +90,8 @@ class ChatSession extends EventEmitter {
       console.log(chalk.green('✅ GPT service initialized with memory keys'));
       
     } catch (error) {
-      console.error('Error initializing services:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient data (PHI)
+      console.error('Error initializing services:', error.message);
       // Continue anyway - services will work without memory
     }
   }
@@ -790,7 +791,8 @@ class ChatSession extends EventEmitter {
         }
         
       } catch (error) {
-        console.error(chalk.red('❌ Error saving conversation summary or messages:'), error);
+        // HIPAA COMPLIANCE: Never log full error object as it may contain conversation data (PHI)
+        console.error(chalk.red('❌ Error saving conversation summary or messages:'), error.message);
       }
     }
     

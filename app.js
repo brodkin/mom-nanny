@@ -126,7 +126,8 @@ app.get('/api/admin/heartbeat', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Heartbeat check failed:', error);
+    // HIPAA COMPLIANCE: Never log full error object as it may contain database information
+    console.error('Heartbeat check failed:', error.message);
     res.json({
       success: true,
       data: {
@@ -185,7 +186,8 @@ app.ws('/connection', async (ws) => {
       await memoryService.initialize();
       console.log('Memory service initialized successfully'.cyan);
     } catch (error) {
-      console.error('Error initializing memory service:', error);
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error initializing memory service:', error.message);
       // Continue anyway - memory service will be unavailable but the call should still work
     }
     
@@ -215,7 +217,8 @@ app.ws('/connection', async (ws) => {
         gptService.initialize().then(() => {
           // Silent initialization - no console output that might leak to chat
         }).catch(error => {
-          console.error('Error initializing GPT service:', error);
+          // HIPAA COMPLIANCE: Never log full error object as it may contain patient data (PHI)
+          console.error('Error initializing GPT service:', error.message);
         });
 
         // Set RECORDING_ENABLED='true' in .env to record calls
@@ -363,10 +366,30 @@ app.ws('/connection', async (ws) => {
           if (messages.length > 0) {
             await storageService.saveMessages(numericId, messages);
             console.log(`${messages.length} conversation messages saved to database`.green);
+            
+            // Analyze emotional state asynchronously to prevent WebSocket cleanup delays
+            // HIPAA COMPLIANCE: Process emotional analysis in background without blocking
+            setImmediate(async () => {
+              try {
+                const emotionalMetrics = await gptService.analyzeEmotionalState(messages);
+                
+                // Get database manager instance for emotional metrics
+                const dbManager = DatabaseManager.getInstance();
+                await dbManager.waitForInitialization();
+                await dbManager.saveEmotionalMetrics(numericId, emotionalMetrics);
+                
+                console.log(`Emotional metrics saved for conversation ${conversationId}`.green);
+              } catch (error) {
+                // HIPAA COMPLIANCE: Never log emotional metrics data in error messages
+                console.error('Error analyzing or saving emotional state:', error.message);
+                console.error('Failed to process emotional analysis for conversation:', conversationId);
+              }
+            });
           }
           
         } catch (error) {
-          console.error('Error saving conversation summary or messages:', error);
+          // HIPAA COMPLIANCE: Never log full error object as it may contain conversation data (PHI)
+          console.error('Error saving conversation summary or messages:', error.message);
         }
       }
       
@@ -397,7 +420,8 @@ app.use('/api/admin/*', (req, res) => {
 
 // Error handling middleware for admin routes
 app.use('/admin', (error, req, res, next) => {
-  console.error('Admin route error:', error);
+  // HIPAA COMPLIANCE: Never log full error object as it may contain request data with PHI
+  console.error('Admin route error:', error.message);
   res.status(500).json({
     success: false,
     error: 'Internal server error',
@@ -406,7 +430,8 @@ app.use('/admin', (error, req, res, next) => {
 });
 
 app.use('/api/admin', (error, req, res, next) => {
-  console.error('Admin API error:', error);
+  // HIPAA COMPLIANCE: Never log full error object as it may contain request data with PHI
+  console.error('Admin API error:', error.message);
   res.status(500).json({
     success: false,
     error: 'Internal server error',
