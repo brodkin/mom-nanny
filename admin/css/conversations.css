@@ -1168,11 +1168,14 @@
 }
 
 /* SVG Icon Styling */
-.emotional-badge .emotional-icon {
+.emotional-badge .emotional-icon,
+.state-badge .emotional-icon {
   display: inline-block;
   width: 24px;
   height: 24px;
   flex-shrink: 0;
+  /* White icon for consistency */
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
 .emotional-badge.calm {
