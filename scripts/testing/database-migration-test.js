@@ -14,21 +14,21 @@
  * 4. Schema verification against expected structure
  * 5. Comparison with database-schema-backup.sql
  * 
- * Usage: node test-database-reset.js
+ * Usage: node scripts/testing/database-migration-test.js
  * Exit Codes: 0 = success, 1 = failure
  */
 
 const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
-const DatabaseManager = require('./services/database-manager');
+const DatabaseManager = require('../../services/database-manager');
 
 // Test configuration
 const TEST_CONFIG = {
     BACKUP_SUFFIX: '.bak',
     TEST_DB_DIR: './test-databases',
-    SCHEMA_BACKUP_FILE: './database-schema-backup.sql',
-    PRODUCTION_DB_PATH: './storage/conversation-summaries.db'
+    SCHEMA_BACKUP_FILE: '../../database-schema-backup.sql',
+    PRODUCTION_DB_PATH: '../../storage/conversation-summaries.db'
 };
 
 // Expected schema structure

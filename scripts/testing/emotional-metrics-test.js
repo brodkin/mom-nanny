@@ -11,7 +11,7 @@
  * 5. Schema verification
  */
 
-const DatabaseManager = require('./services/database-manager.js');
+const DatabaseManager = require('../../services/database-manager.js');
 
 async function testEmotionalMetrics() {
   console.log('🧪 Testing Emotional Metrics Database (Migration 5)');

@@ -10,7 +10,7 @@ process.env.NODE_ENV = 'test';
 // Set a dummy API key to prevent initialization errors
 process.env.OPENAI_API_KEY = 'test-key-for-mock';
 
-const { GptService } = require('./services/gpt-service');
+const { GptService } = require('../../services/gpt-service');
 
 async function testEmotionalAnalysis() {
   console.log('🧪 Testing Emotional Analysis Implementation...\n');
