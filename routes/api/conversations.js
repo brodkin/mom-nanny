@@ -212,9 +212,9 @@ router.get('/', async (req, res) => {
     const enrichedConversations = conversations.map(conv => {
       let summary = null;
       let emotionalState = 'unknown';
-      let anxietyLevel = 0;
-      let confusionLevel = 0;
-      let agitationLevel = 0;
+      let anxietyLevel = null;  // Keep as null for unknown states
+      let confusionLevel = null;
+      let agitationLevel = null;
       let careIndicators = {
         medicationConcerns: [],
         painLevel: 0,
@@ -244,7 +244,7 @@ router.get('/', async (req, res) => {
           summary = JSON.parse(conv.summary_text);
           if (summary.mentalStateIndicators) {
             emotionalState = summary.mentalStateIndicators.overallMoodTrend || 'unknown';
-            anxietyLevel = summary.mentalStateIndicators.anxietyLevel || 0;
+            anxietyLevel = summary.mentalStateIndicators.anxietyLevel || null;
           }
           if (summary.careIndicators) {
             careIndicators = {

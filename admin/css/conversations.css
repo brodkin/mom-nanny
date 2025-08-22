@@ -1167,29 +1167,77 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* SVG Icon Styling */
+.emotional-badge .emotional-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
 .emotional-badge.calm {
-  background: linear-gradient(135deg, #10B981, #34D399);
+  --badge-color: #10b981;
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--badge-color) 90%, white 10%),
+    var(--badge-color)
+  );
   color: white;
+}
+.emotional-badge.calm .emotional-icon {
+  /* White icon for consistency */
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
 .emotional-badge.mild {
-  background: linear-gradient(135deg, #F59E0B, #FCD34D);
-  color: #7C2D12;
+  --badge-color: #f59e0b;
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--badge-color) 90%, white 10%),
+    var(--badge-color)
+  );
+  color: white;
+}
+.emotional-badge.mild .emotional-icon {
+  /* White icon for consistency */
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
 .emotional-badge.moderate {
-  background: linear-gradient(135deg, #FB923C, #FED7AA);
-  color: #7C2D12;
+  --badge-color: #ea580c;
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--badge-color) 90%, white 10%),
+    var(--badge-color)
+  );
+  color: white;
+}
+.emotional-badge.moderate .emotional-icon {
+  /* White icon for consistency */
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
 .emotional-badge.high {
-  background: linear-gradient(135deg, #EF4444, #FCA5A5);
+  --badge-color: #ef4444;
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--badge-color) 90%, white 10%),
+    var(--badge-color)
+  );
   color: white;
+}
+.emotional-badge.high .emotional-icon {
+  /* White icon for consistency */
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
 .emotional-badge.unknown {
-  background: linear-gradient(135deg, #9CA3AF, #D1D5DB);
-  color: #374151;
+  --badge-color: #6b7280;
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--badge-color) 90%, white 10%),
+    var(--badge-color)
+  );
+  color: white;
+}
+.emotional-badge.unknown .emotional-icon {
+  /* White icon for consistency */
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
 /* Modern Pagination Styles */

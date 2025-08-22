@@ -31,11 +31,11 @@ class ConversationsPage {
     };
     
     this.emotionalStateColors = {
-      calm: { class: 'calm', color: '#10b981', label: '😌 Calm', emoji: '😌' },
-      mild_anxiety: { class: 'mild', color: '#f59e0b', label: '😟 Mild Anxiety', emoji: '😟' },
-      moderate_anxiety: { class: 'moderate', color: '#ea580c', label: '😰 Moderate Anxiety', emoji: '😰' },
-      high_anxiety: { class: 'high', color: '#ef4444', label: '😨 High Anxiety', emoji: '😨' },
-      unknown: { class: 'unknown', color: '#6b7280', label: '❓ Unknown', emoji: '❓' }
+      calm: { class: 'calm', color: '#10b981', label: 'Calm', icon: 'calm.svg' },
+      mild_anxiety: { class: 'mild', color: '#f59e0b', label: 'Mild Anxiety', icon: 'mild.svg' },
+      moderate_anxiety: { class: 'moderate', color: '#ea580c', label: 'Moderate Anxiety', icon: 'moderate.svg' },
+      high_anxiety: { class: 'high', color: '#ef4444', label: 'High Anxiety', icon: 'high.svg' },
+      unknown: { class: 'unknown', color: '#6b7280', label: 'Too Short', icon: 'brief.svg' }
     };
 
     // Bind methods to preserve context
@@ -647,28 +647,47 @@ class ConversationsPage {
   /**
    * Format emotional state with enhanced colored badge including emojis
    */
-  formatEmotionalState(state, anxietyLevel = 0, confusionLevel = 0, agitationLevel = 0) {
+  formatEmotionalState(state, anxietyLevel, confusionLevel, agitationLevel) {
     const stateInfo = this.emotionalStateColors[state] || this.emotionalStateColors.unknown;
+    
+    // Check if this is truly an unknown state (no metrics available)
+    const isUnknownState = state === 'unknown' || anxietyLevel === null || anxietyLevel === undefined;
+    
     // Round all levels to whole numbers
-    const anxiety = Math.round(Math.max(0, Math.min(10, anxietyLevel)));
-    const confusion = Math.round(Math.max(0, Math.min(10, confusionLevel)));
-    const agitation = Math.round(Math.max(0, Math.min(10, agitationLevel)));
+    const anxiety = Math.round(Math.max(0, Math.min(10, anxietyLevel || 0)));
+    const confusion = Math.round(Math.max(0, Math.min(10, confusionLevel || 0)));
+    const agitation = Math.round(Math.max(0, Math.min(10, agitationLevel || 0)));
     
     // Build tooltip with all metrics if available
-    let tooltipText = `Anxiety: ${anxiety}/10`;
-    if (confusionLevel !== undefined && confusionLevel !== null) {
-      tooltipText += `\nConfusion: ${confusion}/10`;
+    let tooltipText;
+    if (isUnknownState) {
+      tooltipText = 'Conversation too brief for emotional analysis (under 30 seconds)';
+    } else {
+      tooltipText = `Anxiety: ${anxiety}/10`;
+      if (confusionLevel !== undefined && confusionLevel !== null) {
+        tooltipText += `\nConfusion: ${confusion}/10`;
+      }
+      if (agitationLevel !== undefined && agitationLevel !== null) {
+        tooltipText += `\nAgitation: ${agitation}/10`;
+      }
     }
-    if (agitationLevel !== undefined && agitationLevel !== null) {
-      tooltipText += `\nAgitation: ${agitation}/10`;
-    }
+    
+    const iconHtml = stateInfo.icon 
+      ? `<img src="/admin/assets/icons/emotional-states/${stateInfo.icon}" 
+              class="emotional-icon" 
+              alt="${stateInfo.label}" 
+              width="24" 
+              height="24">`
+      : '<span class="emotional-icon">❓</span>';
+    
+    const anxietyDisplay = isUnknownState ? '<30s' : `${anxiety}/10`;
     
     return `
       <span class="emotional-badge ${stateInfo.class}" 
             title="${tooltipText}">
-        ${stateInfo.emoji}
-        <span class="label">${stateInfo.label.replace(/^.\s/, '')}</span>
-        <span class="anxiety-level">${anxiety}/10</span>
+        ${iconHtml}
+        <span class="label">${stateInfo.label}</span>
+        <span class="anxiety-level">${anxietyDisplay}</span>
       </span>
     `;
   }
