@@ -371,7 +371,14 @@ app.ws('/connection', async (ws) => {
             // HIPAA COMPLIANCE: Process emotional analysis in background without blocking
             setImmediate(async () => {
               try {
-                const emotionalMetrics = await gptService.analyzeEmotionalState(messages);
+                // Convert messages to the format expected by analyzeEmotionalState
+                const interactions = messages.map(msg => ({
+                  type: msg.role === 'user' ? 'user_utterance' : 'assistant_response',
+                  text: msg.content,
+                  timestamp: msg.timestamp
+                }));
+                
+                const emotionalMetrics = await gptService.analyzeEmotionalState(interactions);
                 
                 // Get database manager instance for emotional metrics
                 const dbManager = DatabaseManager.getInstance();

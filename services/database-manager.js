@@ -756,18 +756,40 @@ class DatabaseManager {
       throw new Error('conversationId is required for saveEmotionalMetrics');
     }
 
-    // Validate metric ranges
+    // Convert from GPT's 0-100 scale to database's 0-10 scale
+    const scaleDown = (value) => {
+      if (value === undefined || value === null) return null;
+      return Math.round(value / 10); // Convert 0-100 to 0-10
+    };
+
+    // Convert mood from -100 to +100 to -1.0 to +1.0
+    const scaleMood = (value) => {
+      if (value === undefined || value === null) return null;
+      return value / 100; // Convert -100 to +100 to -1.0 to +1.0
+    };
+
+    // Apply scale conversions
+    const scaledMetrics = {
+      ...metrics,
+      anxietyLevel: scaleDown(metrics.anxietyLevel),
+      agitationLevel: scaleDown(metrics.agitationLevel),
+      confusionLevel: scaleDown(metrics.confusionLevel),
+      comfortLevel: scaleDown(metrics.comfortLevel),
+      sentimentScore: scaleMood(metrics.overallMood)
+    };
+
+    // Validate metric ranges after scaling
     const validateRange = (value, name, min = 0, max = 10) => {
       if (value !== undefined && value !== null && (value < min || value > max)) {
         throw new Error(`${name} must be between ${min} and ${max}, got ${value}`);
       }
     };
 
-    validateRange(metrics.anxietyLevel, 'anxietyLevel');
-    validateRange(metrics.agitationLevel, 'agitationLevel');
-    validateRange(metrics.confusionLevel, 'confusionLevel');
-    validateRange(metrics.comfortLevel, 'comfortLevel');
-    validateRange(metrics.sentimentScore, 'sentimentScore', -1.0, 1.0);
+    validateRange(scaledMetrics.anxietyLevel, 'anxietyLevel');
+    validateRange(scaledMetrics.agitationLevel, 'agitationLevel');
+    validateRange(scaledMetrics.confusionLevel, 'confusionLevel');
+    validateRange(scaledMetrics.comfortLevel, 'comfortLevel');
+    validateRange(scaledMetrics.sentimentScore, 'sentimentScore', -1.0, 1.0);
 
     // Validate sentiment values
     if (metrics.overallSentiment && !['positive', 'neutral', 'negative'].includes(metrics.overallSentiment)) {
@@ -807,10 +829,10 @@ class DatabaseManager {
 
       const params = [
         conversationId,
-        metrics.anxietyLevel || null,
-        metrics.agitationLevel || null,
-        metrics.confusionLevel || null,
-        metrics.comfortLevel || null,
+        scaledMetrics.anxietyLevel || null,
+        scaledMetrics.agitationLevel || null,
+        scaledMetrics.confusionLevel || null,
+        scaledMetrics.comfortLevel || null,
         metrics.mentionsPain ? 1 : 0,
         metrics.mentionsMedication ? 1 : 0,
         metrics.mentionsStaffComplaint ? 1 : 0,
@@ -819,7 +841,7 @@ class DatabaseManager {
         metrics.repetitionCount || 0,
         metrics.topicChanges || 0,
         metrics.overallSentiment || null,
-        metrics.sentimentScore || null,
+        scaledMetrics.sentimentScore || null,
         metrics.callDurationSeconds || null,
         metrics.timeOfDay || null,
         metrics.dayOfWeek ? metrics.dayOfWeek.toLowerCase() : null,

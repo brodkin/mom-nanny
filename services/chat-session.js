@@ -787,6 +787,51 @@ class ChatSession extends EventEmitter {
           if (messages.length > 0) {
             await this.storageService.saveMessages(numericId, messages);
             console.log(chalk.green(`💬 ${messages.length} conversation messages saved to database`));
+            
+            // Analyze emotional state asynchronously
+            // Only analyze if conversation is meaningful (>30 seconds)
+            const duration = summary.callMetadata ? summary.callMetadata.duration : 0;
+            console.log(chalk.gray(`📊 Conversation duration: ${duration} seconds`));
+            
+            if (duration > 30) {
+              console.log(chalk.cyan('🧠 Analyzing emotional state (duration > 30s)...'));
+              
+              // Create a promise that will complete when emotional analysis is done
+              // For chat sessions, we need to wait for this to complete before process exits
+              const emotionalAnalysisPromise = new Promise((resolve) => {
+                // Use setImmediate to allow other operations to complete first
+                setImmediate(async () => {
+                  try {
+                    // Convert messages to the format expected by analyzeEmotionalState
+                    // The GPT service expects interactions with 'type' field, not 'role'
+                    const interactions = messages.map(msg => ({
+                      type: msg.role === 'user' ? 'user_utterance' : 'assistant_response',
+                      text: msg.content,
+                      timestamp: msg.timestamp
+                    }));
+                    
+                    const emotionalMetrics = await this.gptService.analyzeEmotionalState(interactions);
+                    console.log(chalk.cyan('📈 Emotional metrics generated:'));
+                    console.log(chalk.cyan('   Raw response:', JSON.stringify(emotionalMetrics, null, 2)));
+                    
+                    // Save emotional metrics to database
+                    await this.databaseManager.saveEmotionalMetrics(numericId, emotionalMetrics);
+                    console.log(chalk.green(`✅ Emotional metrics saved for conversation ${conversationId}`));
+                  } catch (error) {
+                    // HIPAA COMPLIANCE: Never log emotional metrics data in error messages
+                    console.error(chalk.red('❌ Error analyzing or saving emotional state:'), error.message);
+                    console.error(chalk.red('   Error details:'), error.stack?.split('\n')[0]);
+                  }
+                  resolve();
+                });
+              });
+              
+              // Wait for emotional analysis to complete before ending session
+              // This ensures the process doesn't exit before the analysis finishes
+              await emotionalAnalysisPromise;
+            } else {
+              console.log(chalk.gray(`⏩ Skipping emotional analysis for short conversation (${duration}s < 30s threshold)`));
+            }
           }
         }
         
