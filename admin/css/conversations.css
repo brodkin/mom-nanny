@@ -103,8 +103,8 @@
 }
 
 .filters-grid {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
   align-items: start;
 }
@@ -113,6 +113,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 200px;
+  flex: 0 0 auto;
+}
+
+/* Special handling for emotional state filter group to allow it more space */
+.filter-group-emotional {
+  min-width: 300px;
+  flex: 1 1 auto;
 }
 
 .filter-label {
@@ -196,9 +204,8 @@
 /* Emotional State Filters */
 .emotional-state-filters {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: var(--space-1);
-  overflow-x: auto;
 }
 
 .checkbox-label {
@@ -1078,8 +1085,12 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .filters-grid {
-    grid-template-columns: 1fr 1fr;
+  .filter-group {
+    min-width: 180px;
+  }
+  
+  .filter-group-emotional {
+    min-width: 250px;
   }
   
   .conversation-meta {
@@ -1098,8 +1109,14 @@
     gap: var(--space-3);
   }
   
-  .filters-grid {
-    grid-template-columns: 1fr;
+  .filter-group {
+    min-width: 150px;
+    flex: 1 1 auto;
+  }
+  
+  .filter-group-emotional {
+    min-width: 200px;
+    flex: 1 1 100%;
   }
   
   .emotional-state-filters {
