@@ -1,291 +1,328 @@
-# Call GPT: Generative AI Phone Calling
+# Compassionate AI Companion System
 
-Wouldn't it be neat if you could build an app that allowed you to chat with ChatGPT on the phone?
+A specialized AI companion designed to provide emotional support and comfort to elderly individuals with dementia and anxiety through phone calls. This system prioritizes patience, validation, and emotional well-being over technical efficiency.
 
-Twilio gives you a superpower called [Media Streams](https://twilio.com/media-streams). Media Streams provides a Websocket connection to both sides of a phone call. You can get audio streamed to you, process it, and send audio back.
+**Mission**: Provide compassionate AI companionship when family members cannot be immediately available, serving as a bridge during distressing moments and offering consistent, gentle support.
 
-This app serves as a demo exploring two services:
-- [Deepgram](https://deepgram.com/) for Speech to Text and Text to Speech
-- [OpenAI](https://openai.com) for GPT prompt completion
+This application combines several technologies to create a voice-first AI system:
+- [Twilio Media Streams](https://twilio.com/media-streams) for real-time phone call handling
+- [Deepgram](https://deepgram.com/) for Speech-to-Text and Text-to-Speech
+- [OpenAI GPT](https://openai.com) for compassionate conversation AI
+- SQLite database for persistent memory and conversation tracking
 
-These service combine to create a voice application that is remarkably better at transcribing, understanding, and speaking than traditional IVR systems.
+## Core Features
 
-Features:
-- 🏁 Returns responses with low latency, typically 1 second by utilizing streaming.
-- ❗️ Allows the user to interrupt the GPT assistant and ask a different question.
-- 📔 Maintains chat history with GPT.
-- 🛠️ Allows the GPT to call external tools.
+- 💝 **Compassionate Responses**: Every interaction prioritizes emotional comfort and dignity
+- 🧠 **Persistent Memory**: Remembers important details about the user across calls
+- 🗣️ **Real-time Conversation**: Low-latency responses with natural interruption handling
+- 📞 **Emergency Assessment**: Intelligent evaluation of urgent situations vs. anxiety episodes
+- 📰 **Engagement Tools**: News headlines and topics to redirect anxious conversations
+- 📊 **Emotional Analysis**: GPT-powered tracking of anxiety, confusion, and mood patterns
+- 🏥 **Admin Dashboard**: Caregiver interface for monitoring conversation patterns and emotional trends
 
-## Setting up for Development
+## Quick Start
 
 ### Prerequisites
-Sign up for the following services and get an API key for each:
-- [Deepgram](https://console.deepgram.com/signup)
-- [OpenAI](https://platform.openai.com/signup)
+- Node.js 18+ installed
+- API keys from:
+  - [OpenAI](https://platform.openai.com/signup) for GPT conversation AI
+  - [Deepgram](https://console.deepgram.com/signup) for speech processing
+  - [Twilio](https://twilio.com) for phone call integration (for production use)
+  - [ngrok](https://ngrok.com) for local development with phone calls
 
-If you're hosting the app locally, we also recommend using a tunneling service like [ngrok](https://ngrok.com) so that Twilio can forward audio to your app.
-
-### 1. Start Ngrok
-Start an [ngrok](https://ngrok.com) tunnel for port `3000`:
-
-```bash
-ngrok http 3000
-```
-Ngrok will give you a unique URL, like `abc123.ngrok.io`. Copy the URL without http:// or https://. You'll need this URL in the next step.
-
-### 2. Configure Environment Variables
-Copy `.env.example` to `.env` and configure the following environment variables:
+### 1. Installation
 
 ```bash
-# Your ngrok or server URL
-# E.g. 123.ngrok.io or myserver.fly.dev (exlude https://)
-SERVER="yourserverdomain.com"
-
-# Service API Keys
-OPENAI_API_KEY="sk-XXXXXX"
-DEEPGRAM_API_KEY="YOUR-DEEPGRAM-API-KEY"
-
-# Configure your Twilio credentials if you want
-# to make test calls using '$ npm test'.
-TWILIO_ACCOUNT_SID="YOUR-ACCOUNT-SID"
-TWILIO_AUTH_TOKEN="YOUR-AUTH-TOKEN"
-FROM_NUMBER='+12223334444'
-TO_NUMBER='+13334445555'
-```
-
-### 3. Install Dependencies with NPM
-Install the necessary packages:
-
-```bash
+# Clone and install dependencies
+git clone [repository-url]
+cd mom-nanny
 npm install
 ```
 
-### 4. Start Your Server in Development Mode
-Run the following command:
+### 2. Environment Setup
+Copy `.env.example` to `.env` and configure:
+
 ```bash
+# Required for all modes
+OPENAI_API_KEY="sk-your-openai-key"
+DEEPGRAM_API_KEY="your-deepgram-key"
+
+# Required for phone integration
+SERVER="your-ngrok-url.ngrok.io"  # No https://
+TWILIO_ACCOUNT_SID="your-account-sid"
+TWILIO_AUTH_TOKEN="your-auth-token"
+
+# Optional configuration
+VOICE_MODEL="aura-asteria-en"  # Deepgram voice model
+RECORDING_ENABLED="false"      # Enable call recording
+TIMEZONE="America/Los_Angeles" # Admin dashboard timezone
+SQLITE_DB_PATH="./storage/conversation-summaries.db"
+
+# Testing phone numbers
+FROM_NUMBER="+15551234567"     # Your Twilio number
+YOUR_NUMBER="+15559876543"     # Your personal phone
+```
+
+### 3. Development Modes
+
+#### Text Chat (Recommended for Development)
+```bash
+npm run chat
+```
+Interactive console interface with full GPT integration, memory persistence, and debugging commands:
+- `/help` - Show available commands
+- `/memories` - View stored memories
+- `/context` - Show conversation context
+- `/stats` - Display token usage
+- `/debug` - Toggle verbose logging
+
+#### Phone Call Testing
+```bash
+# Start the server
 npm run dev
+
+# In another terminal, start ngrok
+ngrok http 3000
+
+# Update your Twilio webhook URL to: https://your-ngrok-url.ngrok.io/incoming
+
+# Test with automated calls
+npm run inbound   # Simulated incoming call
+npm run outbound  # Calls YOUR_NUMBER
 ```
-This will start your app using `nodemon` so that any changes to your code automatically refreshes and restarts the server.
 
-### 5. Configure an Incoming Phone Number
+### 4. Admin Dashboard
+Once running, visit `http://localhost:3000/admin` to view:
+- Recent conversation summaries
+- Emotional analysis trends
+- System statistics and health metrics
 
-Connect a phone number using the [Twilio Console](https://console.twilio.com/us1/develop/phone-numbers/manage/incoming).
+## How It Works
 
-You can also use the Twilio CLI:
+The system coordinates data flow between multiple services to create seamless, compassionate conversations:
 
-```bash
-twilio phone-numbers:update +1[your-twilio-number] --voice-url=https://your-server.ngrok.io/incoming
+### Phone Call Flow
 ```
-This configuration tells Twilio to send incoming call audio to your app when someone calls your number. The app responds to the incoming call webhook with a [Stream](https://www.twilio.com/docs/voice/twiml/stream) TwiML verb that will connect an audio media stream to your websocket server.
+1. Twilio receives incoming call → WebSocket connection established
+2. Audio streams to Deepgram → Real-time speech-to-text
+3. GPT processes text → Generates compassionate response with memory context
+4. Response chunks sent to Deepgram → Text-to-speech conversion
+5. Audio streams back to caller → Natural conversation flow
+```
 
-## Application Workflow
-CallGPT coordinates the data flow between multiple different services including Deepgram, OpenAI, and Twilio Media Streams:
-![Call GPT Flow](https://github.com/twilio-labs/call-gpt/assets/1418949/0b7fcc0b-d5e5-4527-bc4c-2ffb8931139c)
+### Key Technical Features
+- **Interruption Handling**: Users can interrupt the AI naturally, just like human conversation
+- **Response Chunking**: Uses bullet points (•) to break responses into quick audio chunks
+- **Memory Integration**: Persistent SQLite database stores personal details across calls
+- **Emotional Analysis**: GPT-4 analyzes conversation tone and emotional patterns
+- **Emergency Detection**: Intelligent assessment of genuine emergencies vs. anxiety episodes
 
+## Conversation Design Philosophy
 
-## Modifying the ChatGPT Context & Prompt
-Within `gpt-service.js` you'll find the settings for the GPT's initial context and prompt. For example:
+The AI companion follows specific conversational principles:
 
+### Core Personality Traits
+- **Infinitely Patient**: Never shows frustration with repetition or confusion
+- **Validating**: Acknowledges feelings rather than correcting misunderstandings
+- **Gentle**: Uses soft, comforting language appropriate for elderly users
+- **Consistent**: Maintains the same warm personality across all interactions
+
+### Response Patterns
 ```javascript
-this.userContext = [
-  { "role": "system", "content": "You are an outbound sales representative selling Apple Airpods. You have a youthful and cheery personality. Keep your responses as brief as possible but make every attempt to keep the caller on the phone without being rude. Don't ask more than 1 question at a time. Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous. Speak out all prices to include the currency. Please help them decide between the airpods, airpods pro and airpods max by asking questions like 'Do you prefer headphones that go in your ear or over the ear?'. If they are trying to choose between the airpods and airpods pro try asking them if they need noise canceling. Once you know which model they would like ask them how many they would like to purchase and try to get them to place an order. Add a '•' symbol every 5 to 10 words at natural pauses where your response can be split for text to speech." },
-  { "role": "assistant", "content": "Hello! I understand you're looking for a pair of AirPods, is that correct?" },
-],
+// Example compassionate response structure
+"Hello dear! • How are you feeling today? • I'm so glad you called."
 ```
-### About the `system` Attribute
-The `system` attribute is background information for the GPT. As you build your use-case, play around with modifying the context. A good starting point would be to imagine training a new employee on their first day and giving them the basics of how to help a customer.
 
-There are some context prompts that will likely be helpful to include by default. For example:
+The `•` symbol is crucial - it breaks responses into natural chunks for faster audio delivery, reducing user wait time during anxious moments.
 
-- You have a [cheerful, wise, empathetic, etc.] personality.
-- Keep your responses as brief as possible but make every attempt to keep the caller on the phone without being rude.
-- Don't ask more than 1 question at a time.
-- Don't make assumptions about what values to plug into functions.
-- Ask for clarification if a user request is ambiguous.
-- Add a '•' symbol every 5 to 10 words at natural pauses where your response can be split for text to speech.
+### Memory System
+The AI silently remembers important details:
+- Personal preferences and family information
+- Medical concerns and medication schedules
+- Emotional patterns and effective comfort strategies
+- Topics that bring joy or cause distress
 
-These context items help shape a GPT so that it will act more naturally in a phone conversation.
+**Important**: Memory operations are invisible to users - the AI never mentions "remembering" or "storing" information.
 
-The `•` symbol context in particular is helpful for the app to be able to break sentences into natural chunks. This speeds up text-to-speech processing so that users hear audio faster.
+## Available AI Functions
 
-### About the `content` Attribute
-This attribute is your default conversations starter for the GPT. However, you could consider making it more complex and customized based on personalized user data.
+The AI companion has access to specialized functions that enhance the caregiving experience:
 
-In this case, our bot will start off by saying, "Hello! I understand you're looking for a pair of AirPods, is that correct?"
+### Emergency Assessment (`transferCallDeferred`)
+**Purpose**: Evaluate whether a situation requires immediate human intervention
+**Critical Note**: The system understands that users with dementia often experience anxiety that feels like emergencies. True emergencies are rare.
 
-## Using Function Calls with GPT
-You can use function calls to interact with external APIs and data sources. For example, your GPT could check live inventory, check an item's price, or place an order.
+**Assessment Criteria**:
+- Actual medical distress (chest pain, difficulty breathing)
+- Physical injury from falls
+- Genuine safety concerns
 
-### How Function Calling Works
-Function calling is handled within the `gpt-service.js` file in the following sequence:
+**Default Behavior**: Comfort and redirect rather than transfer, as most "emergencies" are anxiety episodes.
 
-1. `gpt-service` loads `function-manifest.js` and requires (imports) all functions defined there from the `functions` directory. Our app will call these functions later when GPT gives us a function name and parameters.
+### Engagement Tool (`getNewsHeadlines`)
+**Purpose**: Redirect anxious or repetitive conversations with novel topics
+**Categories**: General news, health, science, entertainment
+**Usage**: Proactively introduced when conversations become circular or distressing
+
+### Memory Functions (Silent Operation)
+- `rememberInformation`: Store personal details naturally during conversation
+- `recallMemory`: Retrieve stored information for context
+- `updateMemory`: Build progressive understanding over time
+- `forgetMemory`: Remove outdated or incorrect information
+- `listAvailableMemories`: Internal discovery of stored memories
+
+**Critical**: These functions operate silently - the AI never tells users it's "remembering" or "storing" information.
+
+### Call Management (`endCallDeferred`)
+**Purpose**: Gracefully end conversations when appropriate
+**Behavior**: Always includes warm goodbye before triggering end sequence
+
+## Adding Custom Functions
+
+To extend the AI's capabilities:
+
+1. **Create Function File**: Add `newFunction.js` in `/functions/` directory
+2. **Define in Manifest**: Add function definition to `function-manifest.js`
+3. **Include Speech Cue**: Add `say` property for pre-execution comfort phrases
+
+Example function structure:
 ```javascript
-tools.forEach((tool) => {
-  const functionName = tool.function.name;
-  availableFunctions[functionName] = require(`../functions/${functionName}`);
-});
+// functions/comfortUser.js
+module.exports = function comfortUser(args) {
+  // Function logic here
+  return "Comfort message delivered successfully";
+};
 ```
 
-2. When we call GPT for completions, we also pass in the same `function-manifest` JSON as the tools parameter. This allows the GPT to "know" what functions are available:
-
-```javascript
-const stream = await this.openai.chat.completions.create({
-  model: 'gpt-4',
-  messages: this.userContext,
-  tools, // <-- function-manifest definition
-  stream: true,
-});
-```
-3. When the GPT responds, it will send us a stream of chunks for the text completion. The GPT will tell us whether each text chunk is something to say to the user, or if it's a tool call that our app needs to execute.  This is indicated by the `deltas.tool_calls` key:
-```javascript
-if (deltas.tool_calls) {
-  // handle function calling
-}
-```
-4. Once we have gathered all of the stream chunks about the tool call, our application can run the actual function code that we imported during the first step. The function name and parameters are provided by GPT:
-```javascript
-const functionToCall = availableFunctions[functionName];
-const functionResponse = functionToCall(functionArgs);
-```
-5. As the final step, we add the function response data into the conversation context like this:
-
-```javascript
-this.userContext.push({
-  role: 'function',
-  name: functionName,
-  content: functionResponse,
-});
-```
-We then ask the GPT to generate another completion including what it knows from the function call. This allows the GPT to respond to the user with details gathered from the external data source.
-
-### Adding Custom Function Calls
-You can have your GPT call external data sources by adding functions to the `/functions` directory. Follow these steps:
-
-1. Create a function (e.g. `checkInventory.js` in `/functions`)
-1. Within `checkInventory.js`, write a function called `checkInventory`.
-1. Add information about your function to the `function-manifest.js` file. This information provides context to GPT about what arguments the function takes.
-
-**Important:** Your function's name must be the same as the file name that contains the function (excluding the .js extension). For example, our function is called `checkInventory` so we have named the the file `checkInventory.js`, and set the `name` attribute in `function-manifest.js` to be `checkInventory`.
-
-Example function manifest entry:
-
+Function manifest entry:
 ```javascript
 {
   type: "function",
   function: {
-    name: "checkInventory",
-    say: "Let me check our inventory right now.",
-    description: "Check the inventory of airpods, airpods pro or airpods max.",
+    name: "comfortUser",
+    say: "Let me help you feel better.",
+    description: "Provide targeted comfort for specific anxiety triggers",
     parameters: {
       type: "object",
       properties: {
-        model: {
+        trigger: {
           type: "string",
-          "enum": ["airpods", "airpods pro", "airpods max"],
-          description: "The model of airpods, either the airpods, airpods pro or airpods max",
-        },
-      },
-      required: ["model"],
-    },
-    returns: {
-      type: "object",
-      properties: {
-        stock: {
-          type: "integer",
-          description: "An integer containing how many of the model are in currently in stock."
+          description: "The anxiety trigger to address"
         }
-      }
-    }
-  },
-}
-```
-#### Using `say` in the Function Manifest
-The `say` key in the function manifest allows you to define a sentence for the app to speak to the user before calling a function. For example, if a function will take a long time to call you might say "Give me a few moments to look that up for you..."
-
-### Receiving Function Arguments
-When ChatGPT calls a function, it will provide an object with multiple attributes as a single argument. The parameters included in the object are based on the definition in your `function-manifest.js` file.
-
-In the `checkInventory` example above, `model` is a required argument, so the data passed to the function will be a single object like this:
-
-```javascript
-{
-  model: "airpods pro"
-}
-```
-For our `placeOrder` function, the arguments passed will look like this:
-
-```javascript
-{
-  model: "airpods pro",
-  quantity: 10
-}
-```
-### Returning Arguments to GPT
-Your function should always return a value: GPT will get confused when the function returns nothing, and may continue trying to call the function expecting an answer. If your function doesn't have any data to return to the GPT, you should still return a response with an instruction like "Tell the user that their request was processed successfully." This prevents the GPT from calling the function repeatedly and wasting tokens. 
-
-Any data that you return to the GPT should match the expected format listed in the `returns` key of `function-manifest.js`.
-
-## Utility Scripts for Placing Calls
-The `scripts` directory contains two files that allow you to place test calls:
-- `npm run inbound` will place an automated call from a Twilio number to your app and speak a script. You can adjust this to your use-case, e.g. as an automated test.
-- `npm run outbound` will place an outbound call that connects to your app. This can be useful if you want the app to call your phone so that you can manually test it.
-
-## Using Eleven Labs for Text to Speech
-Replace the Deepgram API call and array transformation in tts-service.js with the following call to Eleven Labs. Note that sometimes Eleven Labs will hit a rate limit (especially on the free trial) and return 400 errors with no audio (or a clicking sound).
-
-```
-try {
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM/stream?output_format=ulaw_8000&optimize_streaming_latency=3`,
-    {
-      method: 'POST',
-      headers: {
-        'xi-api-key': process.env.XI_API_KEY,
-        'Content-Type': 'application/json',
-        accept: 'audio/wav',
       },
-      body: JSON.stringify({
-        model_id: process.env.XI_MODEL_ID,
-        text: partialResponse,
-      }),
+      required: ["trigger"]
     }
-  );
-  
-  if (response.status === 200) {
-    const audioArrayBuffer = await response.arrayBuffer();
-    this.emit('speech', partialResponseIndex, Buffer.from(audioArrayBuffer).toString('base64'), partialResponse, interactionCount);
-  } else {
-    console.log('Eleven Labs Error:');
-    console.log(response);
   }
-} catch (err) {
-  console.error('Error occurred in XI LabsTextToSpeech service');
-  console.error(err);
 }
 ```
 
+## Testing & Quality Assurance
 
-## Testing with Jest
-Repeatedly calling the app can be a time consuming way to test your tool function calls. This project contains example unit tests that can help you test your functions without relying on the GPT to call them.
-
-Simple example tests are available in the `/test` directory. To run them, simply run `npm run test`.
-
-## Deploy via Fly.io
-Fly.io is a hosting service similar to Heroku that simplifies the deployment process. Given Twilio Media Streams are sent and received from us-east-1, it's recommended to choose Fly's Ashburn, VA (IAD) region.
-
-> Deploying to Fly.io is not required to try the app, but can be helpful if your home internet speed is variable.
-
-Modify the app name `fly.toml` to be a unique value (this must be globally unique).
-
-Deploy the app using the Fly.io CLI:
+### Unit Testing
 ```bash
+npm test
+```
+Runs Jest tests for all function modules, ensuring reliability without requiring GPT calls.
+
+### Integration Testing Scripts
+```bash
+npm run inbound   # Automated test call with scripted conversation
+npm run outbound  # Places call to YOUR_NUMBER for manual testing
+npm run chat      # Text-based testing with full system integration
+```
+
+### Admin Dashboard Testing
+```bash
+npm run test:dashboard
+```
+Tests the admin interface APIs and statistics endpoints.
+
+## Database & Persistence
+
+The system uses SQLite for reliable local storage with automatic schema migrations:
+
+### Stored Data
+- **Conversations**: Call metadata, duration, emotional analysis
+- **Messages**: Complete conversation transcripts with timestamps
+- **Memories**: Personal information learned about users
+- **Analytics**: Emotional patterns and conversation insights
+- **Settings**: System configuration and preferences
+
+### Emotional Analysis
+Advanced GPT-4 powered analysis tracks:
+- Anxiety levels (0-10 scale)
+- Confusion indicators
+- Agitation patterns
+- Overall mood sentiment (-10 to +10)
+- Comfort effectiveness metrics
+
+### Data Privacy
+- No personally identifiable information in logs
+- Local SQLite storage - no external transmission
+- Conversation summaries rather than full transcripts
+- HIPAA-conscious design for healthcare environments
+
+## Architecture Overview
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Twilio Call   │───▶│   Audio Stream   │───▶│   Deepgram STT  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                         │
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Audio Response │◀───│   Deepgram TTS   │◀───│   GPT-4 + Memory│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                         │
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Call Ends     │───▶│ Conversation Log │───▶│ Emotional Analysis│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+## Deployment
+
+### Production Considerations
+- **Latency**: Deploy close to users for optimal response times
+- **Reliability**: Consider load balancing for high call volumes
+- **Monitoring**: Set up health checks and error alerting
+- **Backup**: Regular database backups for conversation history
+
+### Fly.io Deployment (Recommended)
+```bash
+# Install Fly CLI and login
+fly auth login
+
+# Configure app name in fly.toml (must be globally unique)
 fly launch
 
+# Deploy application
 fly deploy
-```
 
-Import your secrets from your .env file to your deployed app:
-```bash
+# Import environment variables
 fly secrets import < .env
 ```
+
+Fly.io's east-coast regions are recommended for optimal Twilio Media Streams performance.
+
+---
+
+## Credits & Acknowledgments
+
+This compassionate AI companion system was built upon the foundational architecture provided by the [Twilio Call GPT demo](https://github.com/twilio-labs/call-gpt) project. We extend our gratitude to the Twilio Labs team for their excellent work in demonstrating real-time voice AI integration.
+
+The original project showcased the technical possibilities of combining Twilio Media Streams, Deepgram, and OpenAI for voice applications. This implementation has been extensively modified and enhanced to serve the specific needs of elderly care and dementia support, with a focus on compassion, patience, and emotional well-being rather than commercial applications.
+
+**Key architectural components retained from the original**:
+- Twilio Media Streams WebSocket handling
+- Deepgram speech-to-text and text-to-speech integration
+- OpenAI GPT streaming response processing
+- Real-time audio interruption handling
+
+**Major enhancements for compassionate care**:
+- Persistent memory system for personalized interactions
+- Emotional analysis and mood tracking
+- Emergency assessment and escalation protocols
+- Admin dashboard for caregiver insights
+- Specialized conversation design for dementia care
+- Comprehensive testing and development tools
+
+We encourage others to explore the original Twilio Call GPT project for general voice AI applications, while this version remains focused on providing dignified, compassionate care for vulnerable populations.
