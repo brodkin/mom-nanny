@@ -151,9 +151,11 @@ class ConversationsPage {
         const averageAnxiety = document.getElementById('average-anxiety');
         if (averageAnxiety && analyticsResult.data) {
           const anxietyLevel = analyticsResult.data.emotionalTrends?.averageAnxiety || 0;
-          // Format as percentage (0-100 scale)
-          const anxietyPercentage = Math.round(anxietyLevel * 100);
-          averageAnxiety.textContent = anxietyPercentage + '%';
+          // Display as X/10 format (data is already in 0-10 scale from emotional_metrics)
+          // Round to nearest whole number
+          const anxietyRounded = Math.round(anxietyLevel);
+          // Create HTML with styled /10 suffix - same size but less prominent
+          averageAnxiety.innerHTML = `${anxietyRounded}<span style="opacity: 0.4;">/10</span>`;
         }
       }
       
@@ -555,9 +557,11 @@ class ConversationsPage {
       startTime: conv.startTime,
       startTimeFormatted: conv.startTimeFormatted, // Add formatted timezone data
       duration: conv.duration,
-      emotionalState: this.formatEmotionalState(conv.emotionalState, conv.anxietyLevel),
+      emotionalState: this.formatEmotionalState(conv.emotionalState, conv.anxietyLevel, conv.confusionLevel, conv.agitationLevel),
       emotionalStateRaw: conv.emotionalState,
       anxietyLevel: conv.anxietyLevel,
+      confusionLevel: conv.confusionLevel,
+      agitationLevel: conv.agitationLevel,
       keyTopics: this.extractKeyTopics(conv.careIndicators),
       messageSnippet: conv.messageSnippet || '',
       actions: '', // Will be formatted by column formatter
@@ -643,16 +647,28 @@ class ConversationsPage {
   /**
    * Format emotional state with enhanced colored badge including emojis
    */
-  formatEmotionalState(state, anxietyLevel = 0) {
+  formatEmotionalState(state, anxietyLevel = 0, confusionLevel = 0, agitationLevel = 0) {
     const stateInfo = this.emotionalStateColors[state] || this.emotionalStateColors.unknown;
-    const level = Math.max(0, Math.min(10, anxietyLevel));
+    // Round all levels to whole numbers
+    const anxiety = Math.round(Math.max(0, Math.min(10, anxietyLevel)));
+    const confusion = Math.round(Math.max(0, Math.min(10, confusionLevel)));
+    const agitation = Math.round(Math.max(0, Math.min(10, agitationLevel)));
+    
+    // Build tooltip with all metrics if available
+    let tooltipText = `Anxiety: ${anxiety}/10`;
+    if (confusionLevel !== undefined && confusionLevel !== null) {
+      tooltipText += `\nConfusion: ${confusion}/10`;
+    }
+    if (agitationLevel !== undefined && agitationLevel !== null) {
+      tooltipText += `\nAgitation: ${agitation}/10`;
+    }
     
     return `
       <span class="emotional-badge ${stateInfo.class}" 
-            title="Anxiety Level: ${level}/10">
+            title="${tooltipText}">
         ${stateInfo.emoji}
         <span class="label">${stateInfo.label.replace(/^.\s/, '')}</span>
-        <span class="anxiety-level">${level}/10</span>
+        <span class="anxiety-level">${anxiety}/10</span>
       </span>
     `;
   }

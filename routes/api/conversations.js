@@ -173,7 +173,7 @@ router.get('/', async (req, res) => {
     const countResult = await dbManager.get(countSql, params);
     const total = countResult.total;
     
-    // Get conversations data with message snippets
+    // Get conversations data with message snippets and emotional metrics
     const dataSql = `
       SELECT 
         c.id,
@@ -183,6 +183,11 @@ router.get('/', async (req, res) => {
         c.duration,
         c.caller_info,
         s.summary_text,
+        em.anxiety_level,
+        em.confusion_level,
+        em.agitation_level,
+        em.comfort_level,
+        em.sentiment_score,
         (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as message_count,
         (SELECT GROUP_CONCAT(content, ' ') 
          FROM (
@@ -195,6 +200,7 @@ router.get('/', async (req, res) => {
         ) as message_snippet
       FROM conversations c
       LEFT JOIN summaries s ON c.id = s.conversation_id
+      LEFT JOIN emotional_metrics em ON c.id = em.conversation_id
       ${whereClause}
       ${orderByClause}
       LIMIT ? OFFSET ?
@@ -207,13 +213,33 @@ router.get('/', async (req, res) => {
       let summary = null;
       let emotionalState = 'unknown';
       let anxietyLevel = 0;
+      let confusionLevel = 0;
+      let agitationLevel = 0;
       let careIndicators = {
         medicationConcerns: [],
         painLevel: 0,
         staffComplaints: []
       };
       
-      if (conv.summary_text) {
+      // First try to use emotional_metrics data (GPT-based, 0-10 scale)
+      if (conv.anxiety_level !== null && conv.anxiety_level !== undefined) {
+        anxietyLevel = conv.anxiety_level; // Already in 0-10 scale from database
+        confusionLevel = conv.confusion_level || 0;
+        agitationLevel = conv.agitation_level || 0;
+        
+        // Map anxiety level to emotional state categories
+        if (anxietyLevel >= 0 && anxietyLevel <= 2) {
+          emotionalState = 'calm';
+        } else if (anxietyLevel >= 3 && anxietyLevel <= 4) {
+          emotionalState = 'mild_anxiety';
+        } else if (anxietyLevel >= 5 && anxietyLevel <= 7) {
+          emotionalState = 'moderate_anxiety';
+        } else if (anxietyLevel >= 8 && anxietyLevel <= 10) {
+          emotionalState = 'high_anxiety';
+        }
+      }
+      // Fallback to summary data if no emotional_metrics available
+      else if (conv.summary_text) {
         try {
           summary = JSON.parse(conv.summary_text);
           if (summary.mentalStateIndicators) {
@@ -250,6 +276,8 @@ router.get('/', async (req, res) => {
         duration: conv.duration || (conv.start_time && conv.end_time ? Math.round((new Date(conv.end_time) - new Date(conv.start_time)) / 1000) : 0),
         emotionalState,
         anxietyLevel,
+        confusionLevel,
+        agitationLevel,
         careIndicators,
         messageCount: conv.message_count,
         messageSnippet: conv.message_snippet || '',
@@ -307,66 +335,59 @@ router.get('/analytics', async (req, res) => {
     
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     
-    // Get emotional trends data
+    // Get emotional trends data from emotional_metrics table (0-10 scale)
     const emotionalTrendsSql = `
       SELECT 
-        AVG(CAST(json_extract(a.sentiment_scores, '$.anxiety') AS REAL)) as avg_anxiety,
-        AVG(CAST(json_extract(a.sentiment_scores, '$.agitation') AS REAL)) as avg_agitation,
-        AVG(CAST(json_extract(a.sentiment_scores, '$.positiveEngagement') AS REAL)) as avg_positive_engagement,
+        AVG(em.anxiety_level) as avg_anxiety,
+        AVG(em.confusion_level) as avg_confusion,
+        AVG(em.agitation_level) as avg_agitation,
+        AVG(em.comfort_level) as avg_comfort,
         DATE(c.start_time) as call_date,
-        json_extract(a.sentiment_scores, '$.anxiety') as anxiety,
-        json_extract(a.sentiment_scores, '$.agitation') as agitation,
-        json_extract(a.sentiment_scores, '$.positiveEngagement') as positive_engagement
+        em.anxiety_level as anxiety,
+        em.confusion_level as confusion,
+        em.agitation_level as agitation,
+        em.comfort_level as comfort,
+        COUNT(DISTINCT em.conversation_id) as conversations_with_metrics
       FROM conversations c
-      JOIN analytics a ON c.id = a.conversation_id
+      INNER JOIN emotional_metrics em ON c.id = em.conversation_id
       ${whereClause}
+      GROUP BY call_date
     `;
     
     const emotionalData = await dbManager.all(emotionalTrendsSql, params);
     
-    // Calculate averages
-    let totalAnxiety = 0, totalAgitation = 0, totalPositive = 0, count = 0;
+    // Calculate averages (data is already in 0-10 scale from emotional_metrics)
+    let totalAnxiety = 0, totalConfusion = 0, totalAgitation = 0, totalComfort = 0, count = 0;
     const trendOverTime = [];
-    const dailyTrends = new Map();
     
     emotionalData.forEach(row => {
-      if (row.anxiety !== null && row.agitation !== null && row.positive_engagement !== null) {
-        totalAnxiety += parseFloat(row.anxiety) || 0;
-        totalAgitation += parseFloat(row.agitation) || 0;
-        totalPositive += parseFloat(row.positive_engagement) || 0;
+      if (row.avg_anxiety !== null) {
+        // Add to trend over time (using already averaged values per day)
+        trendOverTime.push({
+          date: row.call_date,
+          averageAnxiety: parseFloat(row.avg_anxiety) || 0,
+          averageConfusion: parseFloat(row.avg_confusion) || 0,
+          averageAgitation: parseFloat(row.avg_agitation) || 0,
+          averageComfort: parseFloat(row.avg_comfort) || 0,
+          conversationCount: row.conversations_with_metrics || 0
+        });
+        
+        // Accumulate for overall averages
+        totalAnxiety += parseFloat(row.avg_anxiety) || 0;
+        totalConfusion += parseFloat(row.avg_confusion) || 0;
+        totalAgitation += parseFloat(row.avg_agitation) || 0;
+        totalComfort += parseFloat(row.avg_comfort) || 0;
         count++;
-        
-        const date = row.call_date;
-        if (!dailyTrends.has(date)) {
-          dailyTrends.set(date, {
-            date,
-            anxiety: [],
-            agitation: [],
-            positiveEngagement: []
-          });
-        }
-        
-        dailyTrends.get(date).anxiety.push(parseFloat(row.anxiety) || 0);
-        dailyTrends.get(date).agitation.push(parseFloat(row.agitation) || 0);
-        dailyTrends.get(date).positiveEngagement.push(parseFloat(row.positive_engagement) || 0);
       }
-    });
-    
-    // Process daily trends
-    dailyTrends.forEach((data, date) => {
-      trendOverTime.push({
-        date,
-        averageAnxiety: data.anxiety.reduce((a, b) => a + b, 0) / data.anxiety.length,
-        averageAgitation: data.agitation.reduce((a, b) => a + b, 0) / data.agitation.length,
-        averagePositiveEngagement: data.positiveEngagement.reduce((a, b) => a + b, 0) / data.positiveEngagement.length
-      });
     });
     
     const emotionalTrends = {
       averageAnxiety: count > 0 ? totalAnxiety / count : 0,
+      averageConfusion: count > 0 ? totalConfusion / count : 0,
       averageAgitation: count > 0 ? totalAgitation / count : 0,
-      averagePositiveEngagement: count > 0 ? totalPositive / count : 0,
-      trendOverTime: trendOverTime.sort((a, b) => a.date.localeCompare(b.date))
+      averageComfort: count > 0 ? totalComfort / count : 0,
+      trendOverTime: trendOverTime.sort((a, b) => a.date.localeCompare(b.date)),
+      dataSource: 'emotional_metrics' // Indicate we're using the new GPT-based metrics
     };
     
     // Get pattern analysis
