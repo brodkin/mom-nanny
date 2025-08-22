@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{pageTitle}} - Nanny Admin</title>
+  
+  <!-- Preload critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/admin.css">
+  <!-- PAGE_CSS_PLACEHOLDER -->
+  
+  <!-- Meta tags -->
+  <meta name="description" content="{{pageDescription}}">
+  <meta name="theme-color" content="#6366f1">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><g transform='translate(50,50) scale(1.5)'><path d='M12 2C8.5 2 6 4.5 6 7.5C6 8.2 6.1 8.9 6.3 9.5C5.8 9.3 5.3 9.2 4.8 9.2C3.8 9.2 3 10 3 11C3 12 3.8 12.8 4.8 12.8C5.3 12.8 5.8 12.7 6.3 12.5C6.5 12.8 6.8 13.1 7.1 13.3C7.5 13.6 8 13.8 8.5 13.9V14.5C8.5 15.3 9.2 16 10 16H14C14.8 16 15.5 15.3 15.5 14.5V13.9C16 13.8 16.5 13.6 16.9 13.3C17.2 13.1 17.5 12.8 17.7 12.5C18.2 12.7 18.7 12.8 19.2 12.8C20.2 12.8 21 12 21 11C21 10 20.2 9.2 19.2 9.2C18.7 9.2 18.2 9.3 17.7 9.5C17.9 8.9 18 8.2 18 7.5C18 4.5 15.5 2 12 2Z' fill='white'/><ellipse cx='12' cy='10' rx='4.5' ry='4' fill='%236366f1'/><path d='M9 14.5L10.5 15.5L12 15L13.5 15.5L15 14.5' stroke='white' stroke-width='0.5' fill='none'/><path d='M8 16C7.5 16 7 16.5 7 17V20C7 20.5 7.5 21 8 21H16C16.5 21 17 20.5 17 20V17C17 16.5 16.5 16 16 16' fill='white'/><path d='M10 17H14V20.5C14 20.8 13.8 21 13.5 21H10.5C10.2 21 10 20.8 10 20.5V17Z' fill='%236366f1'/><ellipse cx='6.5' cy='18' rx='1.5' ry='2.5' transform='rotate(-20 6.5 18)' fill='white'/><ellipse cx='17.5' cy='18' rx='1.5' ry='2.5' transform='rotate(20 17.5 18)' fill='white'/></g></svg>">
+  
+  <!-- Prevent FOUC -->
+  <style>
+    body { visibility: hidden; }
+    .js body { visibility: visible; }
+  </style>
+  <script>document.documentElement.className = 'js';</script>
+</head>
+<body data-page="{{pageName}}">
+  <!-- Admin Layout Container -->
+  <div class="admin-layout">
+    <!-- SIDEBAR_PLACEHOLDER -->
+    <!-- HEADER_PLACEHOLDER -->
+    
+    <!-- Main Content -->
+    <main class="admin-main" role="main" id="main-content">
+      <!-- PAGE_CONTENT_PLACEHOLDER -->
+    </main>
+    
+    <!-- FOOTER_PLACEHOLDER -->
+    
+    <!-- Mobile Sidebar Overlay -->
+    <div class="layout-overlay"></div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="js/admin.js"></script>
+  <script type="module" src="js/template-loader.js"></script>
+  <!-- PAGE_JS_PLACEHOLDER -->
+  
+  <!-- Set current year -->
+  <script>
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
