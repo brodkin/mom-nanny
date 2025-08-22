@@ -165,7 +165,7 @@ describe('DatabaseManager', () => {
       expect(tables.length).toBeGreaterThan(0);
       
       const version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(4); // Should be at latest version (4) after initial setup
+      expect(version).toBe(5); // Should be at latest version (5) after initial setup with emotional metrics
     });
 
     test('should apply Migration 4 performance indexes', async () => {
@@ -189,9 +189,9 @@ describe('DatabaseManager', () => {
     });
 
     test('should skip Migration 4 if already applied', async () => {
-      // First, verify we're at version 4
+      // First, verify we're at version 5 (with emotional metrics)
       let version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(4);
+      expect(version).toBe(5);
 
       // Count current indexes
       const initialIndexes = await dbManager.all(`
@@ -202,9 +202,9 @@ describe('DatabaseManager', () => {
       // Apply migrations again - should be idempotent
       await dbManager.applyMigrations();
       
-      // Version should still be 4
+      // Version should still be 5 (with emotional metrics)
       version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(4);
+      expect(version).toBe(5);
 
       // Index count should be unchanged
       const finalIndexes = await dbManager.all(`

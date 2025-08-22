@@ -382,6 +382,7 @@ Migration 1: Initial schema (conversations, summaries, messages, analytics)
 Migration 2: Memories table
 Migration 3: Settings table  
 Migration 4: Performance indexes
+Migration 5: Emotional metrics table for GPT-based analysis
 ```
 
 #### Adding New Migrations
@@ -508,6 +509,100 @@ const testDb = new DatabaseManager('./test.db');
 4. **Verify Memory**: Check persistence across sessions
 5. **Test Error Cases**: Disconnect, timeout scenarios
 6. **Maintain Compassion**: Every change must serve the user's emotional needs
+
+## Emotional Analysis System (GPT-Based)
+
+### Overview
+The system performs sophisticated emotional analysis of conversations using GPT-4 to track anxiety, confusion, agitation, and overall mood. This data enables caregivers to understand emotional patterns and improve care quality.
+
+### When Emotional Data is Captured
+- **Trigger**: At the end of every conversation (phone or chat)
+- **Threshold**: Only conversations > 30 seconds receive emotional analysis
+- **Storage**: All conversations > 2 seconds are saved to database
+- **Processing**: Analysis runs asynchronously via `setImmediate()` to avoid blocking
+
+### Scoring Methodology
+- **GPT Analysis**: Holistic evaluation of entire conversation context
+- **Input Scale**: GPT returns 0-100 for anxiety/confusion/agitation levels
+- **Database Scale**: Automatically converted to 0-10 for database storage
+- **Mood Scale**: -100 to +100 from GPT, converted to -10 to +10 in database
+- **Peak Tracking**: Captures both average and peak emotional states
+- **Trend Analysis**: Tracks whether emotions are increasing/stable/decreasing
+
+### Database Schema (Migration 5)
+```sql
+emotional_metrics table:
+- conversation_id: Links to conversations table
+- anxiety_level, confusion_level, agitation_level: 0-10 scale
+- comfort_level: 0-10 positive emotion tracking
+- sentiment_score: -10 to +10 overall mood
+- analysis_method: 'gpt_v1' or 'keyword_v1' fallback
+- raw_analysis: Complete GPT JSON response for reprocessing
+```
+
+### Implementation Details
+
+#### Phone Calls (app.js)
+```javascript
+// After conversation ends (WebSocket close)
+if (duration > 30) {
+  setImmediate(async () => {
+    const interactions = messages.map(msg => ({
+      type: msg.role === 'user' ? 'user_utterance' : 'assistant_response',
+      text: msg.content,
+      timestamp: msg.timestamp
+    }));
+    const emotionalMetrics = await gptService.analyzeEmotionalState(interactions);
+    await dbManager.saveEmotionalMetrics(numericId, emotionalMetrics);
+  });
+}
+```
+
+#### Chat Sessions (chat-session.js)
+```javascript
+// Wrapped in Promise to ensure completion before process exit
+const emotionalAnalysisPromise = new Promise((resolve) => {
+  setImmediate(async () => {
+    // Same analysis as phone calls
+    resolve();
+  });
+});
+await emotionalAnalysisPromise; // Wait for completion
+```
+
+### Scale Conversion
+The system handles automatic scale conversion between GPT output and database storage:
+- **Anxiety/Confusion/Agitation**: GPT 0-100 → Database 0-10 (divide by 10)
+- **Comfort Level**: GPT 0-100 → Database 0-10 (divide by 10)
+- **Overall Mood**: GPT -100 to +100 → Database -10 to +10 (divide by 10)
+
+### Error Handling
+- **GPT Failures**: System continues with keyword-based analysis
+- **Database Errors**: Logged but don't interrupt conversation flow
+- **Missing Fields**: Default to null values in database
+- **HIPAA Compliance**: No PHI in error logs, only conversation IDs
+
+### Testing Scripts
+```bash
+# Simulate long conversation (>30s) with emotional analysis
+node scripts/simulation/simulate-chat-with-wait.js
+
+# Simulate short conversation (<30s) without analysis
+node scripts/simulation/simulate-short-chat.js
+
+# Test emotional content handling
+node scripts/simulation/simulate-chat-interaction.js
+
+# Test basic chat session saving
+node scripts/simulation/simulate-chat-save.js
+```
+
+### Future API Preparation
+The indexed `emotional_metrics` table is ready for:
+- Time-series visualization of emotional trends
+- Aggregate statistics by date range
+- Pattern analysis across multiple conversations
+- Caregiver dashboard integration
 
 ## Critical Reminders
 

@@ -119,7 +119,7 @@ describe('DatabaseManager Regression Tests', () => {
         await db.waitForInitialization();
         
         const version = await db.getCurrentMigrationVersion();
-        expect(version).toBe(4);
+        expect(version).toBe(5);
         
         const tables = await db.getTables();
         expect(tables).toEqual(
@@ -129,7 +129,8 @@ describe('DatabaseManager Regression Tests', () => {
             'messages',
             'analytics',
             'memories',
-            'settings'
+            'settings',
+            'emotional_metrics'
           ])
         );
         
@@ -159,10 +160,10 @@ describe('DatabaseManager Regression Tests', () => {
       // Verify all are properly initialized
       for (let i = 0; i < instances.length; i++) {
         const version = await instances[i].getCurrentMigrationVersion();
-        expect(version).toBe(4);
+        expect(version).toBe(5);
         
         const tables = await instances[i].getTables();
-        expect(tables).toHaveLength(6); // conversations, summaries, messages, analytics, memories, settings
+        expect(tables).toHaveLength(7); // conversations, summaries, messages, analytics, memories, settings, emotional_metrics
       }
       
       // Clean up

@@ -99,6 +99,223 @@ class GptService extends EventEmitter {
     }
   }
 
+  async analyzeEmotionalState(conversationTranscript) {
+    // Create conversation text from transcript
+    let conversationText = '';
+    if (Array.isArray(conversationTranscript)) {
+      // Handle array of interactions (from conversationAnalyzer.interactions)
+      conversationText = conversationTranscript.map(interaction => {
+        const timestamp = new Date(interaction.timestamp).toLocaleTimeString();
+        if (interaction.type === 'user_utterance') {
+          return `[${timestamp}] User: ${interaction.text}`;
+        } else if (interaction.type === 'assistant_response') {
+          return `[${timestamp}] Assistant: ${interaction.text}`;
+        }
+        return '';
+      }).filter(line => line.length > 0).join('\n');
+    } else if (typeof conversationTranscript === 'string') {
+      conversationText = conversationTranscript;
+    } else {
+      throw new Error('Invalid conversation transcript format');
+    }
+
+    // In test environment, return mock emotional analysis
+    if (process.env.NODE_ENV === 'test') {
+      return {
+        anxietyLevel: 25.5,
+        anxietyPeak: 65.0,
+        anxietyTrend: "decreasing",
+        confusionLevel: 40.0,
+        confusionPeak: 75.0,
+        confusionTrend: "stable",
+        agitationLevel: 15.0,
+        agitationPeak: 30.0,
+        agitationTrend: "stable",
+        overallMood: 20.5,
+        moodTrend: "improving",
+        analysisConfidence: 0.85,
+        keyObservations: [
+          "Mock analysis for testing",
+          "Simulated emotional metrics"
+        ]
+      };
+    }
+
+    // System prompt for emotional analysis as specified in tasks.md
+    const emotionalAnalysisPrompt = `You are an expert geriatric psychiatrist analyzing a dementia care conversation.
+Evaluate the entire conversation holistically, considering context and emotional progression.
+
+Provide numerical scores (0-100 for levels, -100 to +100 for mood):
+- Early anxiety that resolves should score lower than persistent anxiety
+- Consider dementia context (repetition may not indicate anxiety)
+- Weight recent emotional state more heavily than early conversation
+
+Return ONLY valid JSON with these exact numeric fields (no nulls).`;
+
+    // Tool definition for structured output
+    const emotionalAnalysisTool = {
+      type: "function",
+      function: {
+        name: "reportEmotionalAnalysis",
+        description: "Report structured emotional analysis of the conversation",
+        parameters: {
+          type: "object",
+          properties: {
+            anxietyLevel: {
+              type: "number",
+              description: "Overall anxiety level (0-100)",
+              minimum: 0,
+              maximum: 100
+            },
+            anxietyPeak: {
+              type: "number", 
+              description: "Peak anxiety level during conversation (0-100)",
+              minimum: 0,
+              maximum: 100
+            },
+            anxietyTrend: {
+              type: "string",
+              enum: ["increasing", "decreasing", "stable", "fluctuating"],
+              description: "Trend of anxiety throughout conversation"
+            },
+            confusionLevel: {
+              type: "number",
+              description: "Overall confusion level (0-100)",
+              minimum: 0,
+              maximum: 100
+            },
+            confusionPeak: {
+              type: "number",
+              description: "Peak confusion level during conversation (0-100)", 
+              minimum: 0,
+              maximum: 100
+            },
+            confusionTrend: {
+              type: "string",
+              enum: ["increasing", "decreasing", "stable", "fluctuating"],
+              description: "Trend of confusion throughout conversation"
+            },
+            agitationLevel: {
+              type: "number",
+              description: "Overall agitation level (0-100)",
+              minimum: 0,
+              maximum: 100
+            },
+            agitationPeak: {
+              type: "number",
+              description: "Peak agitation level during conversation (0-100)",
+              minimum: 0,
+              maximum: 100
+            },
+            agitationTrend: {
+              type: "string",
+              enum: ["increasing", "decreasing", "stable", "fluctuating"],
+              description: "Trend of agitation throughout conversation"
+            },
+            overallMood: {
+              type: "number",
+              description: "Overall mood score (-100 to +100, negative is sad/distressed, positive is happy/content)",
+              minimum: -100,
+              maximum: 100
+            },
+            moodTrend: {
+              type: "string",
+              enum: ["improving", "declining", "stable", "fluctuating"],
+              description: "Trend of mood throughout conversation"
+            },
+            analysisConfidence: {
+              type: "number",
+              description: "Confidence in analysis (0.0 to 1.0)",
+              minimum: 0.0,
+              maximum: 1.0
+            },
+            keyObservations: {
+              type: "array",
+              items: {
+                type: "string"
+              },
+              description: "Key observations about emotional state (2-5 items)",
+              minItems: 2,
+              maxItems: 5
+            }
+          },
+          required: [
+            "anxietyLevel", "anxietyPeak", "anxietyTrend",
+            "confusionLevel", "confusionPeak", "confusionTrend", 
+            "agitationLevel", "agitationPeak", "agitationTrend",
+            "overallMood", "moodTrend", "analysisConfidence", "keyObservations"
+          ]
+        }
+      }
+    };
+
+    try {
+      // Create the analysis request
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4-1106-preview',
+        messages: [
+          { role: 'system', content: emotionalAnalysisPrompt },
+          { role: 'user', content: `Please analyze this conversation for emotional state:\n\n${conversationText}` }
+        ],
+        tools: [emotionalAnalysisTool],
+        tool_choice: { type: "function", function: { name: "reportEmotionalAnalysis" } },
+        temperature: 0.3 // Lower temperature for more consistent analysis
+      });
+
+      // Extract the function call result
+      const choice = response.choices[0];
+      if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+        const toolCall = choice.message.tool_calls[0];
+        if (toolCall.function.name === 'reportEmotionalAnalysis') {
+          const analysisResult = JSON.parse(toolCall.function.arguments);
+          
+          // Validate and ensure all required numeric fields are present with defaults
+          const validatedResult = {
+            anxietyLevel: Number(analysisResult.anxietyLevel) || 0,
+            anxietyPeak: Number(analysisResult.anxietyPeak) || 0,
+            anxietyTrend: analysisResult.anxietyTrend || 'stable',
+            confusionLevel: Number(analysisResult.confusionLevel) || 0,
+            confusionPeak: Number(analysisResult.confusionPeak) || 0,
+            confusionTrend: analysisResult.confusionTrend || 'stable',
+            agitationLevel: Number(analysisResult.agitationLevel) || 0,
+            agitationPeak: Number(analysisResult.agitationPeak) || 0,
+            agitationTrend: analysisResult.agitationTrend || 'stable',
+            overallMood: Number(analysisResult.overallMood) || 0,
+            moodTrend: analysisResult.moodTrend || 'stable',
+            analysisConfidence: Number(analysisResult.analysisConfidence) || 0.5,
+            keyObservations: Array.isArray(analysisResult.keyObservations) ? 
+              analysisResult.keyObservations : ['No specific observations']
+          };
+
+          return validatedResult;
+        }
+      }
+
+      throw new Error('No valid emotional analysis function call returned');
+
+    } catch (error) {
+      // HIPAA COMPLIANCE: Never log full error object as it may contain emotional analysis data (PHI)
+      console.error('GPT Emotional Analysis Error:', error.message);
+      
+      // Return default values if analysis fails
+      return {
+        anxietyLevel: 0,
+        anxietyPeak: 0,
+        anxietyTrend: 'stable',
+        confusionLevel: 0,
+        confusionPeak: 0,
+        confusionTrend: 'stable',
+        agitationLevel: 0,
+        agitationPeak: 0,
+        agitationTrend: 'stable',
+        overallMood: 0,
+        moodTrend: 'stable',
+        analysisConfidence: 0.0,
+        keyObservations: ['Analysis failed - using default values']
+      };
+    }
+  }
+
   async completion(text, interactionCount, role = 'user', name = 'user', returnUsage = false) {
     this.updateUserContext(name, role, text);
 
