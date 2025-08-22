@@ -83,7 +83,7 @@
 
 /* Light mode icon (sun) */
 .theme-icon-light {
-  color: #f59e0b;
+  color: #f59e0b; /* Same as mild anxiety badge color */
   opacity: 1;
   transform: scale(1);
   margin-left: 3px;
@@ -96,14 +96,14 @@
 
 /* Dark mode icon (moon) */
 .theme-icon-dark {
-  color: #64748b;
+  color: #6366f1; /* Primary purple color */
   opacity: 0.3;
   transform: scale(0.8);
   margin-right: 3px;
 }
 
 .theme-toggle.dark .theme-icon-dark {
-  color: white;
+  color: #6366f1; /* Keep primary purple color when active */
   opacity: 1;
   transform: scale(1);
 }
