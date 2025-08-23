@@ -452,74 +452,136 @@ class MemoryManager {
    * Show add memory modal
    */
   async showAddMemoryModal() {
-    const modal = new Modal({
-      title: 'Add New Memory',
-      size: 'lg',
-      content: `
-        <form id="add-memory-form" class="memory-form">
-          <div class="form-group">
-            <label for="memory-key" class="form-label">Memory Key *</label>
-            <input 
-              type="text" 
-              id="memory-key" 
-              class="form-input" 
-              placeholder="e.g., favorite_food, daughter_name, medical_allergy"
-              required
-            >
-            <div class="form-help">A unique identifier for this memory (lowercase, underscores for spaces)</div>
-          </div>
-          
-          <div class="form-group">
-            <label for="memory-category" class="form-label">Category *</label>
-            <select id="memory-category" class="form-select" required>
-              <option value="">Select a category</option>
-              <option value="family">Family</option>
-              <option value="preferences">Preferences</option>
-              <option value="medical">Medical</option>
-              <option value="personal">Personal</option>
-              <option value="activities">Activities</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="memory-content" class="form-label">Content *</label>
-            <textarea 
-              id="memory-content" 
-              class="form-textarea" 
-              rows="4" 
-              placeholder="Enter the memory content here..."
-              required
-            ></textarea>
-            <div class="form-help">Detailed information that will help personalize conversations</div>
-          </div>
-        </form>
-      `,
-      buttons: [
-        {
-          text: 'Cancel',
-          style: 'secondary',
-          action: 'cancel'
-        },
-        {
-          text: 'Add Memory',
-          style: 'primary',
-          action: 'add'
-        }
-      ]
+    const modal = document.getElementById('memory-modal');
+    const form = document.getElementById('memory-form');
+    const modalTitle = modal.querySelector('.modal-title');
+    const submitBtn = modal.querySelector('.submit-btn .btn-text');
+    
+    // Reset form and modal
+    form.reset();
+    modalTitle.textContent = 'Add Memory';
+    submitBtn.textContent = 'Save Memory';
+    
+    // Clear any previous errors
+    this.clearFormErrors();
+    
+    // Show modal
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-open');
+    
+    // Focus first input
+    setTimeout(() => {
+      document.getElementById('memory-key').focus();
+    }, 100);
+    
+    // Setup event listeners if not already done
+    this.setupModalEventListeners();
+  }
+
+  /**
+   * Setup modal event listeners
+   */
+  setupModalEventListeners() {
+    const modal = document.getElementById('memory-modal');
+    const form = document.getElementById('memory-form');
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('[data-action="cancel"]');
+    const overlay = modal.querySelector('.modal-overlay');
+    
+    // Close modal events
+    const closeModal = () => {
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+    };
+    
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    overlay?.addEventListener('click', closeModal);
+    
+    // Form submit
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleAddMemory();
     });
     
-    modal.on('add', () => this.handleAddMemory(modal));
-    modal.on('cancel', () => modal.close());
+    // Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        closeModal();
+      }
+    });
+  }
+
+  /**
+   * Setup view modal event listeners
+   */
+  setupViewModalEventListeners(memoryKey) {
+    const modal = document.getElementById('view-memory-modal');
+    const closeBtn = modal.querySelector('.modal-close');
+    const editBtn = modal.querySelector('[data-action="edit"]');
+    const closeFooterBtn = modal.querySelector('[data-action="close"]');
+    const overlay = modal.querySelector('.modal-overlay');
     
-    modal.show();
+    // Close modal function
+    const closeModal = () => {
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+    };
+    
+    // Remove existing listeners to prevent duplicates
+    const newCloseBtn = closeBtn.cloneNode(true);
+    const newEditBtn = editBtn.cloneNode(true);
+    const newCloseFooterBtn = closeFooterBtn.cloneNode(true);
+    const newOverlay = overlay.cloneNode(true);
+    
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+    closeFooterBtn.parentNode.replaceChild(newCloseFooterBtn, closeFooterBtn);
+    overlay.parentNode.replaceChild(newOverlay, overlay);
+    
+    // Add event listeners
+    newCloseBtn.addEventListener('click', closeModal);
+    newCloseFooterBtn.addEventListener('click', closeModal);
+    newOverlay.addEventListener('click', closeModal);
+    
+    // Edit button
+    newEditBtn.addEventListener('click', () => {
+      closeModal();
+      this.editMemory(memoryKey);
+    });
+    
+    // Escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        closeModal();
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+  }
+
+  /**
+   * Clear form validation errors
+   */
+  clearFormErrors() {
+    const errorElements = document.querySelectorAll('.form-error');
+    const inputElements = document.querySelectorAll('.form-input, .form-textarea, .form-select');
+    
+    errorElements.forEach(el => {
+      el.style.display = 'none';
+      el.textContent = '';
+    });
+    
+    inputElements.forEach(el => {
+      el.classList.remove('error');
+    });
   }
 
   /**
    * Handle add memory form submission
    */
-  async handleAddMemory(modal) {
-    const form = document.getElementById('add-memory-form');
+  async handleAddMemory() {
+    const form = document.getElementById('memory-form');
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
@@ -543,7 +605,11 @@ class MemoryManager {
         throw new Error(error.error || 'Failed to add memory');
       }
       
-      modal.close();
+      // Close modal
+      const modal = document.getElementById('memory-modal');
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      
       Notification.success('Memory added successfully', {
         description: `Added "${key}" to the memory system`
       });
@@ -572,67 +638,57 @@ class MemoryManager {
       const data = await response.json();
       const memory = data.data;
       
-      const modal = new Modal({
-        title: `Memory: ${memory.key}`,
-        size: 'large',
-        content: `
-          <div class="memory-details">
-            <div class="detail-group">
-              <label class="detail-label">Key</label>
-              <div class="detail-value">${this.escapeHtml(memory.key)}</div>
-            </div>
-            
-            <div class="detail-group">
-              <label class="detail-label">Category</label>
-              <div class="detail-value">
-                <span class="category-badge ${memory.category}">
-                  ${this.escapeHtml(memory.category)}
-                </span>
-              </div>
-            </div>
-            
-            <div class="detail-group">
-              <label class="detail-label">Content</label>
-              <div class="detail-value">${this.escapeHtml(memory.content)}</div>
-            </div>
-            
-            <div class="detail-group">
-              <label class="detail-label">Created</label>
-              <div class="detail-value">${new Date(memory.created_at).toLocaleString()}</div>
-            </div>
-            
-            <div class="detail-group">
-              <label class="detail-label">Last Updated</label>
-              <div class="detail-value">${memory.updated_at ? new Date(memory.updated_at).toLocaleString() : 'Never'}</div>
-            </div>
-            
-            <div class="detail-group">
-              <label class="detail-label">Last Accessed</label>
-              <div class="detail-value">${memory.last_accessed ? new Date(memory.last_accessed).toLocaleString() : 'Never'}</div>
-            </div>
+      // Get the view modal elements
+      const modal = document.getElementById('view-memory-modal');
+      const modalTitle = modal.querySelector('.modal-title');
+      const contentContainer = document.getElementById('view-memory-content');
+      
+      // Update modal title
+      modalTitle.textContent = `Memory: ${memory.key}`;
+      
+      // Update modal content
+      contentContainer.innerHTML = `
+        <div class="detail-group">
+          <label class="detail-label">Key</label>
+          <div class="detail-value">${this.escapeHtml(memory.key)}</div>
+        </div>
+        
+        <div class="detail-group">
+          <label class="detail-label">Category</label>
+          <div class="detail-value">
+            <span class="category-badge ${memory.category}">
+              ${this.escapeHtml(memory.category)}
+            </span>
           </div>
-        `,
-        buttons: [
-          {
-            text: 'Edit',
-            style: 'secondary',
-            action: 'edit'
-          },
-          {
-            text: 'Close',
-            style: 'primary',
-            action: 'close'
-          }
-        ]
-      });
+        </div>
+        
+        <div class="detail-group">
+          <label class="detail-label">Content</label>
+          <div class="detail-value">${this.escapeHtml(memory.content)}</div>
+        </div>
+        
+        <div class="detail-group">
+          <label class="detail-label">Created</label>
+          <div class="detail-value">${new Date(memory.created_at).toLocaleString()}</div>
+        </div>
+        
+        <div class="detail-group">
+          <label class="detail-label">Last Updated</label>
+          <div class="detail-value">${memory.updated_at ? new Date(memory.updated_at).toLocaleString() : 'Never'}</div>
+        </div>
+        
+        <div class="detail-group">
+          <label class="detail-label">Last Accessed</label>
+          <div class="detail-value">${memory.last_accessed ? new Date(memory.last_accessed).toLocaleString() : 'Never'}</div>
+        </div>
+      `;
       
-      modal.on('edit', () => {
-        modal.close();
-        this.editMemory(key);
-      });
-      modal.on('close', () => modal.close());
+      // Show modal
+      modal.style.display = 'flex';
+      document.body.classList.add('modal-open');
       
-      modal.show();
+      // Setup event listeners for this modal
+      this.setupViewModalEventListeners(key);
       
     } catch (error) {
       console.error('Error viewing memory:', error);
@@ -656,66 +712,25 @@ class MemoryManager {
       const data = await response.json();
       const memory = data.data;
       
-      const modal = new Modal({
-        title: `Edit Memory: ${memory.key}`,
-        size: 'large',
-        content: `
-          <form id="edit-memory-form" class="memory-form">
-            <div class="form-group">
-              <label for="edit-memory-key" class="form-label">Memory Key *</label>
-              <input 
-                type="text" 
-                id="edit-memory-key" 
-                class="form-input" 
-                value="${this.escapeHtml(memory.key)}"
-                required
-                readonly
-              >
-              <div class="form-help">Memory key cannot be changed after creation</div>
-            </div>
-            
-            <div class="form-group">
-              <label for="edit-memory-category" class="form-label">Category *</label>
-              <select id="edit-memory-category" class="form-select" required>
-                <option value="">Select a category</option>
-                <option value="family" ${memory.category === 'family' ? 'selected' : ''}>Family</option>
-                <option value="preferences" ${memory.category === 'preferences' ? 'selected' : ''}>Preferences</option>
-                <option value="medical" ${memory.category === 'medical' ? 'selected' : ''}>Medical</option>
-                <option value="personal" ${memory.category === 'personal' ? 'selected' : ''}>Personal</option>
-                <option value="activities" ${memory.category === 'activities' ? 'selected' : ''}>Activities</option>
-                <option value="other" ${memory.category === 'other' ? 'selected' : ''}>Other</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <label for="edit-memory-content" class="form-label">Content *</label>
-              <textarea 
-                id="edit-memory-content" 
-                class="form-textarea" 
-                rows="4" 
-                required
-              >${this.escapeHtml(memory.content)}</textarea>
-            </div>
-          </form>
-        `,
-        buttons: [
-          {
-            text: 'Cancel',
-            style: 'secondary',
-            action: 'cancel'
-          },
-          {
-            text: 'Save Changes',
-            style: 'primary',
-            action: 'save'
-          }
-        ]
-      });
+      // Get the modal elements
+      const modal = document.getElementById('edit-memory-modal');
+      const modalTitle = modal.querySelector('.modal-title');
+      const keyInput = document.getElementById('edit-memory-key');
+      const categorySelect = document.getElementById('edit-memory-category');
+      const contentTextarea = document.getElementById('edit-memory-content');
       
-      modal.on('save', () => this.handleEditMemory(modal, key));
-      modal.on('cancel', () => modal.close());
+      // Populate the modal with memory data
+      modalTitle.textContent = `Edit Memory: ${memory.key}`;
+      keyInput.value = memory.key;
+      categorySelect.value = memory.category || '';
+      contentTextarea.value = memory.content || '';
       
-      modal.show();
+      // Setup event listeners for this modal
+      this.setupEditModalEventListeners(key);
+      
+      // Show the modal
+      modal.style.display = 'flex';
+      document.body.classList.add('modal-open');
       
     } catch (error) {
       console.error('Error loading memory for editing:', error);
@@ -725,10 +740,49 @@ class MemoryManager {
     }
   }
 
+  setupEditModalEventListeners(originalKey) {
+    const modal = document.getElementById('edit-memory-modal');
+    const overlay = modal.querySelector('.modal-overlay');
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('[data-action="cancel"]');
+    const saveBtn = modal.querySelector('[data-action="save"]');
+    
+    // Close modal function
+    const closeModal = () => {
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      // Clean up event listeners by replacing elements
+      const newOverlay = overlay.cloneNode(true);
+      const newCloseBtn = closeBtn.cloneNode(true);
+      const newCancelBtn = cancelBtn.cloneNode(true);
+      const newSaveBtn = saveBtn.cloneNode(true);
+      
+      overlay.parentNode.replaceChild(newOverlay, overlay);
+      closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+      cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+      saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    };
+    
+    // Event listeners
+    overlay.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    saveBtn.addEventListener('click', () => this.handleEditMemory(originalKey));
+    
+    // Escape key handler
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+  }
+
   /**
    * Handle edit memory form submission
    */
-  async handleEditMemory(modal, key) {
+  async handleEditMemory(key) {
     const form = document.getElementById('edit-memory-form');
     if (!form.checkValidity()) {
       form.reportValidity();
@@ -752,7 +806,11 @@ class MemoryManager {
         throw new Error(error.error || 'Failed to update memory');
       }
       
-      modal.close();
+      // Close the HTML modal
+      const modal = document.getElementById('edit-memory-modal');
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      
       Notification.success('Memory updated successfully', {
         description: `Updated "${key}" in the memory system`
       });

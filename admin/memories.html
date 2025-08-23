@@ -12,6 +12,7 @@
   
   <!-- CSS -->
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/memory-components.css">
   <link rel="stylesheet" href="css/global-search.css">
   <link rel="stylesheet" href="css/modal-override.css?v=6">
   
@@ -27,84 +28,7 @@
     body { visibility: hidden; }
     .js body { visibility: visible; }
     
-    /* Memory management page styles */
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: var(--space-8);
-      gap: var(--space-6);
-    }
-    
-    .page-title-section {
-      flex: 1;
-    }
-    
-    .page-title {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0 0 var(--space-2);
-    }
-    
-    .page-icon {
-      width: 32px;
-      height: 32px;
-      color: var(--color-primary);
-    }
-    
-    .page-description {
-      font-size: 1.1rem;
-      color: var(--text-secondary);
-      margin: 0;
-      line-height: 1.5;
-    }
-    
-    .page-actions {
-      display: flex;
-      gap: var(--space-3);
-      flex-shrink: 0;
-    }
-    
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: var(--space-6);
-      margin-bottom: var(--space-8);
-    }
-    
-    
-    .search-filter-container {
-      display: flex;
-      gap: var(--space-3);
-      align-items: center;
-    }
-    
-    .search-input-wrapper {
-      position: relative;
-    }
-    
-    .search-input-wrapper .search-icon {
-      position: absolute;
-      left: var(--space-3);
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-secondary);
-      pointer-events: none;
-    }
-    
-    .search-input-wrapper .form-input {
-      padding-left: calc(var(--space-3) + 16px + var(--space-2));
-      min-width: 250px;
-    }
-    
-    .memory-table-container {
-      overflow-x: auto;
-    }
-    
+    /* Memory-specific styles */
     .category-badge {
       display: inline-flex;
       align-items: center;
@@ -169,193 +93,7 @@
       padding: var(--space-1) var(--space-2);
     }
     
-    /* Loading and error states */
-    .loading-container, .error-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-8);
-      text-align: center;
-    }
-    
-    .loading-spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border-primary);
-      border-top: 3px solid var(--color-primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: var(--space-4);
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .loading-text, .error-text {
-      color: var(--text-secondary);
-      margin-bottom: var(--space-4);
-    }
-    
-    .error-icon {
-      width: 48px;
-      height: 48px;
-      color: var(--color-danger);
-      margin-bottom: var(--space-4);
-    }
-    
-    .error-icon svg {
-      width: 100%;
-      height: 100%;
-    }
-    
-    /* Empty state */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-8);
-      text-align: center;
-    }
-    
-    .empty-icon {
-      width: 64px;
-      height: 64px;
-      color: var(--text-secondary);
-      margin-bottom: var(--space-4);
-    }
-    
-    .empty-icon svg {
-      width: 100%;
-      height: 100%;
-    }
-    
-    .empty-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: var(--space-2);
-    }
-    
-    .empty-description {
-      color: var(--text-secondary);
-      margin-bottom: var(--space-6);
-      max-width: 400px;
-    }
-    
-    /* Pagination styles */
-    .pagination-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--space-6) 0;
-      border-top: 1px solid var(--border-primary);
-      margin-top: var(--space-6);
-    }
-    
-    .pagination-info {
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-    }
-    
-    .pagination-controls {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-    }
-    
-    .page-numbers {
-      display: flex;
-      gap: var(--space-1);
-    }
-    
-    .page-number {
-      min-width: 32px;
-      height: 32px;
-      padding: 0 var(--space-2);
-      border: 1px solid var(--border-primary);
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      border-radius: var(--radius-md);
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    
-    .page-number:hover:not(:disabled) {
-      background: var(--bg-secondary);
-      border-color: var(--color-primary);
-    }
-    
-    .page-number.active {
-      background: var(--color-primary);
-      color: white;
-      border-color: var(--color-primary);
-    }
-    
-    .page-number:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    /* Sort table headers */
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-      position: relative;
-    }
-    
-    th.sortable:hover {
-      background: var(--bg-secondary);
-    }
-    
-    th.sortable .sort-icon {
-      opacity: 0.3;
-      transition: opacity 0.2s ease;
-    }
-    
-    th.sortable:hover .sort-icon,
-    th.sortable.sorted-asc .sort-icon,
-    th.sortable.sorted-desc .sort-icon {
-      opacity: 1;
-    }
-    
-    th.sortable.sorted-desc .sort-icon {
-      transform: rotate(180deg);
-    }
-
     @media (max-width: 768px) {
-      .page-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      
-      .page-actions {
-        justify-content: flex-start;
-      }
-      
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .search-filter-container {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      
-      .search-input-wrapper .form-input {
-        min-width: auto;
-      }
-      
-      .pagination-container {
-        flex-direction: column;
-        gap: var(--space-4);
-        align-items: center;
-      }
-      
       .action-buttons {
         flex-direction: column;
       }
@@ -388,12 +126,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
             Add Memory
-          </button>
-          <button id="refresh-memories" class="btn btn-outline">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Refresh
           </button>
         </div>
       </div>
@@ -450,31 +182,31 @@
         </div>
       </div>
 
-      <!-- Memory Table Card -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title-section">
-            <h2 class="card-title">Stored Memories</h2>
-            <p class="card-description">View and manage all memories that help personalize conversations</p>
+      <!-- Filters Section -->
+      <div class="filters-section glass-card" data-collapsible="true" data-collapsed="true" data-persist="memory-filters">
+        <div class="filters-header collapsible-header">
+          <h3 class="filters-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            Filters
+          </h3>
+          <div class="header-actions">
+            <div class="search-input-container">
+              <input type="text" id="memory-search" class="form-input" placeholder="Search memories..." aria-label="Search memories">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+            </div>
+            <button id="clear-all-filters" class="btn btn-sm btn-ghost">Clear All</button>
           </div>
-          
-          <div class="card-actions">
-            <!-- Search and Filter Controls -->
-            <div class="search-filter-container">
-              <div class="search-input-wrapper">
-                <input 
-                  type="text" 
-                  id="memory-search" 
-                  class="form-input" 
-                  placeholder="Search memories..."
-                  aria-label="Search memories"
-                >
-                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <path d="m21 21-4.35-4.35"></path>
-                </svg>
-              </div>
-              
+        </div>
+        
+        <div class="filters-grid collapsible-content">
+          <div class="filter-group">
+            <label class="filter-label">Category</label>
+            <div class="filter-controls">
               <select id="category-filter" class="form-select" aria-label="Filter by category">
                 <option value="">All Categories</option>
                 <option value="family">Family</option>
@@ -487,8 +219,10 @@
             </div>
           </div>
         </div>
-        
-        <div class="card-content">
+      </div>
+
+      <!-- Memory Table Section -->
+      <div>
           <!-- Loading State -->
           <div id="memories-loading" class="loading-container" style="display: none;">
             <div class="loading-spinner"></div>
@@ -524,23 +258,23 @@
               <thead>
                 <tr>
                   <th class="sortable" data-sort="key">
-                    Memory Key
                     <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
                     </svg>
+                    Memory Key
                   </th>
                   <th class="sortable" data-sort="category">
-                    Category
                     <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
                     </svg>
+                    Category
                   </th>
                   <th>Content Preview</th>
                   <th class="sortable" data-sort="last_accessed">
-                    Last Accessed
                     <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
                     </svg>
+                    Last Accessed
                   </th>
                   <th>Actions</th>
                 </tr>
@@ -574,12 +308,220 @@
               </button>
             </div>
           </div>
-        </div>
-      </div>
     </main>
 
     <!-- Mobile Sidebar Overlay -->
     <div class="layout-overlay"></div>
+  </div>
+
+  <!-- Memory Modal - MOVED TO BODY LEVEL FOR PROPER FULL-VIEWPORT COVERAGE -->
+  <div id="memory-modal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Memory</h3>
+        <button class="modal-close" aria-label="Close modal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="memory-form" class="memory-form">
+          <div class="form-group">
+            <label for="memory-key" class="form-label">
+              Memory Key <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="memory-key" 
+              name="key" 
+              class="form-input" 
+              placeholder="e.g., favorite_music, daughter_name, medication_time"
+              required
+              aria-describedby="memory-key-help memory-key-error"
+            />
+            <div id="memory-key-help" class="form-help">
+              A unique identifier for this memory (use lowercase with underscores)
+            </div>
+            <div id="memory-key-error" class="form-error" style="display: none;"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="memory-content" class="form-label">
+              Content <span class="required">*</span>
+            </label>
+            <textarea 
+              id="memory-content" 
+              name="content" 
+              class="form-textarea" 
+              rows="4"
+              placeholder="Describe the memory in detail..."
+              required
+              aria-describedby="memory-content-help memory-content-error"
+            ></textarea>
+            <div id="memory-content-help" class="form-help">
+              Detailed information about this memory that will help provide personalized care
+            </div>
+            <div id="memory-content-error" class="form-error" style="display: none;"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="memory-category" class="form-label">
+              Category <span class="required">*</span>
+            </label>
+            <select 
+              id="memory-category" 
+              name="category" 
+              class="form-select" 
+              required
+              aria-describedby="memory-category-help memory-category-error"
+            >
+              <option value="">Select a category...</option>
+              <option value="family">Family</option>
+              <option value="health">Health</option>
+              <option value="preferences">Preferences</option>
+              <option value="topics_to_avoid">Topics to Avoid</option>
+              <option value="general">General</option>
+            </select>
+            <div id="memory-category-help" class="form-help">
+              Choose the most appropriate category for this memory
+            </div>
+            <div id="memory-category-error" class="form-error" style="display: none;"></div>
+          </div>
+          
+          <div class="category-descriptions">
+            <div class="category-description" data-category="family">
+              <div class="category-badge category-family">Family</div>
+              <p>Information about family members, relationships, and important family events</p>
+            </div>
+            <div class="category-description" data-category="health">
+              <div class="category-badge category-health">Health</div>
+              <p>Medical conditions, medications, allergies, and health-related preferences</p>
+            </div>
+            <div class="category-description" data-category="preferences">
+              <div class="category-badge category-preferences">Preferences</div>
+              <p>Personal likes, dislikes, hobbies, interests, and comfort preferences</p>
+            </div>
+            <div class="category-description" data-category="topics_to_avoid">
+              <div class="category-badge category-topics_to_avoid">Topics to Avoid</div>
+              <p>Sensitive subjects or topics that may cause distress or discomfort</p>
+            </div>
+            <div class="category-description" data-category="general">
+              <div class="category-badge category-general">General</div>
+              <p>Other important information that doesn't fit into specific categories</p>
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-action="cancel">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary submit-btn" data-action="save">
+              <span class="btn-text">Save Memory</span>
+              <div class="btn-loading" style="display: none;">
+                <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+              </div>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Memory Modal - MOVED TO BODY LEVEL FOR PROPER FULL-VIEWPORT COVERAGE -->
+  <div id="view-memory-modal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Memory Details</h3>
+        <button class="modal-close" aria-label="Close modal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="view-memory-content" class="memory-details">
+          <!-- Content will be populated by JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="edit">
+          Edit Memory
+        </button>
+        <button type="button" class="btn btn-primary" data-action="close">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Memory Modal - MOVED TO BODY LEVEL FOR PROPER FULL-VIEWPORT COVERAGE -->
+  <div id="edit-memory-modal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Memory</h3>
+        <button class="modal-close" aria-label="Close modal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-memory-form" class="memory-form">
+          <div class="form-group">
+            <label for="edit-memory-key" class="form-label">Memory Key *</label>
+            <input 
+              type="text" 
+              id="edit-memory-key" 
+              class="form-input" 
+              required
+              readonly
+            >
+            <div class="form-help">Memory key cannot be changed after creation</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="edit-memory-category" class="form-label">Category *</label>
+            <select id="edit-memory-category" class="form-select" required>
+              <option value="">Select a category</option>
+              <option value="family">Family</option>
+              <option value="preferences">Preferences</option>
+              <option value="medical">Medical</option>
+              <option value="personal">Personal</option>
+              <option value="activities">Activities</option>
+              <option value="general">General</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="edit-memory-content" class="form-label">Content *</label>
+            <textarea 
+              id="edit-memory-content" 
+              class="form-textarea" 
+              rows="4" 
+              required
+            ></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="cancel">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" data-action="save">
+          Save Changes
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- JavaScript -->

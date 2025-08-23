@@ -7,9 +7,9 @@
   box-sizing: border-box !important;
 }
 
-/* CRITICAL FIX: #transcript-modal must cover exact viewport dimensions */
+/* CRITICAL FIX: All modals must cover exact viewport dimensions */
 /* This overrides any conflicting styles from conversations.css */
-#transcript-modal {
+.modal {
   /* Fixed positioning to break out of any parent constraints */
   position: fixed !important;
   top: 0 !important;
@@ -48,13 +48,12 @@
 }
 
 .modal.show,
-#transcript-modal[style*="display: flex"] {
+.modal[style*="display: flex"] {
   display: flex !important;
 }
 
 /* Modal overlay - MUST fill entire viewport */
-.modal-overlay,
-#transcript-modal .modal-overlay {
+.modal-overlay {
   /* Absolute positioning within the fixed modal container */
   position: absolute !important;
   top: 0 !important;
@@ -83,27 +82,10 @@
   overflow: hidden !important;
 }
 
-/* Other modals can use centered approach */
-.modal:not(#transcript-modal) {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 9999 !important;
-  display: none;
-  max-width: 90% !important;
-  max-height: 90% !important;
-  width: auto !important;
-  height: auto !important;
-}
-
-.modal:not(#transcript-modal).show {
-  display: block !important;
-}
+/* All modals use consistent full-viewport approach */
 
 /* Modal container - the actual content box (centered) */
-.modal-container,
-#transcript-modal .modal-container {
+.modal-container {
   position: relative !important;
   z-index: 1051 !important;
   width: 93%;
@@ -156,7 +138,6 @@ body.modal-open {
 }
 
 /* Dark theme support */
-[data-theme="dark"] .modal-overlay,
-[data-theme="dark"] #transcript-modal .modal-overlay {
+[data-theme="dark"] .modal-overlay {
   background: rgba(0, 0, 0, 0.7) !important;
 }
