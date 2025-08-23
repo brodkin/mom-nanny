@@ -11,7 +11,7 @@
  * - Duration filtering (short, medium, long conversations)
  * - Global search across all conversation data
  * - Sortable data table with pagination
- * - Transcript modal with emotional timeline
+ * - Transcript modal
  * - Export to CSV functionality
  * - Loading, empty, and error states
  */
@@ -842,188 +842,11 @@ class ConversationsPage {
 
     html += '</div></div>'; // Close messages-container and conversation-content
 
-    // Add emotional timeline if available
-    if (data.emotionalTimeline && data.emotionalTimeline.length > 0) {
-      html += this.formatEmotionalTimeline(data.emotionalTimeline);
-    }
-
-    // Add care indicators if available
-    if (data.careIndicators) {
-      html += this.formatCareIndicators(data.careIndicators);
-    }
-
     html += '</div>'; // Close transcript-container
 
     return html;
   }
 
-  /**
-   * Format emotional timeline section
-   * FIXED: Ensures only emotional metrics are displayed, never message content
-   */
-  formatEmotionalTimeline(timeline) {
-    let html = `
-      <div class="emotional-timeline">
-        <h4>Emotional Timeline</h4>
-        <div class="timeline-container">
-          <div class="timeline-legend">
-            <div class="legend-item anxiety">
-              <span class="legend-color" style="background-color: #ef4444"></span>
-              <span>Anxiety</span>
-            </div>
-            <div class="legend-item agitation">
-              <span class="legend-color" style="background-color: #f59e0b"></span>
-              <span>Agitation</span>
-            </div>
-            <div class="legend-item engagement">
-              <span class="legend-color" style="background-color: #10b981"></span>
-              <span>Positive Engagement</span>
-            </div>
-          </div>
-          <div class="timeline-chart">
-    `;
-
-    // Create simple timeline visualization
-    // FIXED: Explicitly filter out any non-metric properties to prevent 
-    // message content from being displayed even if erroneously included in data
-    timeline.forEach((point, index) => {
-      const timestamp = new Date(point.timestamp).toLocaleTimeString();
-      
-      // FIXED: Only extract and use emotional metrics, ignore any other properties
-      const anxietyLevel = Math.max(0, Math.min(10, Number(point.anxietyLevel) || 0));
-      const agitationLevel = Math.max(0, Math.min(10, Number(point.agitationLevel) || 0));
-      const positiveEngagement = Math.max(0, Math.min(10, Number(point.positiveEngagement) || 0));
-      
-      html += `
-        <div class="timeline-point">
-          <div class="point-time">${timestamp}</div>
-          <div class="point-metrics">
-            <div class="metric anxiety" title="Anxiety: ${anxietyLevel}/10">
-              <div class="metric-bar" style="width: ${(anxietyLevel / 10) * 100}%"></div>
-              <span class="metric-value">${anxietyLevel}</span>
-            </div>
-            <div class="metric agitation" title="Agitation: ${agitationLevel}/10">
-              <div class="metric-bar" style="width: ${(agitationLevel / 10) * 100}%"></div>
-              <span class="metric-value">${agitationLevel}</span>
-            </div>
-            <div class="metric engagement" title="Positive Engagement: ${positiveEngagement}/10">
-              <div class="metric-bar" style="width: ${(positiveEngagement / 10) * 100}%"></div>
-              <span class="metric-value">${positiveEngagement}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-          </div>
-        </div>
-      </div>
-    `;
-
-    return html;
-  }
-
-  /**
-   * Format care indicators section
-   */
-  formatCareIndicators(careIndicators) {
-    let html = `
-      <div class="care-indicators">
-        <h4>Care Indicators</h4>
-        <div class="indicators-grid">
-    `;
-
-    // Medication concerns
-    if (careIndicators.medicationConcerns && careIndicators.medicationConcerns.length > 0) {
-      html += `
-        <div class="indicator-item medication">
-          <div class="indicator-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <circle cx="15.5" cy="8.5" r="1.5"></circle>
-              <circle cx="8.5" cy="15.5" r="1.5"></circle>
-              <circle cx="15.5" cy="15.5" r="1.5"></circle>
-            </svg>
-            <h5>Medication Concerns</h5>
-          </div>
-          <ul>
-            ${careIndicators.medicationConcerns.map(concern => 
-              `<li>${this.escapeHtml(concern)}</li>`
-            ).join('')}
-          </ul>
-        </div>
-      `;
-    }
-
-    // Pain level
-    if (careIndicators.painLevel && careIndicators.painLevel > 0) {
-      html += `
-        <div class="indicator-item pain">
-          <div class="indicator-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-            </svg>
-            <h5>Pain Level</h5>
-          </div>
-          <div class="pain-level">
-            <div class="pain-scale">
-              <div class="pain-bar" style="width: ${(careIndicators.painLevel / 10) * 100}%"></div>
-            </div>
-            <span class="pain-value">${careIndicators.painLevel}/10</span>
-          </div>
-        </div>
-      `;
-    }
-
-    // Staff complaints
-    if (careIndicators.staffComplaints && careIndicators.staffComplaints.length > 0) {
-      html += `
-        <div class="indicator-item staff">
-          <div class="indicator-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <h5>Staff Issues</h5>
-          </div>
-          <ul>
-            ${careIndicators.staffComplaints.map(complaint => 
-              `<li>${this.escapeHtml(complaint)}</li>`
-            ).join('')}
-          </ul>
-        </div>
-      `;
-    }
-
-    // Key topics
-    if (careIndicators.keyTopics && careIndicators.keyTopics.length > 0) {
-      html += `
-        <div class="indicator-item topics">
-          <div class="indicator-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-            <h5>Key Topics</h5>
-          </div>
-          <div class="topic-tags">
-            ${careIndicators.keyTopics.map(topic => 
-              `<span class="topic-tag">${this.escapeHtml(topic)}</span>`
-            ).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    html += `
-        </div>
-      </div>
-    `;
-
-    return html;
-  }
 
   /**
    * Show transcript modal with content
