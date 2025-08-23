@@ -11,7 +11,7 @@
  * visual consistency with the compassionate care theme.
  */
 
-import { Modal, Notification, ComponentUtils } from './components/components.js';
+import { Notification, ComponentUtils } from './components/components.js';
 
 /**
  * Memory Manager - Main class for handling memory operations
@@ -829,12 +829,7 @@ class MemoryManager {
    * Delete memory with confirmation
    */
   async deleteMemory(key) {
-    const confirmed = await Modal.confirm({
-      title: 'Delete Memory',
-      message: `Are you sure you want to delete the memory "${key}"? This action cannot be undone. The AI will no longer have access to this information.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel'
-    });
+    const confirmed = confirm(`Are you sure you want to delete the memory "${key}"? This action cannot be undone. The AI will no longer have access to this information.`);
     
     if (!confirmed) return;
     

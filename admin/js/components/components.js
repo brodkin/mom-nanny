@@ -5,11 +5,10 @@
  * - Card: Expandable cards with loading states and refresh functionality
  * - DataTable: Sortable, paginated tables with search and export
  * - Chart: Wrapper for Chart.js with real-time updates and animations
- * - Modal: Programmatic modals with multiple sizes and types
  * - Notification: Toast notifications with auto-dismiss and stacking
  * 
  * @example
- * import { Card, DataTable, Chart, Modal, Notification } from './components.js';
+ * import { Card, DataTable, Chart, Notification } from './components.js';
  * 
  * // Or import all components
  * import * as Components from './components.js';
@@ -19,8 +18,6 @@
  * const table = new DataTable({ columns: [...], data: [...] });
  * const chart = new Chart({ type: 'line', data: {...} });
  * 
- * // Static methods
- * Modal.confirm('Are you sure?').then(result => console.log(result));
  * Notification.success('Operation completed');
  */
 
@@ -28,7 +25,6 @@
 import Card from './card.js';
 import DataTable from './table.js';
 import Chart from './chart.js';
-import Modal from './modal.js';
 import Notification from './notification.js';
 import Collapsible from './collapsible.js';
 
@@ -39,7 +35,6 @@ const ComponentRegistry = {
   Card,
   DataTable,
   Chart,
-  Modal,
   Notification,
   Collapsible
 };
@@ -87,25 +82,6 @@ function initializeComponents(config = {}) {
  * Utility functions for common component operations
  */
 const ComponentUtils = {
-  /**
-   * Create a confirmation dialog
-   * @param {string} message - Confirmation message
-   * @param {Object} options - Additional options
-   * @returns {Promise<boolean>} User's choice
-   */
-  confirm(message, options = {}) {
-    return Modal.confirm({ message, ...options });
-  },
-
-  /**
-   * Show an alert dialog
-   * @param {string} message - Alert message
-   * @param {Object} options - Additional options
-   * @returns {Promise} Promise that resolves when dismissed
-   */
-  alert(message, options = {}) {
-    return Modal.alert({ message, ...options });
-  },
 
   /**
    * Show a success notification
@@ -272,7 +248,6 @@ export {
   Card,
   DataTable,
   Chart,
-  Modal,
   Notification,
   Collapsible,
   ComponentRegistry,
@@ -286,7 +261,6 @@ export default {
   Card,
   DataTable,
   Chart,
-  Modal,
   Notification,
   Collapsible,
   ComponentRegistry,
