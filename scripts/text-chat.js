@@ -37,8 +37,10 @@ class TextChatCLI {
       prompt: chalk.cyan('You: ')
     });
 
-    // Initialize chat session
+    // Initialize chat session and wait for it to complete
     this.chatSession = new ChatSession();
+    await this.chatSession.initializeAsync();
+    
     this.setupEventHandlers();
     
     this.isRunning = true;
@@ -88,13 +90,22 @@ class TextChatCLI {
   }
 
   /**
-   * Show initial AI greeting
+   * Show initial AI greeting with progressive delay based on call frequency
    */
   showInitialGreeting() {
-    console.log(chalk.green('🤖 Hi Francine! How are you doing today?'));
-    console.log();
-    console.log(chalk.gray('💡 Tip: Type /help for commands, or just start chatting!'));
-    console.log();
+    // Get call frequency stats for progressive delay
+    const callStats = this.chatSession.gptService.getCallStats();
+    const callsToday = callStats?.callsToday || 1;
+    const delayMs = Math.max(3000, callsToday * 3000); // Minimum 3s, 3s per call
+
+    console.log(chalk.magenta(`⏱️  Delaying greeting by ${delayMs/1000}s (call #${callsToday} today)`));
+
+    setTimeout(() => {
+      console.log(chalk.green('🤖 Hi Francine! How are you doing today?'));
+      console.log();
+      console.log(chalk.gray('💡 Tip: Type /help for commands, or just start chatting!'));
+      console.log();
+    }, delayMs);
   }
 
   /**

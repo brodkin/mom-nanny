@@ -500,7 +500,7 @@ app.ws('/connection', async (ws) => {
         gptService.setConversationAnalyzer(conversationAnalyzer);
 
         // Initialize GPT service with memory keys
-        gptService.initialize().then(() => {
+        const gptInitPromise = gptService.initialize().then(() => {
           // Silent initialization - no console output that might leak to chat
         }).catch(error => {
           // HIPAA COMPLIANCE: Never log full error object as it may contain patient data (PHI)
@@ -508,8 +508,18 @@ app.ws('/connection', async (ws) => {
         });
 
         // Set RECORDING_ENABLED='true' in .env to record calls
-        recordingService(ttsService, callSid).then(() => {
+        recordingService(ttsService, callSid).then(async () => {
           console.log(`Twilio -> Starting Media Stream for ${streamSid}`.underline.red);
+
+          // Wait for GPT service to finish initializing to access call stats
+          await gptInitPromise;
+
+          // Get call frequency stats for progressive delay
+          const callStats = gptService.getCallStats();
+          const callsToday = callStats?.callsToday || 1;
+          const delayMs = Math.max(3000, callsToday * 3000); // Minimum 3s, 3s per call
+
+          console.log(`⏱️  Delaying greeting by ${delayMs/1000}s (call #${callsToday} today)`.magenta);
 
           // Variety of natural greetings - like a real person answering
           const greetings = [
@@ -525,10 +535,12 @@ app.ws('/connection', async (ws) => {
             'Hi, how are you?'
           ];
 
-          // Select a random greeting
-          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-
-          ttsService.generate({partialResponseIndex: null, partialResponse: randomGreeting}, 0);
+          // Apply progressive delay based on call frequency
+          setTimeout(() => {
+            // Select a random greeting
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            ttsService.generate({partialResponseIndex: null, partialResponse: randomGreeting}, 0);
+          }, delayMs);
         });
       } else if (msg.event === 'media') {
         transcriptionService.send(msg.media.payload);

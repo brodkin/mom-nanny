@@ -29,6 +29,7 @@ class GptService extends EventEmitter {
 
     // Initialize system prompt (will be updated with memory keys)
     this.systemPrompt = '';
+    this.callStats = null; // Store call frequency data for access
     this.userContext = [
       { 'role': 'system', 'content': 'Initializing...' },
       { 'role': 'assistant', 'content': 'Hi Francine! • How are you doing today?' },
@@ -52,13 +53,12 @@ class GptService extends EventEmitter {
     }
 
     // Get today's call statistics if database manager is available
-    let callStats = null;
     if (this.databaseManager) {
       try {
         await this.databaseManager.waitForInitialization();
-        callStats = await this.databaseManager.getTodayCallStats();
-        if (callStats.callsToday > 0) {
-          console.log(`📞 Call Frequency -> ${callStats.callsToday} calls today, last call ${callStats.timeSinceLastCall}`.cyan);
+        this.callStats = await this.databaseManager.getTodayCallStats();
+        if (this.callStats.callsToday > 0) {
+          console.log(`📞 Call Frequency -> ${this.callStats.callsToday} calls today, last call ${this.callStats.timeSinceLastCall}`.cyan);
         }
       } catch (error) {
         console.error('Error loading call frequency data:', error);
@@ -66,7 +66,7 @@ class GptService extends EventEmitter {
     }
 
     // Get the system prompt with memory keys and call frequency data
-    this.systemPrompt = this.templateService.getSystemPrompt(memoryKeys, callStats);
+    this.systemPrompt = this.templateService.getSystemPrompt(memoryKeys, this.callStats);
     
     // Update the system context with the full prompt
     this.userContext[0] = { 'role': 'system', 'content': this.systemPrompt };
@@ -81,6 +81,11 @@ class GptService extends EventEmitter {
   // Set conversation analyzer for tracking
   setConversationAnalyzer(analyzer) {
     this.conversationAnalyzer = analyzer;
+  }
+
+  // Get call frequency statistics (for progressive delay calculation)
+  getCallStats() {
+    return this.callStats;
   }
 
   validateFunctionArgs (args) {
