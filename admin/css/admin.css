@@ -14,6 +14,86 @@
 
 /* Admin-Specific Styles */
 
+/* Glass Card Effect - Global Component */
+.glass-card,
+.card.glass-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover,
+.card.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1), 0 16px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="dark"] .glass-card,
+[data-theme="dark"] .card.glass-card {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .glass-card:hover,
+[data-theme="dark"] .card.glass-card:hover {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-primary);
+  }
+}
+
+/* Nested glass-card optimizations */
+.glass-card .glass-card {
+  /* Nested glass cards have less opacity to prevent over-layering */
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03), 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.glass-card .glass-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .glass-card .glass-card {
+  background: rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .glass-card .glass-card:hover {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Ensure proper spacing for nested cards */
+.glass-card .card.glass-card {
+  margin-bottom: 0; /* Remove bottom margin to prevent double spacing */
+}
+
+/* Dashboard specific glass-card padding adjustments */
+.dashboard-row .glass-card,
+.dashboard-grid .glass-card {
+  padding: var(--space-5);
+}
+
+/* Dashboard glass card spacing */
+[data-page="dashboard"] .glass-card {
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
 /* Theme Toggle - Modern Switch Design */
 .theme-toggle {
   position: relative;

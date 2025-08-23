@@ -672,33 +672,33 @@ class CompassionateDashboard {
     const status = statusConfig[summary.overallStatus] || statusConfig.calm;
     
     container.innerHTML = `
-      <div class="mental-state-indicator">
-        <div class="mental-state-icon ${status.color}">
+      <div class="stat-card" style="margin-bottom: var(--space-3);">
+        <div class="stat-icon">
           ${status.icon}
         </div>
-        <div class="mental-state-info">
-          <h4>Overall Status</h4>
-          <p>${status.label}</p>
+        <div class="stat-content">
+          <span class="stat-label">Overall Status</span>
+          <span class="stat-value">${status.label}</span>
         </div>
       </div>
       
-      <div class="mental-state-indicator">
-        <div class="mental-state-icon ${summary.avgAnxietyLevel > 0.6 ? 'concerning' : summary.avgAnxietyLevel > 0.4 ? 'elevated' : 'calm'}">
+      <div class="stat-card" style="margin-bottom: var(--space-3);">
+        <div class="stat-icon">
           ${summary.avgAnxietyLevel > 0.6 ? '😰' : summary.avgAnxietyLevel > 0.4 ? '😟' : '😌'}
         </div>
-        <div class="mental-state-info">
-          <h4>Anxiety Level</h4>
-          <p>${Math.round(summary.avgAnxietyLevel * 100)}% average</p>
+        <div class="stat-content">
+          <span class="stat-label">Anxiety Level</span>
+          <span class="stat-value">${Math.round(summary.avgAnxietyLevel * 100)}% average</span>
         </div>
       </div>
       
-      <div class="mental-state-indicator">
-        <div class="mental-state-icon ${summary.avgConfusionLevel > 0.6 ? 'concerning' : summary.avgConfusionLevel > 0.4 ? 'elevated' : 'calm'}">
+      <div class="stat-card">
+        <div class="stat-icon">
           ${summary.avgConfusionLevel > 0.6 ? '😵' : summary.avgConfusionLevel > 0.4 ? '🤔' : '🧠'}
         </div>
-        <div class="mental-state-info">
-          <h4>Confusion Level</h4>
-          <p>${Math.round(summary.avgConfusionLevel * 100)}% average</p>
+        <div class="stat-content">
+          <span class="stat-label">Confusion Level</span>
+          <span class="stat-value">${Math.round(summary.avgConfusionLevel * 100)}% average</span>
         </div>
       </div>
     `;

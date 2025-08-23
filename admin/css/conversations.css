@@ -40,32 +40,7 @@
   align-items: center;
 }
 
-/* Glass Card Effect */
-.glass-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.glass-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1), 0 16px 32px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="dark"] .glass-card {
-  background: rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .glass-card:hover {
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.15);
-}
+/* Glass Card Effect - Now defined globally in admin.css */
 
 /* Filters Section */
 .filters-section {
@@ -1380,7 +1355,6 @@
 }
 
 /* Animation for smooth transitions */
-.glass-card,
 .emotional-state-badge,
 .checkbox-label,
 .message,
@@ -1390,11 +1364,6 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .glass-card {
-    background: var(--bg-primary);
-    border: 2px solid var(--border-primary);
-  }
-  
   .emotional-state-badge {
     border-width: 2px;
   }

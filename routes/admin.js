@@ -39,14 +39,14 @@ router.get('/', (req, res) => {
   }
 });
 
-// Compassionate Care Dashboard route
+// Dashboard page route
 router.get('/dashboard', (req, res) => {
   try {
     const dashboardPath = path.join(__dirname, '..', 'admin', 'dashboard.html');
     res.sendFile(dashboardPath);
   } catch (error) {
-    console.error('Error serving care dashboard:', error);
-    res.status(500).json({ error: 'Failed to load care dashboard' });
+    console.error('Error serving dashboard page:', error);
+    res.status(500).json({ error: 'Failed to load dashboard page' });
   }
 });
 
