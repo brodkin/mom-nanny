@@ -27,6 +27,7 @@ const adminStatsRouter = require('./routes/api/admin-stats');
 const adminConfigRouter = require('./routes/api/admin-config');
 const adminDashboardRouter = require('./routes/api/admin-dashboard-real');
 const adminMemoriesRouter = require('./routes/api/admin-memories');
+const emotionalMetricsRouter = require('./routes/api/emotional-metrics');
 const conversationsRouter = require('./routes/api/conversations');
 const searchRouter = require('./routes/api/search');
 
@@ -338,6 +339,9 @@ app.use('/api/admin/stats', adminStatsRouter);
 app.use('/api/admin/config', adminConfigRouter);
 app.use('/api/admin/dashboard', adminDashboardRealRouter);
 app.use('/api/admin/memories', adminMemoriesRouter);
+
+// Mount emotional metrics API routes
+app.use('/api/emotional-metrics', emotionalMetricsRouter);
 
 // Mount conversations API routes
 app.use('/api/conversations', conversationsRouter);
