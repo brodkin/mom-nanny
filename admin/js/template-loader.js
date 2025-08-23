@@ -167,6 +167,8 @@ class TemplateLoader {
     // Reinitialize admin dashboard if it exists
     if (window.adminDashboard) {
       window.adminDashboard.bindEvents();
+      // CRITICAL: Reinitialize theme after templates are loaded and toggle button exists
+      window.adminDashboard.initializeTheme();
     }
 
     // Dispatch custom event for other scripts to listen to

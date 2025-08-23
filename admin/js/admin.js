@@ -112,15 +112,24 @@ class AdminDashboard {
   initializeTheme() {
     const savedTheme = localStorage.getItem('admin-theme') || 'light';
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = savedTheme === 'system' ? (prefersDark ? 'dark' : 'light') : savedTheme;
+    let theme = savedTheme === 'system' ? (prefersDark ? 'dark' : 'light') : savedTheme;
+    
+    // Check if page is already in dark mode due to CSS media query
+    // This happens when user has system dark mode preference and no explicit theme is set
+    const currentDataTheme = document.documentElement.getAttribute('data-theme');
+    const isSystemDarkActive = prefersDark && !currentDataTheme;
+    
+    // If CSS has already applied dark mode via media query, but we think theme should be light,
+    // then we need to explicitly set light mode
+    if (isSystemDarkActive && theme === 'light') {
+      // System dark mode is active but we want light mode - explicitly set it
+      theme = 'light';
+    } else if (isSystemDarkActive && savedTheme !== 'light') {
+      // System dark mode is active and we don't have explicit light preference - use dark
+      theme = 'dark';
+    }
     
     this.setTheme(theme);
-    
-    // Update theme toggle state
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-      themeToggle.classList.toggle('dark', theme === 'dark');
-    }
 
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -133,6 +142,12 @@ class AdminDashboard {
   setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('admin-theme', theme);
+    
+    // Update theme toggle state
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      themeToggle.classList.toggle('dark', theme === 'dark');
+    }
   }
 
   toggleTheme() {
