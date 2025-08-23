@@ -141,109 +141,130 @@ class GptService extends EventEmitter {
       };
     }
 
-    // System prompt for emotional analysis as specified in tasks.md
-    const emotionalAnalysisPrompt = `You are an expert geriatric psychiatrist analyzing a dementia care conversation.
-Evaluate the entire conversation holistically, considering context and emotional progression.
+    // System prompt for emotional analysis with clear transcript-based scoring criteria
+    const emotionalAnalysisPrompt = `You are an expert geriatric psychiatrist analyzing a dementia care conversation. Evaluate ONLY what you can observe in the transcript text.
 
-Provide numerical scores (0-100 for levels, -100 to +100 for mood):
-- Early anxiety that resolves should score lower than persistent anxiety
-- Consider dementia context (repetition may not indicate anxiety)
-- Weight recent emotional state more heavily than early conversation
+ANXIETY SCORING (0-100):
+• 0-20: Calm, engaged, no verbal distress
+• 20-40: Mild worry expressions, seeks reassurance, accepts comfort  
+• 40-60: Repeated worry statements, multiple reassurance requests, difficulty accepting comfort
+• 60-80: Catastrophizing language, unable to redirect from worries
+• 80-100: Severe verbal distress, panic expressions, overwhelming fear statements
 
-Return ONLY valid JSON with these exact numeric fields (no nulls).`;
+CONFUSION SCORING (0-100) - Key transcript indicators:
+• Self-contradictions: "I haven't eaten" then "I just had lunch" (+20-30 points)
+• Not remembering recent statements: "I didn't say that" when they just did (+20-30 points)
+• Frequent repetition: Same question 3+ times (+10-20 points per cluster)
+• Temporal disorientation: Wrong decade, thinking deceased are alive (+20-30 points)
+• Identity confusion: Not knowing who/where they are (+40-50 points)
+• Baseline: 1-2 repetitions normal for dementia (don't over-penalize)
+
+AGITATION SCORING (0-100):
+• 0-20: Cooperative, no verbal resistance
+• 20-40: Mild frustration, complaints but redirectable
+• 40-60: Argumentative, refuses suggestions, verbal resistance
+• 60-80: Hostile language, accusations
+• 80-100: Verbal aggression, threats, extreme outbursts
+
+MOOD SCORING (-100 to +100):
+• Positive: Laughter, gratitude, pleasant memories, engagement
+• Negative: Expressions of sadness, hopelessness, fear, crying
+• Weight final 30% of conversation 2x more than beginning
+
+Return structured JSON with exact numeric fields.`;
 
     // Tool definition for structured output
     const emotionalAnalysisTool = {
-      type: "function",
+      type: 'function',
       function: {
-        name: "reportEmotionalAnalysis",
-        description: "Report structured emotional analysis of the conversation",
+        name: 'reportEmotionalAnalysis',
+        description: 'Report structured emotional analysis of the conversation',
         parameters: {
-          type: "object",
+          type: 'object',
           properties: {
             anxietyLevel: {
-              type: "number",
-              description: "Overall anxiety level (0-100)",
+              type: 'number',
+              description: 'Overall anxiety level (0-100) based on verbal distress, worry expressions, and reassurance-seeking patterns',
               minimum: 0,
               maximum: 100
             },
             anxietyPeak: {
-              type: "number", 
-              description: "Peak anxiety level during conversation (0-100)",
+              type: 'number', 
+              description: 'Peak anxiety level during conversation (0-100) - highest point of verbal distress or panic expressions',
               minimum: 0,
               maximum: 100
             },
             anxietyTrend: {
-              type: "string",
-              enum: ["increasing", "decreasing", "stable", "fluctuating"],
-              description: "Trend of anxiety throughout conversation"
+              type: 'string',
+              enum: ['increasing', 'decreasing', 'stable', 'fluctuating'],
+              description: 'Trend of anxiety throughout conversation - weight final 30% more heavily'
             },
             confusionLevel: {
-              type: "number",
-              description: "Overall confusion level (0-100)",
+              type: 'number',
+              description: 'Overall confusion level (0-100) based on self-contradictions, memory gaps, and repetitive statements beyond dementia baseline',
               minimum: 0,
               maximum: 100
             },
             confusionPeak: {
-              type: "number",
-              description: "Peak confusion level during conversation (0-100)", 
+              type: 'number',
+              description: 'Peak confusion level during conversation (0-100) - highest point of disorientation or contradictory statements', 
               minimum: 0,
               maximum: 100
             },
             confusionTrend: {
-              type: "string",
-              enum: ["increasing", "decreasing", "stable", "fluctuating"],
-              description: "Trend of confusion throughout conversation"
+              type: 'string',
+              enum: ['increasing', 'decreasing', 'stable', 'fluctuating'],
+              description: 'Trend of confusion throughout conversation - distinguish from normal dementia repetition patterns'
             },
             agitationLevel: {
-              type: "number",
-              description: "Overall agitation level (0-100)",
+              type: 'number',
+              description: 'Overall agitation level (0-100) based on verbal resistance, argumentative language, and hostility expressions',
               minimum: 0,
               maximum: 100
             },
             agitationPeak: {
-              type: "number",
-              description: "Peak agitation level during conversation (0-100)",
+              type: 'number',
+              description: 'Peak agitation level during conversation (0-100) - highest point of verbal aggression or resistance',
               minimum: 0,
               maximum: 100
             },
             agitationTrend: {
-              type: "string",
-              enum: ["increasing", "decreasing", "stable", "fluctuating"],
-              description: "Trend of agitation throughout conversation"
+              type: 'string',
+              enum: ['increasing', 'decreasing', 'stable', 'fluctuating'],
+              description: 'Trend of agitation throughout conversation - consider successful redirection as positive indicator'
             },
             overallMood: {
-              type: "number",
-              description: "Overall mood score (-100 to +100, negative is sad/distressed, positive is happy/content)",
+              type: 'number',
+              description: 'Overall mood score (-100 to +100, negative is sad/distressed, positive is happy/content) based on laughter, gratitude, or sadness expressions',
               minimum: -100,
               maximum: 100
             },
             moodTrend: {
-              type: "string",
-              enum: ["improving", "declining", "stable", "fluctuating"],
-              description: "Trend of mood throughout conversation"
+              type: 'string',
+              enum: ['improving', 'declining', 'stable', 'fluctuating'],
+              description: 'Trend of mood throughout conversation - weight final 30% of conversation 2x more heavily'
             },
             analysisConfidence: {
-              type: "number",
-              description: "Confidence in analysis (0.0 to 1.0)",
+              type: 'number',
+              description: 'Confidence in analysis (0.0 to 1.0) - lower for ambiguous conversations or limited transcript data',
               minimum: 0.0,
               maximum: 1.0
             },
             keyObservations: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "string"
+                type: 'string'
               },
-              description: "Key observations about emotional state (2-5 items)",
+              description: 'Key observations about emotional state (2-5 items) - specific transcript-based evidence for scoring decisions',
               minItems: 2,
               maxItems: 5
             }
           },
           required: [
-            "anxietyLevel", "anxietyPeak", "anxietyTrend",
-            "confusionLevel", "confusionPeak", "confusionTrend", 
-            "agitationLevel", "agitationPeak", "agitationTrend",
-            "overallMood", "moodTrend", "analysisConfidence", "keyObservations"
+            'anxietyLevel', 'anxietyPeak', 'anxietyTrend',
+            'confusionLevel', 'confusionPeak', 'confusionTrend', 
+            'agitationLevel', 'agitationPeak', 'agitationTrend',
+            'overallMood', 'moodTrend', 'analysisConfidence', 'keyObservations'
           ]
         }
       }
