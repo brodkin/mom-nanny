@@ -443,13 +443,13 @@ function generateCallTitle(conversation) {
       // Check for specific concerns in care indicators
       if (summary.careIndicators) {
         if (summary.careIndicators.painComplaints && summary.careIndicators.painComplaints.length > 0) {
-          title = "Pain & Discomfort Concerns";
+          title = 'Pain & Discomfort Concerns';
         } else if (summary.careIndicators.medicationConcerns && summary.careIndicators.medicationConcerns.length > 0) {
-          title = "Medication Questions";
+          title = 'Medication Questions';
         } else if (summary.careIndicators.staffComplaints && summary.careIndicators.staffComplaints.length > 0) {
-          title = "Staff Concerns";
+          title = 'Staff Concerns';
         } else if (summary.careIndicators.hospitalRequests > 0) {
-          title = "Hospital/Medical Requests";
+          title = 'Hospital/Medical Requests';
         }
       }
       
@@ -457,28 +457,28 @@ function generateCallTitle(conversation) {
       if (!title && summary.mentalStateIndicators) {
         const anxietyLevel = summary.mentalStateIndicators.anxietyLevel;
         if (anxietyLevel >= 7) {
-          title = "High Anxiety Episode";
+          title = 'High Anxiety Episode';
         } else if (anxietyLevel >= 4) {
-          title = "Mild Anxiety & Reassurance";
+          title = 'Mild Anxiety & Reassurance';
         }
       }
       
       // Check clinical observations
       if (!title && summary.clinicalObservations) {
         if (summary.clinicalObservations.hypochondriaEvents > 0) {
-          title = "Health Anxiety & Reassurance";
+          title = 'Health Anxiety & Reassurance';
         } else if (summary.clinicalObservations.delusionalStatements && summary.clinicalObservations.delusionalStatements.length > 0) {
-          title = "Confusion & Gentle Redirection";
-        } else if (summary.clinicalObservations.paranoiaLevel !== "none") {
-          title = "Paranoid Thoughts";
+          title = 'Confusion & Gentle Redirection';
+        } else if (summary.clinicalObservations.paranoiaLevel !== 'none') {
+          title = 'Paranoid Thoughts';
         }
       }
       
       // Check engagement quality for positive calls
       if (!title && summary.supportEffectiveness && summary.supportEffectiveness.engagementQuality) {
         const engagement = summary.supportEffectiveness.engagementQuality;
-        if (engagement.level === "high" && engagement.score >= 80) {
-          title = "Pleasant Conversation";
+        if (engagement.level === 'high' && engagement.score >= 80) {
+          title = 'Pleasant Conversation';
         }
       }
       
@@ -494,23 +494,23 @@ function generateCallTitle(conversation) {
     const agitation = conversation.agitation_level || 0;
     
     if (conversation.mentions_pain) {
-      title = "Pain & Discomfort Discussion";
+      title = 'Pain & Discomfort Discussion';
     } else if (conversation.mentions_medication) {
-      title = "Medication Conversation";
+      title = 'Medication Conversation';
     } else if (conversation.mentions_family) {
-      title = "Family & Memory Sharing";
+      title = 'Family & Memory Sharing';
     } else if (anxiety >= 7 || agitation >= 7) {
-      title = "High Distress & Support";
+      title = 'High Distress & Support';
     } else if (anxiety >= 4) {
-      title = "Mild Anxiety & Reassurance";
+      title = 'Mild Anxiety & Reassurance';
     } else if (comfort >= 7) {
-      title = "Comfortable Check-in";
+      title = 'Comfortable Check-in';
     } else if (conversation.overall_sentiment === 'positive') {
-      title = "Positive Interaction";
+      title = 'Positive Interaction';
     } else if (conversation.overall_sentiment === 'negative') {
-      title = "Emotional Support Call";
+      title = 'Emotional Support Call';
     } else {
-      title = "General Conversation";
+      title = 'General Conversation';
     }
   }
   
@@ -518,7 +518,7 @@ function generateCallTitle(conversation) {
 }
 
 // Keep the old function for backward compatibility
-function generateCallIdentifier(conversation) {
+function _generateCallIdentifier(conversation) {
   return generateCallTitle(conversation);
 }
 

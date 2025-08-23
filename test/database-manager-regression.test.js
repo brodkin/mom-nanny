@@ -186,7 +186,7 @@ describe('DatabaseManager Regression Tests', () => {
       );
       
       // Run multiple concurrent queries
-      const promises = Array.from({ length: 10 }, (_, i) => {
+      const promises = Array.from({ length: 10 }, (_, _i) => {
         return dbManager.query('SELECT * FROM conversations WHERE call_sid = ?', ['test-concurrent']);
       });
 

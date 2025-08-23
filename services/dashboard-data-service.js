@@ -13,7 +13,7 @@
  * - Performance metrics and service health
  */
 
-const ConversationAnalyzer = require('./conversation-analyzer');
+const _ConversationAnalyzer = require('./conversation-analyzer');
 
 class DashboardDataService {
   constructor(databaseManager) {
@@ -81,7 +81,7 @@ class DashboardDataService {
       
       // Calculate "today" in the configured timezone
       // This creates a date at midnight in the specified timezone
-      const todayInTimezone = new Date(now.toLocaleString("en-US", { timeZone: timezone }));
+      const todayInTimezone = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
       todayInTimezone.setHours(0, 0, 0, 0);
       const today = todayInTimezone.toISOString();
       
@@ -344,7 +344,7 @@ class DashboardDataService {
   async _getConversationStats(today, weekAgo, monthAgo) {
     const totalQuery = 'SELECT COUNT(*) as total FROM conversations';
     // Use DATE() to compare just the date portion in local time
-    const todayQuery = "SELECT COUNT(*) as today FROM conversations WHERE DATE(created_at) = DATE('now', 'localtime')";
+    const todayQuery = 'SELECT COUNT(*) as today FROM conversations WHERE DATE(created_at) = DATE(\'now\', \'localtime\')';
     const weekQuery = 'SELECT COUNT(*) as week FROM conversations WHERE created_at >= ?';
     const monthQuery = 'SELECT COUNT(*) as month FROM conversations WHERE created_at >= ?';
     const avgDurationQuery = 'SELECT AVG(duration) as avg_duration FROM conversations WHERE duration IS NOT NULL';
@@ -681,7 +681,7 @@ class DashboardDataService {
    * Generate mental state summary
    * @private
    */
-  _generateMentalStateSummary(trends, anxiety, confusion) {
+  _generateMentalStateSummary(trends, _anxiety, _confusion) {
     const recentTrends = trends.slice(-7); // Last 7 days
     const avgAnxiety = recentTrends.reduce((sum, day) => sum + (day.anxietyLevel || 0), 0) / recentTrends.length;
     const avgConfusion = recentTrends.reduce((sum, day) => sum + (day.confusionLevel || 0), 0) / recentTrends.length;
@@ -794,7 +794,7 @@ class DashboardDataService {
    * Get medication mention trends
    * @private
    */
-  async _getMedicationTrends(startDate) {
+  async _getMedicationTrends(_startDate) {
     // Basic implementation - would be enhanced with more sophisticated analysis
     return {
       weeklyAverage: 1.2,
@@ -807,7 +807,7 @@ class DashboardDataService {
    * Get pain complaints trends
    * @private
    */
-  async _getPainComplaintsTrends(startDate) {
+  async _getPainComplaintsTrends(_startDate) {
     return {
       weeklyAverage: 0.8,
       trend: 'decreasing',
@@ -819,7 +819,7 @@ class DashboardDataService {
    * Get hospital request trends
    * @private
    */
-  async _getHospitalRequestTrends(startDate) {
+  async _getHospitalRequestTrends(_startDate) {
     return {
       weeklyAverage: 0.3,
       trend: 'stable',
@@ -1297,7 +1297,7 @@ class DashboardDataService {
    * Generate positive insights based on collected data
    * @private
    */
-  _generatePositiveInsights(conversationMetrics, systemMetrics, engagementPatterns, comfortStrategies, memoryInsights, days) {
+  _generatePositiveInsights(conversationMetrics, systemMetrics, engagementPatterns, comfortStrategies, memoryInsights, _days) {
     const insights = [];
     const now = new Date().toISOString();
 
@@ -1392,7 +1392,7 @@ class DashboardDataService {
     // Reliability Insight
     insights.push({
       title: 'Dependable Support',
-      message: `Communication system remains operational 24/7, providing immediate access to compassionate AI companionship during times of need or loneliness.`,
+      message: 'Communication system remains operational 24/7, providing immediate access to compassionate AI companionship during times of need or loneliness.',
       icon: '🛡️',
       priority: 'medium',
       timestamp: now,
@@ -1404,7 +1404,7 @@ class DashboardDataService {
     if (conversationMetrics.total === 0) {
       insights.push({
         title: 'System Ready',
-        message: `Compassionate AI companion system is fully operational and ready to provide emotional support, comfort, and companionship at any time.`,
+        message: 'Compassionate AI companion system is fully operational and ready to provide emotional support, comfort, and companionship at any time.',
         icon: '🌟',
         priority: 'medium',
         timestamp: now,

@@ -39,7 +39,7 @@ async function forgetMemory({ memory_key }) {
     const result = await memoryService.removeMemory(memory_key);
     
     if (result.status === 'success') {
-      console.log(`   ✓ Successfully removed memory`.red);
+      console.log('   ✓ Successfully removed memory'.red);
       return JSON.stringify({
         success: true,
         message: '', // Silent operation - no acknowledgment

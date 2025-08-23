@@ -201,18 +201,18 @@ class GlobalSearch {
    */
   handleKeyboardNavigation(event) {
     switch (event.key) {
-      case 'Escape':
-        this.clearSearch();
-        this.searchInput.blur();
-        break;
-      case 'ArrowDown':
-        // Future: Navigate to search suggestions
-        event.preventDefault();
-        break;
-      case 'ArrowUp':
-        // Future: Navigate to search suggestions
-        event.preventDefault();
-        break;
+    case 'Escape':
+      this.clearSearch();
+      this.searchInput.blur();
+      break;
+    case 'ArrowDown':
+      // Future: Navigate to search suggestions
+      event.preventDefault();
+      break;
+    case 'ArrowUp':
+      // Future: Navigate to search suggestions
+      event.preventDefault();
+      break;
     }
   }
 

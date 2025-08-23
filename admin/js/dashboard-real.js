@@ -444,7 +444,7 @@ class CompassionateDashboard {
   async loadAllData() {
     try {
       // Load data in parallel for better performance
-      const [overviewData, mentalStateData, careIndicatorsData, conversationTrendsData] = await Promise.all([
+      const [_overviewData, mentalStateData, careIndicatorsData, conversationTrendsData] = await Promise.all([
         this.fetchData('/overview'),
         this.fetchData('/mental-state?days=7'),
         this.fetchData('/care-indicators?days=30'),
@@ -893,17 +893,17 @@ class CompassionateDashboard {
 
     const getTrendIcon = (trend) => {
       switch (trend) {
-        case 'up': return '↗';
-        case 'down': return '↘';
-        default: return '→';
+      case 'up': return '↗';
+      case 'down': return '↘';
+      default: return '→';
       }
     };
 
     const getTrendClass = (trend) => {
       switch (trend) {
-        case 'up': return 'trend-up';
-        case 'down': return 'trend-down';
-        default: return 'trend-stable';
+      case 'up': return 'trend-up';
+      case 'down': return 'trend-down';
+      default: return 'trend-stable';
       }
     };
 
@@ -1234,7 +1234,7 @@ class CompassionateDashboard {
     }
   }
 
-  updateHeartbeatStatus(status, data) {
+  updateHeartbeatStatus(status, _data) {
     const heartbeatElement = document.getElementById('system-heartbeat');
     const statusElement = document.getElementById('heartbeat-status');
     

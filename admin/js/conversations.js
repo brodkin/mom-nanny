@@ -168,26 +168,6 @@ class ConversationsPage {
     }
   }
   
-  /**
-   * Format duration in seconds to human-readable format
-   * @param {number} seconds - Duration in seconds
-   * @returns {string} Formatted duration (e.g., "2h 15m", "45m", "30s")
-   */
-  formatDuration(seconds) {
-    if (!seconds || seconds === 0) return '0m';
-    
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${secs > 0 ? secs + 's' : ''}`.trim();
-    } else {
-      return `${secs}s`;
-    }
-  }
 
   /**
    * Initialize the DataTable component
@@ -377,23 +357,25 @@ class ConversationsPage {
       const today = now.toISOString().split('T')[0];
       
       switch (range) {
-        case 'today':
-          this.currentFilters.dateFrom = today;
-          this.currentFilters.dateTo = today;
-          break;
-        case 'week':
-          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          this.currentFilters.dateFrom = weekAgo.toISOString().split('T')[0];
-          this.currentFilters.dateTo = today;
-          break;
-        case 'month':
-          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          this.currentFilters.dateFrom = monthAgo.toISOString().split('T')[0];
-          this.currentFilters.dateTo = today;
-          break;
-        default: // 'all'
-          this.currentFilters.dateFrom = null;
-          this.currentFilters.dateTo = null;
+      case 'today':
+        this.currentFilters.dateFrom = today;
+        this.currentFilters.dateTo = today;
+        break;
+      case 'week': {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        this.currentFilters.dateFrom = weekAgo.toISOString().split('T')[0];
+        this.currentFilters.dateTo = today;
+        break;
+      }
+      case 'month': {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        this.currentFilters.dateFrom = monthAgo.toISOString().split('T')[0];
+        this.currentFilters.dateTo = today;
+        break;
+      }
+      default: // 'all'
+        this.currentFilters.dateFrom = null;
+        this.currentFilters.dateTo = null;
       }
     }
     
@@ -501,16 +483,16 @@ class ConversationsPage {
       // Duration filters
       if (this.currentFilters.duration !== 'all') {
         switch (this.currentFilters.duration) {
-          case 'short':
-            params.append('maxDuration', '300'); // Under 5 minutes
-            break;
-          case 'medium':
-            params.append('minDuration', '300');
-            params.append('maxDuration', '900'); // 5-15 minutes
-            break;
-          case 'long':
-            params.append('minDuration', '900'); // Over 15 minutes
-            break;
+        case 'short':
+          params.append('maxDuration', '300'); // Under 5 minutes
+          break;
+        case 'medium':
+          params.append('minDuration', '300');
+          params.append('maxDuration', '900'); // 5-15 minutes
+          break;
+        case 'long':
+          params.append('minDuration', '900'); // Over 15 minutes
+          break;
         }
       }
 
@@ -628,7 +610,7 @@ class ConversationsPage {
     }
     
     const minutes = Math.floor(totalSeconds / 60);
-    const remainingSeconds = totalSeconds % 60;
+    const _remainingSeconds = totalSeconds % 60;
     
     if (minutes < 60) {
       return `${minutes} minutes`;
@@ -809,7 +791,7 @@ class ConversationsPage {
 
     // Add messages
     if (data.messages && data.messages.length > 0) {
-      data.messages.forEach((message, index) => {
+      data.messages.forEach((message, _index) => {
         // Use server-provided formatted timestamp if available
         let timestamp;
         if (message.timestampFormatted && message.timestampFormatted.time) {

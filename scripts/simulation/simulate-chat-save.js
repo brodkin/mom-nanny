@@ -46,7 +46,7 @@ async function testChatSave() {
   
   // Look for chat conversations
   const chatConversations = await dbManager.all(
-    "SELECT * FROM conversations WHERE call_sid LIKE 'CHAT_%' ORDER BY id DESC LIMIT 5"
+    'SELECT * FROM conversations WHERE call_sid LIKE \'CHAT_%\' ORDER BY id DESC LIMIT 5'
   );
   
   console.log('\n📌 Chat conversations in database:');
@@ -64,7 +64,7 @@ async function testChatSave() {
   
   // Look for our specific session
   const ourSession = await dbManager.get(
-    "SELECT * FROM conversations WHERE call_sid = ?",
+    'SELECT * FROM conversations WHERE call_sid = ?',
     [session.callSid]
   );
   
@@ -74,14 +74,14 @@ async function testChatSave() {
     
     // Check for messages
     const messages = await dbManager.all(
-      "SELECT * FROM messages WHERE conversation_id = ?",
+      'SELECT * FROM messages WHERE conversation_id = ?',
       [ourSession.id]
     );
     console.log('   Messages saved:', messages.length);
     
     // Check for emotional metrics
     const metrics = await dbManager.get(
-      "SELECT * FROM emotional_metrics WHERE conversation_id = ?",
+      'SELECT * FROM emotional_metrics WHERE conversation_id = ?',
       [ourSession.id]
     );
     

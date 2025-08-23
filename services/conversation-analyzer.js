@@ -11,7 +11,7 @@ class ConversationAnalyzer {
    * @param {Date} startTime - Call start timestamp
    * @param {Object} dependencies - Injected dependencies (optional, for testing)
    */
-  constructor(callSid, startTime, dependencies = {}) {
+  constructor(callSid, startTime, _dependencies = {}) {
     this.callSid = callSid;
     this.startTime = startTime;
     this.endTime = null;

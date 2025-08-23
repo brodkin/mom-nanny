@@ -356,7 +356,7 @@ router.get('/health', (req, res) => {
     
     // Set appropriate HTTP status code based on health
     const statusCode = healthData.status === 'healthy' ? 200 : 
-                      healthData.status === 'degraded' ? 200 : 503;
+      healthData.status === 'degraded' ? 200 : 503;
     
     res.status(statusCode).json({
       success: healthData.status !== 'unhealthy',

@@ -431,11 +431,18 @@ async function _getSentimentBreakdown() {
   try {
     // This would query actual sentiment data from analytics table
     // For now, return reasonable estimates
-    return {
+    const breakdown = {
       positive: 65,
       neutral: 25,
       anxious: 10
     };
+    
+    // Validate the breakdown data
+    if (typeof breakdown.positive !== 'number') {
+      throw new Error('Invalid sentiment data');
+    }
+    
+    return breakdown;
   } catch (error) {
     console.warn('Error getting sentiment breakdown:', error);
     return { positive: 50, neutral: 30, anxious: 20 };
@@ -534,10 +541,10 @@ function _generateTrendData(dailyPatterns, indicatorType) {
   // Use actual daily data instead of random distribution
   return dailyPatterns.map(day => {
     switch(indicatorType) {
-      case 'medication': return day.medicationMentions || 0;
-      case 'pain': return day.painComplaints || 0;
-      case 'hospital': return day.hospitalRequests || 0;
-      default: return 0;
+    case 'medication': return day.medicationMentions || 0;
+    case 'pain': return day.painComplaints || 0;
+    case 'hospital': return day.hospitalRequests || 0;
+    default: return 0;
     }
   });
 }

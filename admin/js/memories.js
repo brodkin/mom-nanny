@@ -11,7 +11,7 @@
  * visual consistency with the compassionate care theme.
  */
 
-import { Notification, ComponentUtils } from './components/components.js';
+import { Notification } from './components/components.js';
 
 /**
  * Memory Manager - Main class for handling memory operations
@@ -111,7 +111,7 @@ class MemoryManager {
       this.showLoadingState();
       
       // Load in parallel for better performance
-      const [memoriesResponse, statsResponse] = await Promise.all([
+      const [_memoriesResponse, _statsResponse] = await Promise.all([
         this.loadMemories(),
         this.loadStats()
       ]);
@@ -253,7 +253,7 @@ class MemoryManager {
    */
   updateSortIcons() {
     document.querySelectorAll('th.sortable').forEach(th => {
-      const icon = th.querySelector('.sort-icon');
+      const _icon = th.querySelector('.sort-icon');
       th.classList.remove('sorted-asc', 'sorted-desc');
       
       if (th.dataset.sort === this.sortField) {

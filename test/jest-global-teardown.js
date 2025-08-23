@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require('path');
+const _path = require('path');
 
 module.exports = async () => {
   // Clean up test database

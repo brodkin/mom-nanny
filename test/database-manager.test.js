@@ -1,6 +1,6 @@
 const DatabaseManager = require('../services/database-manager');
 const fs = require('fs');
-const path = require('path');
+const _path = require('path');
 
 describe('DatabaseManager', () => {
   let dbManager;
@@ -134,8 +134,8 @@ describe('DatabaseManager', () => {
     });
 
     test('should handle concurrent operations safely', async () => {
-      const promises = Array.from({ length: 10 }, (_, i) => {
-        return new Promise(async resolve => {
+      const promises = Array.from({ length: 10 }, (_, _i) => {
+        return new Promise(resolve => {
           setTimeout(async () => {
             const result = await dbManager.query('SELECT sqlite_version()');
             resolve(result);

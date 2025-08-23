@@ -14,12 +14,12 @@ const chat = spawn('npm', ['run', 'chat'], {
   env: { ...process.env, NODE_ENV: 'development' }
 });
 
-let outputBuffer = '';
+let _outputBuffer = '';
 
 // Capture output
 chat.stdout.on('data', (data) => {
   const output = data.toString();
-  outputBuffer += output;
+  _outputBuffer += output;
   process.stdout.write(output);
 });
 
@@ -29,13 +29,13 @@ chat.stderr.on('data', (data) => {
 
 // Conversation script with emotional content
 const conversation = [
-  { message: "I can't find my medication and I'm really scared", delay: 3000 },
-  { message: "What if something bad happens to me?", delay: 5000 },
-  { message: "I think I might be dying, my chest feels tight", delay: 4000 },
-  { message: "Where is my husband? He usually helps me", delay: 4000 },
-  { message: "I'm so confused about everything", delay: 3000 },
-  { message: "Maybe I should call for help", delay: 3000 },
-  { message: "/exit", delay: 2000 }
+  { message: 'I can\'t find my medication and I\'m really scared', delay: 3000 },
+  { message: 'What if something bad happens to me?', delay: 5000 },
+  { message: 'I think I might be dying, my chest feels tight', delay: 4000 },
+  { message: 'Where is my husband? He usually helps me', delay: 4000 },
+  { message: 'I\'m so confused about everything', delay: 3000 },
+  { message: 'Maybe I should call for help', delay: 3000 },
+  { message: '/exit', delay: 2000 }
 ];
 
 let messageIndex = 0;

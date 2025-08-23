@@ -687,21 +687,17 @@ class DatabaseManager {
     await this.waitForInitialization();
     this._ensureConnection();
     
-    try {
-      // Validate callback is not async to prevent data corruption
-      if (callback.constructor.name === 'AsyncFunction') {
-        throw new Error('Transaction callback cannot be async. Use synchronous callbacks only to prevent data corruption.');
-      }
-      
-      // For better-sqlite3, transactions must be synchronous
-      const transactionFn = this.db.transaction(() => {
-        // Call the callback synchronously
-        return callback();
-      });
-      return transactionFn();
-    } catch (error) {
-      throw error;
+    // Validate callback is not async to prevent data corruption
+    if (callback.constructor.name === 'AsyncFunction') {
+      throw new Error('Transaction callback cannot be async. Use synchronous callbacks only to prevent data corruption.');
     }
+    
+    // For better-sqlite3, transactions must be synchronous
+    const transactionFn = this.db.transaction(() => {
+      // Call the callback synchronously
+      return callback();
+    });
+    return transactionFn();
   }
 
   close() {

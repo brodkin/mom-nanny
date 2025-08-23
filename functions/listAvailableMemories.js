@@ -7,7 +7,7 @@ require('colors');
 
 async function listAvailableMemories() {
   // User-visible notification
-  console.log(`📚 Memory -> Listing all available memories`.blue);
+  console.log('📚 Memory -> Listing all available memories'.blue);
   
   // Get memory service from global context
   const memoryService = global.memoryService;

@@ -322,21 +322,21 @@ export class DataTable extends EventTarget {
     const totalPages = Math.ceil(this.filteredData.length / this.options.pageSize);
     
     switch (action) {
-      case 'first':
-        this.currentPage = 1;
-        break;
-      case 'prev':
-        this.currentPage = Math.max(1, this.currentPage - 1);
-        break;
-      case 'next':
-        this.currentPage = Math.min(totalPages, this.currentPage + 1);
-        break;
-      case 'last':
-        this.currentPage = totalPages;
-        break;
-      case 'page':
-        this.currentPage = parseInt(page);
-        break;
+    case 'first':
+      this.currentPage = 1;
+      break;
+    case 'prev':
+      this.currentPage = Math.max(1, this.currentPage - 1);
+      break;
+    case 'next':
+      this.currentPage = Math.min(totalPages, this.currentPage + 1);
+      break;
+    case 'last':
+      this.currentPage = totalPages;
+      break;
+    case 'page':
+      this.currentPage = parseInt(page);
+      break;
     }
     
     this.render();

@@ -1,6 +1,6 @@
 const TemplateService = require('../services/template-service');
-const path = require('path');
-const fs = require('fs');
+const _path = require('path');
+const _fs = require('fs');
 
 describe('TemplateService', () => {
   let templateService;

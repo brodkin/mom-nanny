@@ -417,7 +417,7 @@ export class MemoryManager extends EventTarget {
    * @param {string} cancelText - Cancel button text
    * @returns {Promise<boolean>} Whether user confirmed
    */
-  async showConfirmation(title, message, confirmText, cancelText) {
+  async showConfirmation(title, message, _confirmText, _cancelText) {
     // Simple implementation - could be enhanced with modal component
     return confirm(`${title}\n\n${message}`);
   }

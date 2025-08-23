@@ -2,7 +2,7 @@
  * Integration test to verify duplicate message fix works in real service scenarios
  */
 
-const GptService = require('../services/gpt-service');
+const _GptService = require('../services/gpt-service');
 const ConversationAnalyzer = require('../services/conversation-analyzer');
 const DatabaseManager = require('../services/database-manager');
 const SqliteStorageService = require('../services/sqlite-storage-service');
@@ -22,7 +22,7 @@ describe('Integration Test: Duplicate Message Fix', () => {
   let dbManager;
   let storageService;
   let conversationAnalyzer;
-  let mockMarkCompletionService;
+  let _mockMarkCompletionService;
 
   beforeEach(async () => {
     // Create fresh in-memory database
@@ -34,7 +34,7 @@ describe('Integration Test: Duplicate Message Fix', () => {
     conversationAnalyzer = new ConversationAnalyzer('test-integration-123', new Date());
     
     // Mock mark completion service
-    mockMarkCompletionService = {
+    _mockMarkCompletionService = {
       clearAll: jest.fn(),
       addMark: jest.fn(),
       waitForMarks: jest.fn().mockResolvedValue()

@@ -45,7 +45,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       const messages = [
@@ -103,7 +103,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       await storageService.saveMessages(numericId, []);
@@ -132,7 +132,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       // Generate large batch of messages
@@ -176,7 +176,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       const invalidMessages = [
@@ -208,7 +208,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       const messages = [
@@ -261,7 +261,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       const originalMessages = [
@@ -285,7 +285,7 @@ describe('Message Persistence', () => {
       await storageService.saveMessages(numericId, originalMessages);
 
       // Test: load messages back
-      const loadedMessages = await storageService.loadMessages(conversationId);
+      const loadedMessages = await storageService.loadMessages(_conversationId);
 
       expect(loadedMessages).toHaveLength(3);
       expect(loadedMessages[0].role).toBe('user');
@@ -346,7 +346,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       // Insert messages in non-chronological order
@@ -370,7 +370,7 @@ describe('Message Persistence', () => {
 
       await storageService.saveMessages(numericId, messagesOutOfOrder);
 
-      const loadedMessages = await storageService.loadMessages(conversationId);
+      const loadedMessages = await storageService.loadMessages(_conversationId);
 
       expect(loadedMessages).toHaveLength(3);
       expect(loadedMessages[0].content).toBe('First message');
@@ -433,7 +433,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       const messages = [
@@ -477,7 +477,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       const messages = [];
@@ -512,7 +512,7 @@ describe('Message Persistence', () => {
       };
 
       const result = await storageService.saveSummary(mockSummary);
-      const conversationId = result.conversationId;
+      const _conversationId = result.conversationId;
       const numericId = result.numericId;
 
       // Setup test data
@@ -528,7 +528,7 @@ describe('Message Persistence', () => {
 
       // Test load performance
       const start = Date.now();
-      const loadedMessages = await storageService.loadMessages(conversationId);
+      const loadedMessages = await storageService.loadMessages(_conversationId);
       const duration = Date.now() - start;
 
       expect(duration).toBeLessThan(100);

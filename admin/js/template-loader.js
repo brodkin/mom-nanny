@@ -107,7 +107,7 @@ class TemplateLoader {
    * @param {string} config.contentSelector - Selector for main content area
    */
   async initializePage(config) {
-    const { pageTitle, activePage, contentSelector = '#main-content' } = config;
+    const { pageTitle, activePage, contentSelector: _contentSelector = '#main-content' } = config;
     
     try {
       // Load all templates concurrently

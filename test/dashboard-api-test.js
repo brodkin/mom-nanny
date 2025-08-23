@@ -59,7 +59,7 @@ async function testEndpoint(endpoint) {
 
 async function testChartDataStructure() {
   try {
-    console.log(`\n📊 Testing Chart.js data compatibility...`);
+    console.log('\n📊 Testing Chart.js data compatibility...');
     
     // Test mental state chart data
     const mentalStateResponse = await fetch(`${API_BASE}/mental-state?days=7`);
@@ -88,7 +88,7 @@ async function testChartDataStructure() {
         }
       });
       
-      console.log(`✅ Mental State Chart: Valid structure`);
+      console.log('✅ Mental State Chart: Valid structure');
       console.log(`   - Labels: ${chartData.labels.length}`);
       console.log(`   - Datasets: ${chartData.datasets.length}`);
     }
@@ -101,7 +101,7 @@ async function testChartDataStructure() {
       const dailyChart = trendsData.data.dailyTrends.chartData;
       
       if (dailyChart.labels && dailyChart.datasets) {
-        console.log(`✅ Daily Trends Chart: Valid structure`);
+        console.log('✅ Daily Trends Chart: Valid structure');
         console.log(`   - Labels: ${dailyChart.labels.length}`);
         console.log(`   - Datasets: ${dailyChart.datasets.length}`);
       }
@@ -110,7 +110,7 @@ async function testChartDataStructure() {
     return true;
     
   } catch (error) {
-    console.log(`❌ Chart Data: FAILED`);
+    console.log('❌ Chart Data: FAILED');
     console.log(`   - Error: ${error.message}`);
     return false;
   }
@@ -118,13 +118,13 @@ async function testChartDataStructure() {
 
 async function testErrorHandling() {
   try {
-    console.log(`\n🚫 Testing error handling...`);
+    console.log('\n🚫 Testing error handling...');
     
     // Test invalid endpoint
     const invalidResponse = await fetch(`${API_BASE}/invalid-endpoint`);
     
     if (invalidResponse.status === 404) {
-      console.log(`✅ 404 handling: OK`);
+      console.log('✅ 404 handling: OK');
     } else {
       console.log(`⚠️  Expected 404, got ${invalidResponse.status}`);
     }
@@ -134,15 +134,15 @@ async function testErrorHandling() {
     const badParamsData = await badParamsResponse.json();
     
     if (badParamsResponse.ok && badParamsData.success) {
-      console.log(`✅ Parameter validation: OK (clamped to max)`);
+      console.log('✅ Parameter validation: OK (clamped to max)');
     } else {
-      console.log(`⚠️  Parameter validation may need improvement`);
+      console.log('⚠️  Parameter validation may need improvement');
     }
     
     return true;
     
   } catch (error) {
-    console.log(`❌ Error Handling: FAILED`);
+    console.log('❌ Error Handling: FAILED');
     console.log(`   - Error: ${error.message}`);
     return false;
   }

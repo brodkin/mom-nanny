@@ -90,8 +90,8 @@ const generateActivityData = (count = 20) => {
 router.get('/stats', (req, res) => {
   try {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const _todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const _weekStart = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
     
     // Generate mock statistics
     const stats = {

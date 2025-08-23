@@ -161,7 +161,7 @@ class SummaryGenerator {
     };
   }
   
-  assessMemoryFunction(analyzer) {
+  assessMemoryFunction(_analyzer) {
     return 'stable';
   }
   

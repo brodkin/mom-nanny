@@ -23,10 +23,13 @@ module.exports = {
   'globals' : {
     'expect': 'writeable',
     'test': 'writeable',
-    'process': 'readable'
+    'process': 'readable',
+    'Chart': 'readable',
+    'fail': 'readonly'
   },
   'parserOptions': {
-    'ecmaVersion': 'latest'
+    'ecmaVersion': 'latest',
+    'sourceType': 'module'
   },
   'rules': {
     'indent': [
@@ -44,6 +47,13 @@ module.exports = {
     'semi': [
       'error',
       'always'
+    ],
+    'no-unused-vars': [
+      'error',
+      {
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_'
+      }
     ]
   }
 };

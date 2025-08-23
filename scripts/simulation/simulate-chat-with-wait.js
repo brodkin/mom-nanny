@@ -31,11 +31,11 @@ chat.stderr.on('data', (data) => {
 
 // Conversation script with much longer delays to ensure > 30 seconds
 const conversation = [
-  { message: "I'm really anxious about my medication", delay: 2000 },
-  { message: "I can't remember if I took it", delay: 10000 }, // 10s delay
-  { message: "What if I get sick?", delay: 10000 }, // 10s delay  
-  { message: "Where is my husband?", delay: 10000 }, // 10s delay
-  { message: "/exit", delay: 5000 } // 5s delay
+  { message: 'I\'m really anxious about my medication', delay: 2000 },
+  { message: 'I can\'t remember if I took it', delay: 10000 }, // 10s delay
+  { message: 'What if I get sick?', delay: 10000 }, // 10s delay  
+  { message: 'Where is my husband?', delay: 10000 }, // 10s delay
+  { message: '/exit', delay: 5000 } // 5s delay
 ];
 
 let messageIndex = 0;

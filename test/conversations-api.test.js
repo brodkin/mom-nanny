@@ -25,7 +25,7 @@ describe('Conversations API', () => {
     DatabaseManager.resetInstance();
     
     // Override the getInstance to return our test database
-    const originalGetInstance = DatabaseManager.getInstance;
+    const _originalGetInstance = DatabaseManager.getInstance;
     DatabaseManager.getInstance = () => {
       if (!testDb) {
         testDb = new DatabaseManager('./test-conversations.db');

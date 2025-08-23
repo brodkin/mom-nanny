@@ -144,19 +144,19 @@ class GptService extends EventEmitter {
       return {
         anxietyLevel: 25.5,
         anxietyPeak: 65.0,
-        anxietyTrend: "decreasing",
+        anxietyTrend: 'decreasing',
         confusionLevel: 40.0,
         confusionPeak: 75.0,
-        confusionTrend: "stable",
+        confusionTrend: 'stable',
         agitationLevel: 15.0,
         agitationPeak: 30.0,
-        agitationTrend: "stable",
+        agitationTrend: 'stable',
         overallMood: 20.5,
-        moodTrend: "improving",
+        moodTrend: 'improving',
         analysisConfidence: 0.85,
         keyObservations: [
-          "Mock analysis for testing",
-          "Simulated emotional metrics"
+          'Mock analysis for testing',
+          'Simulated emotional metrics'
         ]
       };
     }
@@ -299,7 +299,7 @@ Return structured JSON with exact numeric fields.`;
           { role: 'user', content: `Please analyze this conversation for emotional state:\n\n${conversationText}` }
         ],
         tools: [emotionalAnalysisTool],
-        tool_choice: { type: "function", function: { name: "reportEmotionalAnalysis" } },
+        tool_choice: { type: 'function', function: { name: 'reportEmotionalAnalysis' } },
         temperature: 0.3 // Lower temperature for more consistent analysis
       });
 

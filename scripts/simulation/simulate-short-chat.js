@@ -31,9 +31,9 @@ chat.stderr.on('data', (data) => {
 
 // Short conversation script (< 30 seconds)
 const conversation = [
-  { message: "Hello", delay: 1000 },
-  { message: "How are you?", delay: 2000 },
-  { message: "/exit", delay: 2000 }
+  { message: 'Hello', delay: 1000 },
+  { message: 'How are you?', delay: 2000 },
+  { message: '/exit', delay: 2000 }
 ];
 
 let messageIndex = 0;

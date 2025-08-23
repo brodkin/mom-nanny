@@ -67,7 +67,7 @@ describe('Text Chat Components', () => {
       };
 
       const speechPromise = new Promise((resolve) => {
-        service.on('speech', (audioData, interactionCount) => {
+        service.on('speech', (audioData, _interactionCount) => {
           expect(audioData.partialResponseIndex).toBe(0);
           expect(audioData.partialResponse).toBe('Hello there!');
           expect(audioData.mockAudio).toBe('[AUDIO: 12 chars]');
@@ -247,8 +247,8 @@ describe('Integration Tests', () => {
     });
 
     test('should detect function call messages', () => {
-      const functionMessage = "Let me check what's happening in the news today.";
-      const regularMessage = "How are you feeling today?";
+      const functionMessage = 'Let me check what\'s happening in the news today.';
+      const regularMessage = 'How are you feeling today?';
       
       expect(chatSession.isFunctionCallMessage(functionMessage)).toBe(true);
       expect(chatSession.isFunctionCallMessage(regularMessage)).toBe(false);

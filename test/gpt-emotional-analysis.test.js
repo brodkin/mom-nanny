@@ -34,19 +34,19 @@ describe('GPT Emotional Analysis', () => {
       expect(result).toEqual({
         anxietyLevel: 25.5,
         anxietyPeak: 65.0,
-        anxietyTrend: "decreasing",
+        anxietyTrend: 'decreasing',
         confusionLevel: 40.0,
         confusionPeak: 75.0,
-        confusionTrend: "stable",
+        confusionTrend: 'stable',
         agitationLevel: 15.0,
         agitationPeak: 30.0,
-        agitationTrend: "stable",
+        agitationTrend: 'stable',
         overallMood: 20.5,
-        moodTrend: "improving",
+        moodTrend: 'improving',
         analysisConfidence: 0.85,
         keyObservations: [
-          "Mock analysis for testing",
-          "Simulated emotional metrics"
+          'Mock analysis for testing',
+          'Simulated emotional metrics'
         ]
       });
     });
@@ -58,7 +58,7 @@ describe('GPT Emotional Analysis', () => {
 
       // Should return mock data in test environment
       expect(result.anxietyLevel).toBe(25.5);
-      expect(result.keyObservations).toContain("Mock analysis for testing");
+      expect(result.keyObservations).toContain('Mock analysis for testing');
     });
 
     test('should throw error for invalid input', async () => {

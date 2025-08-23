@@ -9,7 +9,7 @@ const { JSDOM } = require('jsdom');
 describe('Memory Management Frontend Statistics', () => {
   let memoryManager;
   let document;
-  let window;
+  let _window;
 
   beforeEach(() => {
     // Create a new DOM environment for each test
@@ -28,7 +28,7 @@ describe('Memory Management Frontend Statistics', () => {
     global.document = dom.window.document;
     global.window = dom.window;
     document = dom.window.document;
-    window = dom.window;
+    _window = dom.window;
 
     // Mock fetch to simulate API responses
     global.fetch = jest.fn();
@@ -142,7 +142,7 @@ describe('Memory Management Frontend Statistics', () => {
     memoryManager.updateStatsDisplayBuggy = function() {
       const totalEl = document.getElementById('total-memories');
       const categoriesEl = document.getElementById('memory-categories');
-      const lastUpdatedEl = document.getElementById('last-updated');
+      const _lastUpdatedEl = document.getElementById('last-updated');
       const recentAccessEl = document.getElementById('recent-access');
 
       // Simulate the buggy behavior: direct conversion without NaN check
@@ -167,8 +167,8 @@ describe('Memory Management Frontend Statistics', () => {
 
     // Set up conditions that cause NaN
     memoryManager.stats = {
-      totalMemories: "invalid",  // Number("invalid") = NaN
-      categoriesUsed: "text",    // Number("text") = NaN
+      totalMemories: 'invalid',  // Number("invalid") = NaN
+      categoriesUsed: 'text',    // Number("text") = NaN
       lastUpdated: undefined,
       recentAccess: undefined    // Number(undefined) = NaN
     };

@@ -312,23 +312,25 @@ describe('Conversations UI Component', () => {
           // Set date range based on selection
           const now = new Date();
           switch (range) {
-            case 'today':
-              this.currentFilters.dateFrom = now.toISOString().split('T')[0];
-              this.currentFilters.dateTo = now.toISOString().split('T')[0];
-              break;
-            case 'week':
-              const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-              this.currentFilters.dateFrom = weekAgo.toISOString().split('T')[0];
-              this.currentFilters.dateTo = now.toISOString().split('T')[0];
-              break;
-            case 'month':
-              const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-              this.currentFilters.dateFrom = monthAgo.toISOString().split('T')[0];
-              this.currentFilters.dateTo = now.toISOString().split('T')[0];
-              break;
-            default:
-              this.currentFilters.dateFrom = null;
-              this.currentFilters.dateTo = null;
+          case 'today':
+            this.currentFilters.dateFrom = now.toISOString().split('T')[0];
+            this.currentFilters.dateTo = now.toISOString().split('T')[0];
+            break;
+          case 'week': {
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            this.currentFilters.dateFrom = weekAgo.toISOString().split('T')[0];
+            this.currentFilters.dateTo = now.toISOString().split('T')[0];
+            break;
+          }
+          case 'month': {
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            this.currentFilters.dateFrom = monthAgo.toISOString().split('T')[0];
+            this.currentFilters.dateTo = now.toISOString().split('T')[0];
+            break;
+          }
+          default:
+            this.currentFilters.dateFrom = null;
+            this.currentFilters.dateTo = null;
           }
         }
         
@@ -380,16 +382,16 @@ describe('Conversations UI Component', () => {
           }
           if (this.currentFilters.duration !== 'all') {
             switch (this.currentFilters.duration) {
-              case 'short':
-                params.append('maxDuration', '300');
-                break;
-              case 'medium':
-                params.append('minDuration', '300');
-                params.append('maxDuration', '900');
-                break;
-              case 'long':
-                params.append('minDuration', '900');
-                break;
+            case 'short':
+              params.append('maxDuration', '300');
+              break;
+            case 'medium':
+              params.append('minDuration', '300');
+              params.append('maxDuration', '900');
+              break;
+            case 'long':
+              params.append('minDuration', '900');
+              break;
             }
           }
 
@@ -512,7 +514,7 @@ describe('Conversations UI Component', () => {
           <div class="conversation-messages">
         `;
 
-        data.messages.forEach((message, index) => {
+        data.messages.forEach((message, _index) => {
           const timestamp = new Date(message.timestamp).toLocaleTimeString();
           const roleClass = message.role === 'user' ? 'user-message' : 'assistant-message';
           
@@ -527,7 +529,7 @@ describe('Conversations UI Component', () => {
           `;
         });
 
-        html += `</div>`;
+        html += '</div>';
 
         // Add emotional timeline if available
         if (data.emotionalTimeline && data.emotionalTimeline.length > 0) {
@@ -545,7 +547,7 @@ describe('Conversations UI Component', () => {
         return html;
       }
 
-      handleTableSort(sortDetail) {
+      handleTableSort(_sortDetail) {
         // Sort handling would be implemented here
         // For testing, we just verify the event was received
       }

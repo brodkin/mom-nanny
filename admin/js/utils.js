@@ -168,7 +168,7 @@ const isValidEmail = (email) => {
 };
 
 const isValidPhone = (phone) => {
-  const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+  const phoneRegex = /^\+?[\d\s\-()]+$/;
   return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
 };
 
@@ -320,7 +320,7 @@ const hexToRgb = (hex) => {
 };
 
 const rgbToHex = (r, g, b) => {
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 };
 
 // Clipboard utilities

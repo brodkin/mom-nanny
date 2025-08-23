@@ -879,13 +879,13 @@ class AdminDashboard {
       // Dashboard-specific shortcuts
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
-          case 'r':
-            e.preventDefault();
-            if (window.dashboardReal && typeof window.dashboardReal.loadAllData === 'function') {
-              window.dashboardReal.loadAllData();
-              this.showToast('Dashboard Refreshed', 'Data has been updated', 'success');
-            }
-            break;
+        case 'r':
+          e.preventDefault();
+          if (window.dashboardReal && typeof window.dashboardReal.loadAllData === 'function') {
+            window.dashboardReal.loadAllData();
+            this.showToast('Dashboard Refreshed', 'Data has been updated', 'success');
+          }
+          break;
         }
       }
     });
@@ -896,7 +896,7 @@ class AdminDashboard {
     const statusElement = document.getElementById('real-time-status');
     if (statusElement) {
       const now = new Date();
-      const timeString = now.toLocaleTimeString();
+      now.toLocaleTimeString();
       
       // Update every minute
       setInterval(() => {

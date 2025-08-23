@@ -25,7 +25,6 @@ ExpressWs(app);
 const adminRouter = require('./routes/admin');
 const adminStatsRouter = require('./routes/api/admin-stats');
 const adminConfigRouter = require('./routes/api/admin-config');
-const adminDashboardRouter = require('./routes/api/admin-dashboard-real');
 const adminMemoriesRouter = require('./routes/api/admin-memories');
 const emotionalMetricsRouter = require('./routes/api/emotional-metrics');
 const conversationsRouter = require('./routes/api/conversations');
@@ -516,7 +515,7 @@ app.ws('/connection', async (ws) => {
         gptService.setConversationAnalyzer(conversationAnalyzer);
 
         // Initialize GPT service with memory keys
-        const gptInitPromise = gptService.initialize().then(() => {
+        gptService.initialize().then(() => {
           // Silent initialization - no console output that might leak to chat
         }).catch(error => {
           // HIPAA COMPLIANCE: Never log full error object as it may contain patient data (PHI)
@@ -727,7 +726,7 @@ app.use('/api/admin/*', (req, res) => {
 });
 
 // Error handling middleware for admin routes
-app.use('/admin', (error, req, res, next) => {
+app.use('/admin', (error, req, res, _next) => {
   // HIPAA COMPLIANCE: Never log full error object as it may contain request data with PHI
   console.error('Admin route error:', error.message);
   res.status(500).json({
@@ -737,7 +736,7 @@ app.use('/admin', (error, req, res, next) => {
   });
 });
 
-app.use('/api/admin', (error, req, res, next) => {
+app.use('/api/admin', (error, req, res, _next) => {
   // HIPAA COMPLIANCE: Never log full error object as it may contain request data with PHI
   console.error('Admin API error:', error.message);
   res.status(500).json({

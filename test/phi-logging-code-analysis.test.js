@@ -46,7 +46,7 @@ describe('PHI Logging Prevention - Code Analysis', () => {
           const unsafeMatches = matches.filter(match => {
             return !match.includes('error.message') && 
                    !match.includes('error:') && 
-                   !match.includes("'Error") &&
+                   !match.includes('\'Error') &&
                    !match.includes('"Error') &&
                    match.includes('error');
           });
@@ -83,7 +83,7 @@ describe('PHI Logging Prevention - Code Analysis', () => {
             if (statement.includes('error') && !statement.includes('error.message')) {
               // This could be unsafe - let's check more carefully
               const isStringLiteral = statement.match(/console\.error\s*\(\s*['"]/) !== null;
-              const isMethodChain = statement.includes('error.') && !statement.includes('error.message');
+              const _isMethodChain = statement.includes('error.') && !statement.includes('error.message');
               
               if (!isStringLiteral && statement.includes(' error')) {
                 // This might be logging a full error object
@@ -146,14 +146,14 @@ describe('PHI Logging Prevention - Code Analysis', () => {
             /console\..*\bmetrics\s*\)/i
           ];
           
-          dangerousPatterns.forEach((pattern, index) => {
+          dangerousPatterns.forEach((pattern, _index) => {
             const matches = content.match(pattern);
             if (matches) {
               console.log(`\nDangerous metrics logging pattern found in ${fileName}:`, matches);
               
               // Allow only safe patterns like "Emotional metrics saved" (string literals)
               const isSafeStringLiteral = matches.every(match => 
-                match.includes('"') || match.includes("'") || match.includes('`')
+                match.includes('"') || match.includes('\'') || match.includes('`')
               );
               
               if (!isSafeStringLiteral) {
@@ -249,7 +249,7 @@ describe('PHI Logging Prevention - Code Analysis', () => {
         errorLoggingStatements.forEach(statement => {
           if (!statement.includes('error.message') && 
               !statement.includes('"Error') && 
-              !statement.includes("'Error")) {
+              !statement.includes('\'Error')) {
             console.log(`\nPotentially unsafe memory service logging: ${statement}`);
             
             // Should use safe error logging

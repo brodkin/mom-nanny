@@ -202,7 +202,7 @@ router.get('/', async (req, res) => {
         id: item.id,
         type: 'analytics',
         title: `Analytics for ${item.call_sid || `Conversation ${item.conversation_id}`}`,
-        summary: `Keywords and patterns analysis`,
+        summary: 'Keywords and patterns analysis',
         timestamp: item.start_time,
         metadata: {
           conversationId: item.conversation_id,

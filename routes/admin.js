@@ -13,7 +13,7 @@ const router = express.Router();
 
 // Middleware for future authentication
 // TODO: Implement proper authentication when needed
-const authenticateAdmin = (req, res, next) => {
+const _authenticateAdmin = (req, res, next) => {
   // For now, allow all requests
   // In production, implement proper auth check here
   next();

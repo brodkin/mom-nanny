@@ -10,7 +10,9 @@
     "test": "jest",
     "test:dashboard": "node ./test/dashboard-api-test.js",
     "dev": "nodemon app.js",
-    "start": "node app.js"
+    "start": "node app.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix"
   },
   "keywords": [],
   "author": "Charlie Weems",

@@ -113,12 +113,12 @@ class ChatSession extends EventEmitter {
     });
 
     // Handle TTS events
-    this.ttsService.on('speech', (audioData, interactionCount) => {
+    this.ttsService.on('speech', (_audioData, _interactionCount) => {
       // TTS processing complete - no additional action needed for text chat
     });
 
     // Handle stream events
-    this.streamService.on('audiosent', (markLabel) => {
+    this.streamService.on('audiosent', (_markLabel) => {
       // Audio sent - no additional action needed for text chat
     });
   }
@@ -303,9 +303,9 @@ class ChatSession extends EventEmitter {
    */
   isFunctionCallMessage(message) {
     const functionMessages = [
-      "I don't know if he can answer, but let's try calling him.",
-      "Let me check what's happening in the news today.",
-      "Okay, it was nice talking with you. Take care!"
+      'I don\'t know if he can answer, but let\'s try calling him.',
+      'Let me check what\'s happening in the news today.',
+      'Okay, it was nice talking with you. Take care!'
     ];
     return functionMessages.includes(message);
   }
@@ -363,33 +363,33 @@ class ChatSession extends EventEmitter {
     const cmd = command.toLowerCase().split(' ')[0];
     
     switch (cmd) {
-      case '/help':
-        this.showHelp();
-        break;
-      case '/stats':
-        this.showStats();
-        break;
-      case '/context':
-        this.showContext();
-        break;
-      case '/debug':
-        this.toggleDebugMode();
-        break;
-      case '/reset':
-        this.resetSession();
-        break;
-      case '/storage':
-        await this.showStoredSummaries();
-        break;
-      case '/memories':
-        await this.showMemories();
-        break;
-      case '/exit':
-        this.endSession();
-        break;
-      default:
-        console.log(chalk.red(`❓ Unknown command: ${command}`));
-        console.log(chalk.gray('Type /help for available commands'));
+    case '/help':
+      this.showHelp();
+      break;
+    case '/stats':
+      this.showStats();
+      break;
+    case '/context':
+      this.showContext();
+      break;
+    case '/debug':
+      this.toggleDebugMode();
+      break;
+    case '/reset':
+      this.resetSession();
+      break;
+    case '/storage':
+      await this.showStoredSummaries();
+      break;
+    case '/memories':
+      await this.showMemories();
+      break;
+    case '/exit':
+      this.endSession();
+      break;
+    default:
+      console.log(chalk.red(`❓ Unknown command: ${command}`));
+      console.log(chalk.gray('Type /help for available commands'));
     }
   }
 
@@ -432,7 +432,7 @@ class ChatSession extends EventEmitter {
   showContext() {
     console.log(chalk.blue.bold('\n📝 Conversation Context:'));
     
-    this.gptService.userContext.forEach((msg, index) => {
+    this.gptService.userContext.forEach((msg, _index) => {
       const role = msg.role;
       const content = msg.content?.substring(0, 100) + (msg.content?.length > 100 ? '...' : '');
       
@@ -540,7 +540,7 @@ class ChatSession extends EventEmitter {
             
             // Display mental state indicators
             if (summaryData.mentalStateIndicators) {
-              console.log(chalk.yellow(`      Mental State:`));
+              console.log(chalk.yellow('      Mental State:'));
               console.log(chalk.gray(`        - Anxiety Level: ${summaryData.mentalStateIndicators.anxietyLevel || 0}`));
               console.log(chalk.gray(`        - Agitation: ${summaryData.mentalStateIndicators.agitationLevel || 0}`));
               console.log(chalk.gray(`        - Confusion Events: ${summaryData.mentalStateIndicators.confusionCount || 0}`));
@@ -548,7 +548,7 @@ class ChatSession extends EventEmitter {
             
             // Display conversation metrics
             if (summaryData.conversationMetrics) {
-              console.log(chalk.yellow(`      Conversation Metrics:`));
+              console.log(chalk.yellow('      Conversation Metrics:'));
               console.log(chalk.gray(`        - Total Interactions: ${summaryData.conversationMetrics.totalInteractions || 0}`));
               console.log(chalk.gray(`        - User Utterances: ${summaryData.conversationMetrics.userUtterances || 0}`));
               console.log(chalk.gray(`        - Repetitions: ${summaryData.conversationMetrics.repetitionCount || 0}`));
@@ -560,7 +560,7 @@ class ChatSession extends EventEmitter {
                                    summaryData.careIndicators.painComplaints > 0 ||
                                    summaryData.careIndicators.staffComplaints > 0;
               if (hasIndicators) {
-                console.log(chalk.yellow(`      Care Indicators:`));
+                console.log(chalk.yellow('      Care Indicators:'));
                 if (summaryData.careIndicators.medicationMentions > 0) {
                   console.log(chalk.gray(`        - Medication Mentions: ${summaryData.careIndicators.medicationMentions}`));
                 }
@@ -575,7 +575,7 @@ class ChatSession extends EventEmitter {
             
             // Display caregiver insights if present
             if (summaryData.caregiverInsights && summaryData.caregiverInsights.length > 0) {
-              console.log(chalk.yellow(`      Key Insights:`));
+              console.log(chalk.yellow('      Key Insights:'));
               summaryData.caregiverInsights.slice(0, 2).forEach(insight => {
                 console.log(chalk.gray(`        • ${insight}`));
               });
@@ -583,10 +583,10 @@ class ChatSession extends EventEmitter {
             
           } catch (e) {
             // If summary_text isn't properly formatted, show what we can
-            console.log(chalk.gray(`      Note: Summary data format unrecognized`));
+            console.log(chalk.gray('      Note: Summary data format unrecognized'));
           }
         } else {
-          console.log(chalk.gray(`      No summary data available`));
+          console.log(chalk.gray('      No summary data available'));
         }
       });
       
@@ -698,7 +698,7 @@ class ChatSession extends EventEmitter {
       // Show statistics
       const stats = await this.memoryService.getStatistics();
       if (stats) {
-        console.log(chalk.gray(`   📈 Memory Distribution:`));
+        console.log(chalk.gray('   📈 Memory Distribution:'));
         for (const [category, count] of Object.entries(stats.byCategory)) {
           if (count > 0) {
             const percentage = Math.round((count / totalMemories) * 100);
@@ -755,7 +755,7 @@ class ChatSession extends EventEmitter {
           const conversationId = result.conversationId; // String conversation ID
           const numericId = result.numericId; // Numeric ID for messages
           
-          console.log(chalk.green(`\n📝 Conversation summary saved to SQLite database`));
+          console.log(chalk.green('\n📝 Conversation summary saved to SQLite database'));
           console.log(chalk.gray(`   Call SID: ${this.callSid}`));
           console.log(chalk.gray(`   Database: ${this.databaseManager.dbPath}`));
           

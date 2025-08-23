@@ -324,7 +324,7 @@ describe('Conversations Search API', () => {
   describe('Search performance and SQL injection protection', () => {
     
     test('should sanitize search input to prevent SQL injection', async () => {
-      const maliciousInput = "'; DROP TABLE conversations; --";
+      const maliciousInput = '\'; DROP TABLE conversations; --';
       
       const response = await request(app)
         .get('/api/conversations')
@@ -336,7 +336,7 @@ describe('Conversations Search API', () => {
     });
 
     test('should handle special characters in search', async () => {
-      const specialChars = "blood pressure (high) & medication!";
+      const specialChars = 'blood pressure (high) & medication!';
       
       const response = await request(app)
         .get('/api/conversations')
