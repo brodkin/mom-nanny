@@ -76,7 +76,7 @@ chat.on('close', (code) => {
     console.log('\n📊 Checking database...\n');
     
     const checkDb = spawn('node', ['-e', `
-      const DatabaseManager = require('./services/database-manager');
+      const DatabaseManager = require('${path.join(__dirname, '../../services/database-manager')}');
       const dbManager = DatabaseManager.getInstance();
       
       (async () => {
@@ -116,7 +116,10 @@ chat.on('close', (code) => {
         
         process.exit(0);
       })();
-    `], { cwd: __dirname });
+    `], { 
+      cwd: path.join(__dirname, '../..'),
+      env: { ...process.env, SQLITE_DB_PATH: './storage/conversation-summaries.db' }
+    });
     
     checkDb.stdout.on('data', (data) => process.stdout.write(data));
     checkDb.stderr.on('data', (data) => process.stderr.write(data));

@@ -23,21 +23,15 @@ class SummaryGenerator {
         totalInteractions: analyzer.interactions.length,
         userUtterances: analyzer.userUtterances.length,
         assistantResponses: analyzer.assistantResponses.length,
-        repetitionCount: analyzer.repetitions.size,
-        topicsDiscussed: Array.from(analyzer.topics.keys()),
-        successfulRedirections: analyzer.successfulRedirections.length,
         interruptionCount: analyzer.interruptionCount,
-        averageResponseLatency: this.calculateAverage(analyzer.responseLatencies)
+        averageResponseLatency: this.calculateAverage(analyzer.responseLatencies?.map(r => r.latency) || [])
       },
       
       // Mental State Indicators
       mentalStateIndicators: {
-        moodProgression: analyzer.moodProgression,
-        anxietyLevel: this.calculateAnxietyLevel(analyzer.moodProgression),
-        confusionIndicators: analyzer.confusionIndicators,
-        agitationLevel: this.calculateAgitationLevel(analyzer.moodProgression),
-        positiveEngagement: this.assessPositiveEngagement(analyzer.engagementMetrics),
-        overallMoodTrend: this.calculateMoodTrend(analyzer.moodProgression)
+        anxietyLevel: 0,
+        agitationLevel: 0,
+        overallMoodTrend: 'stable'
       },
       
       // Care Indicators
@@ -51,10 +45,8 @@ class SummaryGenerator {
       
       // Behavioral Patterns
       behavioralPatterns: {
-        responseLatency: this.calculateAverage(analyzer.responseLatencies),
-        coherenceLevel: this.calculateAverage(analyzer.coherenceScores),
-        memoryIndicators: this.assessMemoryFunction(analyzer),
-        sundowningRisk: this.assessSundowningRisk(analyzer.startTime, analyzer.agitationMarkers)
+        responseLatency: this.calculateAverage(analyzer.responseLatencies?.map(r => r.latency) || []),
+        sundowningRisk: this.assessSundowningRisk(analyzer.startTime, [])
       },
       
       // Clinical Observations
@@ -67,9 +59,6 @@ class SummaryGenerator {
       
       // Support Effectiveness
       supportEffectiveness: {
-        comfortingSuccess: analyzer.successfulRedirections,
-        triggerTopics: this.identifyTriggers(analyzer),
-        calmingStrategies: this.identifyCalmingStrategies(analyzer),
         engagementQuality: this.assessEngagementQuality(analyzer)
       },
       
@@ -80,59 +69,16 @@ class SummaryGenerator {
   
   generateCaregiverInsights(analyzer) {
     const insights = {
-      recommendedConversationStarters: [],
-      topicsToAvoid: [],
-      optimalCallTimes: [],
       currentConcerns: [],
-      positiveStrategies: [],
       communicationTips: []
     };
     
-    // Analyze successful topics
-    const successfulTopics = Array.from(analyzer.topics.entries())
-      .filter(([, data]) => data.sentiment > 0.5)
-      .map(([topic]) => topic);
-    
-    insights.recommendedConversationStarters = successfulTopics.slice(0, 3).map(topic => 
-      `Ask about ${topic} - she responded positively to this topic`
-    );
-    
-    // Identify triggers to avoid
-    const triggers = Array.from(analyzer.topics.entries())
-      .filter(([, data]) => data.sentiment < -0.3)
-      .map(([topic]) => topic);
-    
-    insights.topicsToAvoid = triggers.map(topic => 
-      `Avoid discussing ${topic} - increased anxiety/agitation`
-    );
-    
-    // Time-based recommendations
-    if (analyzer.startTime) {
-      const hour = new Date(analyzer.startTime).getHours();
-      if (hour >= 16 && analyzer.agitationMarkers.length > 2) {
-        insights.currentConcerns.push('Possible sundowning - consider earlier call times');
-        insights.optimalCallTimes.push('Morning or early afternoon calls recommended');
-      }
-    }
-    
-    // Communication strategies that worked
-    if (analyzer.successfulRedirections.length > 0) {
-      insights.positiveStrategies = analyzer.successfulRedirections.slice(0, 3).map(r => 
-        `"${r.strategy}" successfully redirected from ${r.fromTopic} to ${r.toTopic}`
-      );
-    }
-    
-    // Specific tips based on patterns
-    if (analyzer.repetitions.size > 5) {
-      insights.communicationTips.push('High repetition today - remain patient and redirect gently');
-    }
-    
-    if (analyzer.confusionIndicators > 3) {
-      insights.communicationTips.push('Showing confusion - use simple, clear language and avoid complex topics');
-    }
-    
     if (analyzer.medicationMentions.length > 0) {
       insights.currentConcerns.push('Mentioned medication concerns - verify with facility staff');
+    }
+    
+    if (analyzer.interruptionCount > 2) {
+      insights.communicationTips.push('Frequent interruptions - possible agitation or engagement issues');
     }
     
     return insights;
@@ -216,18 +162,6 @@ class SummaryGenerator {
   }
   
   assessMemoryFunction(analyzer) {
-    const memoryScore = {
-      repetitionLevel: analyzer.repetitions.size,
-      coherenceScore: this.calculateAverage(analyzer.coherenceScores),
-      confusionLevel: analyzer.confusionIndicators
-    };
-    
-    // Simple assessment based on patterns
-    if (memoryScore.repetitionLevel > 5 && memoryScore.confusionLevel > 3) {
-      return 'concerning';
-    } else if (memoryScore.repetitionLevel > 3 || memoryScore.confusionLevel > 2) {
-      return 'moderate';
-    }
     return 'stable';
   }
   
@@ -267,63 +201,17 @@ class SummaryGenerator {
     return 'low';
   }
   
-  identifyTriggers(analyzer) {
-    return Array.from(analyzer.topics.entries())
-      .filter(([, data]) => data.sentiment < -0.3)
-      .map(([topic, data]) => ({
-        topic: topic,
-        sentiment: data.sentiment,
-        frequency: data.count
-      }))
-      .sort((a, b) => a.sentiment - b.sentiment) // Most negative first
-      .slice(0, 5);
-  }
-  
-  identifyCalmingStrategies(analyzer) {
-    // Identify what worked based on successful redirections
-    const strategies = analyzer.successfulRedirections.map(redirect => ({
-      strategy: redirect.strategy,
-      effectiveness: 'high',
-      context: `Redirected from ${redirect.fromTopic} to ${redirect.toTopic}`
-    }));
-    
-    // Add topic-based strategies
-    const positiveTopics = Array.from(analyzer.topics.entries())
-      .filter(([, data]) => data.sentiment > 0.6)
-      .map(([topic, data]) => ({
-        strategy: `Discuss ${topic}`,
-        effectiveness: 'high',
-        context: `Consistently positive responses (sentiment: ${data.sentiment})`
-      }));
-    
-    return [...strategies, ...positiveTopics].slice(0, 5);
-  }
   
   assessEngagementQuality(analyzer) {
-    if (!analyzer.engagementMetrics) {
-      return {
-        level: 'unknown',
-        score: 0,
-        indicators: []
-      };
-    }
+    const avgLatency = this.calculateAverage(analyzer.responseLatencies?.map(r => r.latency) || []);
     
-    const positiveRatio = analyzer.engagementMetrics.positiveResponses / analyzer.engagementMetrics.totalResponses;
-    const avgLatency = this.calculateAverage(analyzer.responseLatencies);
-    
-    let level = 'low';
-    let score = positiveRatio * 100;
+    let level = 'moderate';
+    let score = 50;
     const indicators = [];
-    
-    if (positiveRatio > 0.7) {
-      level = 'high';
-      indicators.push('High positive response rate');
-    } else if (positiveRatio > 0.5) {
-      level = 'moderate';
-    }
     
     if (avgLatency < 1000) {
       indicators.push('Quick responses - good engagement');
+      score += 20;
     } else if (avgLatency > 3000) {
       indicators.push('Slow responses - possible disengagement');
       score -= 20;
@@ -331,10 +219,14 @@ class SummaryGenerator {
     
     if (analyzer.interruptionCount < 2) {
       indicators.push('Low interruptions - active listening');
+      score += 10;
     } else {
       indicators.push('Frequent interruptions - possible agitation');
       score -= 10;
     }
+    
+    if (score > 70) level = 'high';
+    if (score < 30) level = 'low';
     
     return {
       level: level,

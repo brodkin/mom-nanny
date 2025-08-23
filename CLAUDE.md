@@ -536,7 +536,7 @@ emotional_metrics table:
 - anxiety_level, confusion_level, agitation_level: 0-10 scale
 - comfort_level: 0-10 positive emotion tracking
 - sentiment_score: -10 to +10 overall mood
-- analysis_method: 'gpt_v1' or 'keyword_v1' fallback
+- analysis_method: 'gpt_v1' (GPT-based analysis)
 - raw_analysis: Complete GPT JSON response for reprocessing
 ```
 

@@ -19,14 +19,6 @@ describe('ConversationAnalyzer', () => {
       expect(analyzer.interactions).toEqual([]);
       expect(analyzer.userUtterances).toEqual([]);
       expect(analyzer.assistantResponses).toEqual([]);
-      expect(analyzer.topics).toBeInstanceOf(Map);
-      expect(analyzer.repetitions).toBeInstanceOf(Map);
-      
-      // Mental state tracking
-      expect(analyzer.moodProgression).toEqual([]);
-      expect(analyzer.anxietyEvents).toEqual([]);
-      expect(analyzer.confusionIndicators).toBe(0);
-      expect(analyzer.agitationMarkers).toEqual([]);
       
       // Care indicators
       expect(analyzer.medicationMentions).toEqual([]);
@@ -34,245 +26,236 @@ describe('ConversationAnalyzer', () => {
       expect(analyzer.hospitalRequests).toBe(0);
       expect(analyzer.staffComplaints).toEqual([]);
       
-      // Behavioral patterns
+      // Basic metrics
       expect(analyzer.responseLatencies).toEqual([]);
       expect(analyzer.interruptionCount).toBe(0);
-      expect(analyzer.coherenceScores).toEqual([]);
-      
-      // Support effectiveness
-      expect(analyzer.successfulRedirections).toEqual([]);
-      expect(analyzer.failedRedirections).toEqual([]);
-      expect(analyzer.engagementMetrics).toEqual([]);
     });
   });
 
   describe('trackUserUtterance', () => {
-    test('should record user utterance with timestamp and analysis', () => {
-      const text = 'I\'m worried about my medication';
+    test('should record user utterance with timestamp', () => {
+      const text = 'I feel worried about my health';
       const timestamp = new Date();
-      
-      analyzer.trackUserUtterance(text, timestamp);
-      
+      const latency = 500;
+
+      analyzer.trackUserUtterance(text, timestamp, latency);
+
       expect(analyzer.userUtterances).toHaveLength(1);
-      expect(analyzer.userUtterances[0]).toHaveProperty('text', text);
-      expect(analyzer.userUtterances[0]).toHaveProperty('timestamp', timestamp);
-      expect(analyzer.userUtterances[0]).toHaveProperty('sentiment');
-      expect(analyzer.userUtterances[0]).toHaveProperty('patterns');
-      expect(analyzer.userUtterances[0]).toHaveProperty('topics');
+      expect(analyzer.userUtterances[0]).toEqual({
+        text,
+        timestamp,
+        latency
+      });
+
+      expect(analyzer.interactions).toHaveLength(1);
+      expect(analyzer.interactions[0]).toEqual({
+        type: 'user_utterance',
+        timestamp,
+        text,
+        data: {
+          text,
+          timestamp,
+          latency
+        }
+      });
+
+      expect(analyzer.responseLatencies).toHaveLength(1);
+      expect(analyzer.responseLatencies[0]).toEqual({ timestamp, latency });
     });
 
-    test('should detect anxiety in user utterance', () => {
-      const text = 'I\'m so scared and worried';
-      analyzer.trackUserUtterance(text, new Date());
-      
-      expect(analyzer.anxietyEvents).toHaveLength(1);
-      expect(analyzer.anxietyEvents[0]).toHaveProperty('text', text);
-      expect(analyzer.anxietyEvents[0]).toHaveProperty('intensity');
-    });
+    test('should track utterance without latency', () => {
+      const text = 'Hello';
+      const timestamp = new Date();
 
-    test('should detect repetition patterns', () => {
-      analyzer.trackUserUtterance('Where is Ryan?', new Date());
-      analyzer.trackUserUtterance('Where is Ryan?', new Date());
-      
-      expect(analyzer.repetitions.size).toBeGreaterThan(0);
+      analyzer.trackUserUtterance(text, timestamp);
+
+      expect(analyzer.userUtterances).toHaveLength(1);
+      expect(analyzer.userUtterances[0].latency).toBeNull();
+      expect(analyzer.responseLatencies).toHaveLength(0);
     });
   });
 
   describe('trackAssistantResponse', () => {
-    test('should record assistant response with analysis', () => {
-      const text = 'That sounds concerning. Let me help you feel better.';
+    test('should record assistant response', () => {
+      const text = 'Hello! How are you feeling today?';
       const timestamp = new Date();
-      
+
       analyzer.trackAssistantResponse(text, timestamp);
-      
+
       expect(analyzer.assistantResponses).toHaveLength(1);
-      expect(analyzer.assistantResponses[0]).toHaveProperty('text', text);
-      expect(analyzer.assistantResponses[0]).toHaveProperty('timestamp', timestamp);
-      expect(analyzer.assistantResponses[0]).toHaveProperty('type');
+      expect(analyzer.assistantResponses[0]).toEqual({
+        text,
+        timestamp,
+        length: text.length
+      });
+
+      expect(analyzer.interactions).toHaveLength(1);
+      expect(analyzer.interactions[0]).toEqual({
+        type: 'assistant_response',
+        timestamp,
+        text,
+        data: {
+          text,
+          timestamp,
+          length: text.length
+        }
+      });
+    });
+
+    test('should prevent duplicate responses within time window', () => {
+      const text = 'Hello there!';
+      const timestamp1 = new Date();
+      const timestamp2 = new Date(timestamp1.getTime() + 1000); // 1 second later
+
+      analyzer.trackAssistantResponse(text, timestamp1);
+      analyzer.trackAssistantResponse(text, timestamp2); // Exact duplicate
+
+      expect(analyzer.assistantResponses).toHaveLength(1);
+      expect(analyzer.interactions).toHaveLength(1);
+    });
+
+    test('should allow similar responses outside time window', () => {
+      const text = 'Hello there!';
+      const timestamp1 = new Date();
+      const timestamp2 = new Date(timestamp1.getTime() + 6000); // 6 seconds later
+
+      analyzer.trackAssistantResponse(text, timestamp1);
+      analyzer.trackAssistantResponse(text, timestamp2);
+
+      expect(analyzer.assistantResponses).toHaveLength(2);
+      expect(analyzer.interactions).toHaveLength(2);
     });
   });
 
   describe('trackInterruption', () => {
-    test('should increment interruption count and record timestamp', () => {
+    test('should increment interruption count and record event', () => {
       const timestamp = new Date();
+
       analyzer.trackInterruption(timestamp);
-      
+
       expect(analyzer.interruptionCount).toBe(1);
-      expect(analyzer.interactions.some(i => i.type === 'interruption')).toBe(true);
+      expect(analyzer.interactions).toHaveLength(1);
+      expect(analyzer.interactions[0]).toEqual({
+        type: 'interruption',
+        timestamp,
+        data: { count: 1 }
+      });
     });
   });
 
   describe('trackFunctionCall', () => {
-    test('should record function calls with metadata', () => {
-      const functionName = 'transferCall';
-      const args = { reason: 'medical emergency' };
+    test('should record function call details', () => {
+      const functionName = 'getNewsHeadlines';
+      const args = { category: 'general' };
       const timestamp = new Date();
-      
+
       analyzer.trackFunctionCall(functionName, args, timestamp);
-      
-      const functionCall = analyzer.interactions.find(i => i.type === 'function_call');
-      expect(functionCall).toBeDefined();
-      expect(functionCall.functionName).toBe(functionName);
-      expect(functionCall.args).toEqual(args);
-    });
-  });
 
-  describe('detectRepetition', () => {
-    test('should detect similar text using Levenshtein distance', () => {
-      const similarity = analyzer.detectRepetition('Where is Ryan?', 'Where is Ryan?');
-      expect(similarity).toBe(1.0); // Exact match
-    });
-
-    test('should detect high similarity in slightly different text', () => {
-      const similarity = analyzer.detectRepetition('Where is Ryan?', 'Where is my son Ryan?');
-      expect(similarity).toBeGreaterThan(0.6);
+      expect(analyzer.interactions).toHaveLength(1);
+      expect(analyzer.interactions[0]).toEqual({
+        type: 'function_call',
+        timestamp,
+        functionName,
+        args,
+        data: {
+          functionName,
+          args,
+          timestamp
+        }
+      });
     });
 
-    test('should detect low similarity in different text', () => {
-      const similarity = analyzer.detectRepetition('Where is Ryan?', 'I love Hawaii');
-      expect(similarity).toBeLessThan(0.3);
-    });
-  });
+    test('should increment hospital requests for transferCall function', () => {
+      const timestamp = new Date();
 
-  describe('analyzeSentiment', () => {
-    test('should analyze sentiment using injected sentiment analyzer', () => {
-      const mockSentimentAnalyzer = {
-        analyzeSentiment: jest.fn().mockReturnValue({
-          anxiety: 0.7,
-          agitation: 0.2,
-          confusion: 0.1,
-          positivity: 0.0,
-          overall: -0.6
-        })
-      };
-      
-      analyzer.sentimentAnalyzer = mockSentimentAnalyzer;
-      const result = analyzer.analyzeSentiment('I\'m worried');
-      
-      expect(mockSentimentAnalyzer.analyzeSentiment).toHaveBeenCalledWith('I\'m worried');
-      expect(result.anxiety).toBe(0.7);
-    });
-  });
+      analyzer.trackFunctionCall('transferCall', { reason: 'emergency' }, timestamp);
 
-  describe('detectAnxietyMarkers', () => {
-    test('should identify anxiety-related words and phrases', () => {
-      const anxietyWords = analyzer.detectAnxietyMarkers('I\'m worried and scared about going to the hospital');
-      expect(anxietyWords).toContain('worried');
-      expect(anxietyWords).toContain('scared');
-      expect(anxietyWords).toContain('hospital');
-    });
-
-    test('should return empty array for non-anxious text', () => {
-      const anxietyWords = analyzer.detectAnxietyMarkers('I had a wonderful day today');
-      expect(anxietyWords).toEqual([]);
-    });
-  });
-
-  describe('detectConfusion', () => {
-    test('should identify confusion markers', () => {
-      const confusionLevel = analyzer.detectConfusion('I don\'t know where I am or what time it is');
-      expect(confusionLevel).toBeGreaterThan(0.5);
-    });
-
-    test('should detect low confusion in coherent text', () => {
-      const confusionLevel = analyzer.detectConfusion('I remember having lunch and talking with the nurse');
-      expect(confusionLevel).toBeLessThan(0.3);
-    });
-  });
-
-  describe('calculateCoherence', () => {
-    test('should assess text coherence in context', () => {
-      const context = ['We were talking about your dog', 'You mentioned you had a golden retriever'];
-      const coherenceScore = analyzer.calculateCoherence('Yes, I loved that dog so much', context);
-      expect(coherenceScore).toBeGreaterThan(0.7);
-    });
-
-    test('should detect low coherence for non-sequitur responses', () => {
-      const context = ['We were talking about your dog'];
-      const coherenceScore = analyzer.calculateCoherence('The purple elephant flies at midnight', context);
-      expect(coherenceScore).toBeLessThan(0.3);
-    });
-  });
-
-  describe('identifyTopics', () => {
-    test('should extract and categorize conversation topics', () => {
-      const topics = analyzer.identifyTopics('I miss my dog in Hawaii and want to see Ryan');
-      expect(topics.memories).toContain('dog');
-      expect(topics.memories).toContain('hawaii');
-      expect(topics.family).toContain('ryan');
+      expect(analyzer.hospitalRequests).toBe(1);
     });
   });
 
   describe('generateSummary', () => {
-    beforeEach(() => {
+    test('should generate basic conversation summary', () => {
+      analyzer.endTime = new Date(analyzer.startTime.getTime() + 120000); // 2 minutes later
+      
       // Add some test data
-      analyzer.trackUserUtterance('I\'m worried about my medication', new Date());
-      analyzer.trackUserUtterance('Where is Ryan?', new Date());
-      analyzer.trackAssistantResponse('Let\'s talk about something pleasant', new Date());
-      analyzer.endTime = new Date();
+      analyzer.trackUserUtterance('Hello', new Date(), 100);
+      analyzer.trackAssistantResponse('Hi there!', new Date());
+      analyzer.trackInterruption(new Date());
+
+      const summary = analyzer.generateSummary();
+
+      expect(summary).toEqual({
+        callMetadata: {
+          callSid: mockCallSid,
+          startTime: analyzer.startTime,
+          endTime: analyzer.endTime,
+          duration: 120 // 2 minutes in seconds
+        },
+        conversationMetrics: {
+          totalUtterances: 1,
+          userUtterances: 1,
+          assistantResponses: 1,
+          totalInteractions: 3, // 1 utterance + 1 response + 1 interruption
+          interruptionCount: 1,
+          averageResponseLatency: 100
+        },
+        clinicalIndicators: {
+          medicationMentions: [],
+          painComplaints: [],
+          hospitalRequests: 0,
+          staffComplaints: []
+        }
+      });
     });
 
-    test('should generate comprehensive conversation summary', () => {
+    test('should handle minimum 1 second duration', () => {
+      analyzer.endTime = new Date(analyzer.startTime.getTime() + 500); // 0.5 seconds
+
+      const summary = analyzer.generateSummary();
+
+      expect(summary.callMetadata.duration).toBe(1);
+    });
+
+    test('should calculate duration for ongoing conversation', () => {
+      // Don't set endTime to simulate ongoing conversation
       const summary = analyzer.generateSummary();
       
-      expect(summary).toHaveProperty('callMetadata');
-      expect(summary).toHaveProperty('conversationMetrics');
-      expect(summary).toHaveProperty('mentalStateAnalysis');
-      expect(summary).toHaveProperty('clinicalIndicators');
-      expect(summary).toHaveProperty('behavioralPatterns');
-      expect(summary).toHaveProperty('supportEffectiveness');
-      expect(summary).toHaveProperty('topicAnalysis');
-      
-      expect(summary.callMetadata.callSid).toBe(mockCallSid);
       expect(summary.callMetadata.duration).toBeGreaterThan(0);
-    });
-
-    test('should calculate conversation metrics', () => {
-      const summary = analyzer.generateSummary();
-      
-      expect(summary.conversationMetrics.totalUtterances).toBeGreaterThan(0);
-      expect(summary.conversationMetrics.userUtterances).toBeGreaterThan(0);
-      expect(summary.conversationMetrics.assistantResponses).toBeGreaterThan(0);
+      expect(summary.callMetadata.endTime).toBeNull();
     });
   });
 
-  describe('generateCaregiverInsights', () => {
-    beforeEach(() => {
-      analyzer.trackUserUtterance('I\'m worried and confused', new Date());
-      analyzer.trackUserUtterance('The staff are mean to me', new Date());
-      analyzer.endTime = new Date();
+  describe('_calculateAverageLatency', () => {
+    test('should return 0 for no latencies', () => {
+      expect(analyzer._calculateAverageLatency()).toBe(0);
     });
 
-    test('should provide actionable insights for caregivers', () => {
-      const insights = analyzer.generateCaregiverInsights();
-      
-      expect(insights).toHaveProperty('immediateAlerts');
-      expect(insights).toHaveProperty('trendAnalysis');
-      expect(insights).toHaveProperty('recommendations');
-      expect(insights).toHaveProperty('riskAssessment');
-    });
-
-    test('should identify high-priority alerts', () => {
-      analyzer.hospitalRequests = 3;
-      analyzer.painComplaints.push({ text: 'I hurt everywhere', intensity: 0.9 });
-      
-      const insights = analyzer.generateCaregiverInsights();
-      expect(insights.immediateAlerts.length).toBeGreaterThan(0);
-      expect(insights.riskAssessment.priority).toBe('critical'); // Corrected expectation
-    });
-
-    test('should provide trend analysis', () => {
-      // Set up proper mood progression with object structure
-      analyzer.moodProgression = [
-        { overall: 0.2, anxiety: 0.1, agitation: 0.1, confusion: 0.1 },
-        { overall: 0.1, anxiety: 0.2, agitation: 0.1, confusion: 0.2 },
-        { overall: -0.2, anxiety: 0.3, agitation: 0.2, confusion: 0.3 },
-        { overall: -0.5, anxiety: 0.4, agitation: 0.3, confusion: 0.4 }
+    test('should calculate average of response latencies', () => {
+      analyzer.responseLatencies = [
+        { timestamp: new Date(), latency: 100 },
+        { timestamp: new Date(), latency: 200 },
+        { timestamp: new Date(), latency: 300 }
       ];
-      
-      const insights = analyzer.generateCaregiverInsights();
-      expect(insights.trendAnalysis).toHaveProperty('moodTrend');
-      expect(insights.trendAnalysis.moodTrend).toBe('declining');
+
+      expect(analyzer._calculateAverageLatency()).toBe(200);
+    });
+  });
+
+  describe('_calculateTextSimilarity', () => {
+    test('should return 1 for identical texts', () => {
+      const text = 'Hello there';
+      expect(analyzer._calculateTextSimilarity(text, text)).toBe(1);
+    });
+
+    test('should return 0 for completely different texts', () => {
+      expect(analyzer._calculateTextSimilarity('Hello there', 'Goodbye friend')).toBeLessThan(0.5);
+    });
+
+    test('should handle empty strings', () => {
+      expect(analyzer._calculateTextSimilarity('', '')).toBe(1);
+      expect(analyzer._calculateTextSimilarity('Hello', '')).toBe(0);
+      expect(analyzer._calculateTextSimilarity('', 'Hello')).toBe(0);
     });
   });
 });

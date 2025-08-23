@@ -661,7 +661,7 @@ app.ws('/connection', async (ws) => {
             console.log(`${messages.length} conversation messages saved to database`.green);
             
             // Analyze emotional state asynchronously to prevent WebSocket cleanup delays
-            // HIPAA COMPLIANCE: Process emotional analysis in background without blocking
+            // HIPAA COMPLIANCE: Process async emotional analysis in background without blocking
             setImmediate(async () => {
               try {
                 // Convert messages to the format expected by analyzeEmotionalState

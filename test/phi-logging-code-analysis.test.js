@@ -194,8 +194,30 @@ describe('PHI Logging Prevention - Code Analysis', () => {
       if (fs.existsSync(dbManagerPath)) {
         const content = fs.readFileSync(dbManagerPath, 'utf8');
         
-        // Find the saveEmotionalMetrics method
-        const saveEmotionalMetricsMatch = content.match(/saveEmotionalMetrics[\s\S]*?}\s*}/);
+        // Find the saveEmotionalMetrics method - capture method and its catch block
+        let saveEmotionalMetricsMatch = null;
+        const startIndex = content.indexOf('async saveEmotionalMetrics(');
+        if (startIndex !== -1) {
+          let braceCount = 0;
+          let inMethod = false;
+          let methodEnd = startIndex;
+          
+          for (let i = startIndex; i < content.length; i++) {
+            const char = content[i];
+            if (char === '{') {
+              braceCount++;
+              inMethod = true;
+            } else if (char === '}') {
+              braceCount--;
+              if (inMethod && braceCount === 0) {
+                methodEnd = i + 1;
+                break;
+              }
+            }
+          }
+          
+          saveEmotionalMetricsMatch = [content.substring(startIndex, methodEnd)];
+        }
         
         if (saveEmotionalMetricsMatch) {
           const methodContent = saveEmotionalMetricsMatch[0];

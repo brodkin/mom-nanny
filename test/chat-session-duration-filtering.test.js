@@ -277,10 +277,10 @@ describe('ChatSession Duration Filtering', () => {
     // Execute the endSession method
     await chatSession.endSession();
     
-    // Verify error was logged
+    // Verify error was logged (HIPAA compliant: error.message only, not full error object)
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       chalk.red('❌ Error saving conversation summary or messages:'),
-      expect.any(Error)
+      'Summary generation failed' // error.message string, not full Error object
     );
     
     // Verify services were still cleaned up
