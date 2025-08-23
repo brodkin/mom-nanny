@@ -8,7 +8,7 @@ This file provides comprehensive technical guidance for LLMs working on this com
 
 **Core Design Principles**:
 - **Patience Over Efficiency**: Never rush or show frustration with repetition
-- **Validation Over Correction**: Acknowledge feelings rather than correcting confusion  
+- **Validation Over Correction**: Acknowledge feelings rather than correcting confusion
 - **Comfort Over Accuracy**: Prioritize emotional well-being over factual precision
 - **Familiarity Over Novelty**: Use familiar topics and gentle redirection
 - **Safety Over Features**: All features must consider the user's vulnerable state
@@ -30,7 +30,7 @@ Pipeline: Twilio Media Stream → Deepgram STT → OpenAI GPT → Deepgram TTS �
 Key Features: Real-time streaming, interruption handling, mark-based audio tracking
 ```
 
-### Development Flow (Text Chat) 
+### Development Flow (Text Chat)
 ```
 Entry Point: npm run chat → scripts/text-chat.js → services/chat-session.js
 Flow: Console Input → Mock Services → GPT → Console Output
@@ -98,7 +98,7 @@ migrations: id, version, applied_at
 
 #### Performance Indexes (Migration 4)
 - `idx_conversations_created_at` - Admin dashboard queries
-- `idx_summaries_created_at` - Recent summaries pagination  
+- `idx_summaries_created_at` - Recent summaries pagination
 - `idx_analytics_created_at` - Analytics reporting
 - `idx_messages_role_timestamp` - Conversation analysis
 - `idx_memories_category_updated` - Memory retrieval optimization
@@ -230,7 +230,7 @@ Say goodbye naturally before triggering
 npm run chat
 # Interactive console with:
 # - Real GPT integration
-# - Mock audio services  
+# - Mock audio services
 # - Memory persistence
 # - Usage tracking
 # Commands: /help, /stats, /context, /memories, /debug, /reset, /exit
@@ -380,7 +380,7 @@ api/admin-config.js  # Configuration API
 // Applied automatically in database-manager.js:
 Migration 1: Initial schema (conversations, summaries, messages, analytics)
 Migration 2: Memories table
-Migration 3: Settings table  
+Migration 3: Settings table
 Migration 4: Performance indexes
 Migration 5: Emotional metrics table for GPT-based analysis
 ```
@@ -613,3 +613,4 @@ The indexed `emotional_metrics` table is ready for:
 - **Memory Is Silent**: Never mention storing/recalling
 - **Testing Matters**: Use chat interface extensively
 - **Compassion First**: Technical excellence serves emotional care
+- **Use MCP tools**: They can help with thinking and browser testing. Serena has an index of the entire project for you.

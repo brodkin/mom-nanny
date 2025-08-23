@@ -141,3 +141,86 @@ body.modal-open {
 [data-theme="dark"] .modal-overlay {
   background: rgba(0, 0, 0, 0.7) !important;
 }
+
+/* Checkbox styling for modals - matches form inputs */
+.modal .checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-2, 0.5rem);
+  cursor: pointer;
+  user-select: none;
+}
+
+.modal .form-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.modal .checkbox-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-color, #d1d5db);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg-primary, #fff);
+  transition: all 0.2s ease;
+  margin-right: var(--space-2, 0.5rem);
+  flex-shrink: 0;
+}
+
+.modal .checkbox-check {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+  stroke: var(--bg-primary, #fff);
+}
+
+.modal .form-checkbox:checked + .checkbox-icon {
+  background: var(--color-primary, #6366f1);
+  border-color: var(--color-primary, #6366f1);
+}
+
+.modal .form-checkbox:checked + .checkbox-icon .checkbox-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.modal .form-checkbox:focus + .checkbox-icon {
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: 2px;
+}
+
+.modal .checkbox-wrapper:hover .checkbox-icon {
+  border-color: var(--color-primary, #6366f1);
+}
+
+.modal .checkbox-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary, #1f2937);
+  line-height: 1.4;
+}
+
+/* Dark mode checkbox styling */
+[data-theme="dark"] .modal .checkbox-icon {
+  border-color: var(--border-color-dark, #4b5563);
+  background: var(--bg-primary-dark, #1f2937);
+}
+
+[data-theme="dark"] .modal .checkbox-text {
+  color: var(--text-primary-dark, #f9fafb);
+}
+
+[data-theme="dark"] .modal .form-checkbox:checked + .checkbox-icon {
+  background: var(--color-primary, #6366f1);
+  border-color: var(--color-primary, #6366f1);
+}
+
+[data-theme="dark"] .modal .checkbox-wrapper:hover .checkbox-icon {
+  border-color: var(--color-primary, #6366f1);
+}

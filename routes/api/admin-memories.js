@@ -65,10 +65,10 @@ router.get('/', async (req, res) => {
     const countResult = await dbManager.get('SELECT COUNT(*) as total FROM memories');
     const total = countResult.total || 0;
     
-    // Get paginated memories
+    // Get paginated memories with is_fact column
     const memories = await dbManager.all(`
       SELECT memory_key as key, memory_content as content, category, 
-             created_at, updated_at, last_accessed
+             created_at, updated_at, last_accessed, is_fact
       FROM memories 
       ORDER BY updated_at DESC 
       LIMIT ? OFFSET ?
@@ -76,10 +76,16 @@ router.get('/', async (req, res) => {
     
     const hasMore = (offset + limit) < total;
     
+    // Transform is_fact from SQLite integer to boolean
+    const transformedMemories = memories.map(memory => ({
+      ...memory,
+      is_fact: Boolean(memory.is_fact)
+    }));
+    
     res.json({
       success: true,
       data: {
-        memories,
+        memories: transformedMemories,
         pagination: {
           offset,
           limit,
@@ -198,11 +204,11 @@ router.get('/:key', async (req, res) => {
 /**
  * POST /api/admin/memories
  * Create new memory or update existing one
- * Body: { key: string, content: string, category?: string }
+ * Body: { key: string, content: string, category?: string, isFact?: boolean }
  */
 router.post('/', async (req, res) => {
   try {
-    const { key, content, category = 'general' } = req.body;
+    const { key, content, category = 'general', isFact = false } = req.body;
     
     if (!key || !content) {
       return res.status(400).json({
@@ -218,8 +224,16 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Validate isFact is boolean if provided
+    if (Object.prototype.hasOwnProperty.call(req.body, 'isFact') && typeof isFact !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'isFact must be a boolean if provided'
+      });
+    }
+    
     const service = await getMemoryService();
-    const result = await service.saveMemory(key, content, category);
+    const result = await service.saveMemory(key, content, category, isFact);
     
     if (result.status === 'error') {
       return res.status(400).json({
@@ -250,12 +264,12 @@ router.post('/', async (req, res) => {
 /**
  * PUT /api/admin/memories/:key
  * Update existing memory
- * Body: { content: string, category?: string }
+ * Body: { content: string, category?: string, isFact?: boolean }
  */
 router.put('/:key', async (req, res) => {
   try {
     const normalizedKey = normalizeKey(req.params.key);
-    const { content, category = 'general' } = req.body;
+    const { content, category = 'general', isFact } = req.body;
     
     if (!normalizedKey) {
       return res.status(400).json({
@@ -278,6 +292,14 @@ router.put('/:key', async (req, res) => {
       });
     }
     
+    // Validate isFact is boolean if provided
+    if (Object.prototype.hasOwnProperty.call(req.body, 'isFact') && typeof isFact !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'isFact must be a boolean if provided'
+      });
+    }
+    
     const service = await getMemoryService();
     
     // Check if memory exists
@@ -289,8 +311,11 @@ router.put('/:key', async (req, res) => {
       });
     }
     
+    // Use existing isFact value if not provided in request
+    const finalIsFact = Object.prototype.hasOwnProperty.call(req.body, 'isFact') ? isFact : existingMemory.is_fact;
+    
     // Update the memory
-    const result = await service.saveMemory(normalizedKey, content, category);
+    const result = await service.saveMemory(normalizedKey, content, category, finalIsFact);
     
     if (result.status === 'error') {
       return res.status(400).json({

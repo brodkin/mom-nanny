@@ -165,7 +165,7 @@ describe('DatabaseManager', () => {
       expect(tables.length).toBeGreaterThan(0);
       
       const version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(5); // Should be at latest version (5) after initial setup with emotional metrics
+      expect(version).toBe(6); // Should be at latest version (6) after initial setup with fact memory migration
     });
 
     test('should apply Migration 4 performance indexes', async () => {
@@ -189,9 +189,9 @@ describe('DatabaseManager', () => {
     });
 
     test('should skip Migration 4 if already applied', async () => {
-      // First, verify we're at version 5 (with emotional metrics)
+      // First, verify we're at version 6 (with fact memory migration)
       let version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(5);
+      expect(version).toBe(6);
 
       // Count current indexes
       const initialIndexes = await dbManager.all(`

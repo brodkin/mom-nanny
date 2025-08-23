@@ -47,6 +47,102 @@
     .category-badge.activities { background: rgba(251, 191, 36, 0.1); color: rgb(251, 191, 36); }
     .category-badge.other { background: rgba(107, 114, 128, 0.1); color: rgb(107, 114, 128); }
     
+    /* Fact/Memory type indicators */
+    .memory-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    
+    .memory-type-badge.fact {
+      background: rgba(251, 191, 36, 0.1);
+      color: rgb(251, 191, 36);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+    
+    .memory-type-badge.memory {
+      background: rgba(107, 114, 128, 0.1);
+      color: rgb(107, 114, 128);
+      border: 1px solid rgba(107, 114, 128, 0.2);
+    }
+    
+    .lock-icon {
+      width: 12px;
+      height: 12px;
+    }
+    
+    /* Fact rows styling */
+    tr.fact-row {
+      background: rgba(251, 191, 36, 0.02);
+      border-left: 3px solid rgba(251, 191, 36, 0.3);
+    }
+    
+    tr.fact-row:hover {
+      background: rgba(251, 191, 36, 0.05);
+    }
+    
+    /* Checkbox styling */
+    .checkbox-wrapper {
+      margin-bottom: var(--space-2);
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .form-checkbox {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .checkbox-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xs);
+      background: var(--bg-primary);
+      transition: all 0.2s ease;
+    }
+    
+    .checkbox-check {
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.2s ease;
+    }
+    
+    .form-checkbox:checked + .checkbox-icon {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    .form-checkbox:checked + .checkbox-icon .checkbox-check {
+      opacity: 1;
+      transform: scale(1);
+      stroke: white;
+    }
+    
+    .form-checkbox:focus + .checkbox-icon {
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    }
+    
+    .checkbox-text {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    
     .content-preview {
       max-width: 300px;
       overflow: hidden;
@@ -263,6 +359,12 @@
                     </svg>
                     Memory Key
                   </th>
+                  <th class="sortable" data-sort="is_fact">
+                    <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                    </svg>
+                    Type
+                  </th>
                   <th class="sortable" data-sort="category">
                     <svg class="sort-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
@@ -391,6 +493,29 @@
             <div id="memory-category-error" class="form-error" style="display: none;"></div>
           </div>
           
+          <div class="form-group">
+            <div class="checkbox-wrapper">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  id="memory-is-fact" 
+                  name="isFact" 
+                  class="form-checkbox"
+                  aria-describedby="memory-is-fact-help"
+                />
+                <span class="checkbox-icon">
+                  <svg class="checkbox-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                  </svg>
+                </span>
+                <span class="checkbox-text">Mark as verified fact</span>
+              </label>
+            </div>
+            <div id="memory-is-fact-help" class="form-help">
+              Facts are verified information that the AI cannot modify. Regular memories are observations that can be updated through conversation.
+            </div>
+          </div>
+          
           <div class="category-descriptions">
             <div class="category-description" data-category="family">
               <div class="category-badge category-family">Family</div>
@@ -510,6 +635,29 @@
               rows="4" 
               required
             ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <div class="checkbox-wrapper">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  id="edit-memory-is-fact" 
+                  name="isFact" 
+                  class="form-checkbox"
+                  aria-describedby="edit-memory-is-fact-help"
+                />
+                <span class="checkbox-icon">
+                  <svg class="checkbox-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                  </svg>
+                </span>
+                <span class="checkbox-text">Mark as verified fact</span>
+              </label>
+            </div>
+            <div id="edit-memory-is-fact-help" class="form-help">
+              Facts are verified information that the AI cannot modify. Regular memories are observations that can be updated through conversation.
+            </div>
           </div>
         </form>
       </div>

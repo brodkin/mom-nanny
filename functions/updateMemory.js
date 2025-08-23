@@ -44,8 +44,18 @@ async function updateMemory({ memory_key, updated_content, category }) {
     const existingMemory = await memoryService.getMemory(memory_key);
     
     if (existingMemory) {
-      // Update existing memory with new content
-      const result = await memoryService.saveMemory(memory_key, updated_content, category || existingMemory.category);
+      // PROTECT FACTS: Check if this is a protected fact before updating
+      if (existingMemory.is_fact) {
+        console.log(`   🔒 Blocked attempt to update protected fact: "${memory_key}"`.yellow);
+        return JSON.stringify({
+          success: false,
+          message: 'This is a verified fact from caregivers and cannot be updated. If you have additional helpful information, please store it as a new memory with a different key.',
+          key: memory_key
+        });
+      }
+      
+      // Update existing memory with new content (preserve is_fact status)
+      const result = await memoryService.saveMemory(memory_key, updated_content, category || existingMemory.category, existingMemory.is_fact);
       
       if (result.status === 'success') {
         console.log(`   ✓ Updated memory in category: ${category || existingMemory.category}`.yellow);

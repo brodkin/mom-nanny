@@ -1,3 +1,23 @@
+/**
+ * MemoryService - Manages persistent memory storage for AI conversations
+ * 
+ * This service handles storing and retrieving contextual information about
+ * the user that should persist across conversation sessions. All operations
+ * are designed to be silent and not interfere with conversation flow.
+ * 
+ * Memory Types:
+ * - Facts (is_fact: true): Verified factual information about the caller
+ *   (e.g., "Has son named Ryan", "Lives at Sunset Manor", "Born March 15, 1940")
+ * - Memories (is_fact: false): Conversation-based observations and experiences
+ *   (e.g., "Was feeling anxious yesterday", "Mentioned missing her late husband")
+ * 
+ * Memory Categories:
+ * - 'family': Information about family members
+ * - 'health': Health conditions, medications, concerns  
+ * - 'preferences': Likes, dislikes, comfort topics
+ * - 'topics_to_avoid': Things that cause distress
+ * - 'general': Other contextual information
+ */
 class MemoryService {
   constructor(databaseManager) {
     this.db = databaseManager;
@@ -18,13 +38,14 @@ class MemoryService {
    */
   async loadMemoriesIntoCache() {
     try {
-      const memories = await this.db.all('SELECT memory_key, memory_content, category FROM memories');
+      const memories = await this.db.all('SELECT memory_key, memory_content, category, is_fact FROM memories');
       this.memoryCache.clear();
       
       for (const memory of memories) {
         this.memoryCache.set(memory.memory_key, {
           content: memory.memory_content,
-          category: memory.category
+          category: memory.category,
+          is_fact: Boolean(memory.is_fact)
         });
       }
       
@@ -42,9 +63,10 @@ class MemoryService {
    * @param {string} key - Descriptive key for the memory (e.g., "son-ryan-name")
    * @param {string} content - The memory content
    * @param {string} category - Category: 'family', 'health', 'preferences', 'topics_to_avoid', 'general'
+   * @param {boolean} isFact - Whether this is a verified fact (true) or conversation memory (false)
    * @returns {Promise<Object>} Result object with status
    */
-  async saveMemory(key, content, category = 'general') {
+  async saveMemory(key, content, category = 'general', isFact = false) {
     try {
       await this.db.waitForInitialization();
       
@@ -63,23 +85,23 @@ class MemoryService {
         // Update existing memory
         await this.db.run(`
           UPDATE memories 
-          SET memory_content = ?, category = ?, updated_at = CURRENT_TIMESTAMP
+          SET memory_content = ?, category = ?, is_fact = ?, updated_at = CURRENT_TIMESTAMP
           WHERE memory_key = ?
-        `, [content, category, normalizedKey]);
+        `, [content, category, isFact ? 1 : 0, normalizedKey]);
         
         // Memory updated (logging handled by function)
       } else {
         // Insert new memory
         await this.db.run(`
-          INSERT INTO memories (memory_key, memory_content, category)
-          VALUES (?, ?, ?)
-        `, [normalizedKey, content, category]);
+          INSERT INTO memories (memory_key, memory_content, category, is_fact)
+          VALUES (?, ?, ?, ?)
+        `, [normalizedKey, content, category, isFact ? 1 : 0]);
         
         // Memory created (logging handled by function)
       }
       
       // Update cache
-      this.memoryCache.set(normalizedKey, { content, category });
+      this.memoryCache.set(normalizedKey, { content, category, is_fact: isFact });
       
       return {
         status: 'success',
@@ -119,13 +141,14 @@ class MemoryService {
         return {
           key: normalizedKey,
           content: cached.content,
-          category: cached.category
+          category: cached.category,
+          is_fact: cached.is_fact
         };
       }
       
       // If not in cache, try database
       const memory = await this.db.get(`
-        SELECT memory_key, memory_content, category 
+        SELECT memory_key, memory_content, category, is_fact 
         FROM memories 
         WHERE memory_key = ?
       `, [normalizedKey]);
@@ -137,13 +160,15 @@ class MemoryService {
         // Add to cache
         this.memoryCache.set(memory.memory_key, {
           content: memory.memory_content,
-          category: memory.category
+          category: memory.category,
+          is_fact: Boolean(memory.is_fact)
         });
         
         return {
           key: memory.memory_key,
           content: memory.memory_content,
-          category: memory.category
+          category: memory.category,
+          is_fact: Boolean(memory.is_fact)
         };
       }
       
@@ -157,26 +182,43 @@ class MemoryService {
   }
 
   /**
-   * Get all memory keys (for system prompt)
-   * @returns {Promise<Array<string>>} Array of all memory keys
+   * Get all memory keys separated by type (for system prompt and organization)
+   * @returns {Promise<Object>} Object with facts and memories arrays
    */
   async getAllMemoryKeys() {
     try {
       await this.db.waitForInitialization();
       
+      const facts = [];
+      const memories = [];
+      
       // Get from cache if loaded
       if (this.cacheLoaded) {
-        return Array.from(this.memoryCache.keys());
+        for (const [key, data] of this.memoryCache.entries()) {
+          if (data.is_fact) {
+            facts.push(key);
+          } else {
+            memories.push(key);
+          }
+        }
+      } else {
+        // Otherwise query database
+        const allMemories = await this.db.all('SELECT memory_key, is_fact FROM memories ORDER BY memory_key');
+        for (const memory of allMemories) {
+          if (memory.is_fact) {
+            facts.push(memory.memory_key);
+          } else {
+            memories.push(memory.memory_key);
+          }
+        }
       }
       
-      // Otherwise query database
-      const memories = await this.db.all('SELECT memory_key FROM memories ORDER BY memory_key');
-      return memories.map(m => m.memory_key);
+      return { facts, memories };
       
     } catch (error) {
       // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
       console.error('Error getting memory keys:', error.message);
-      return [];
+      return { facts: [], memories: [] };
     }
   }
 
@@ -238,7 +280,7 @@ class MemoryService {
       const normalizedQuery = query.toLowerCase().replace(/\s+/g, '-');
       
       const memories = await this.db.all(`
-        SELECT memory_key, memory_content, category 
+        SELECT memory_key, memory_content, category, is_fact 
         FROM memories 
         WHERE memory_key LIKE ?
         ORDER BY memory_key
@@ -247,7 +289,8 @@ class MemoryService {
       return memories.map(m => ({
         key: m.memory_key,
         content: m.memory_content,
-        category: m.category
+        category: m.category,
+        is_fact: Boolean(m.is_fact)
       }));
       
     } catch (error) {
@@ -267,7 +310,7 @@ class MemoryService {
       await this.db.waitForInitialization();
       
       const memories = await this.db.all(`
-        SELECT memory_key, memory_content 
+        SELECT memory_key, memory_content, is_fact 
         FROM memories 
         WHERE category = ?
         ORDER BY memory_key
@@ -275,7 +318,8 @@ class MemoryService {
       
       return memories.map(m => ({
         key: m.memory_key,
-        content: m.memory_content
+        content: m.memory_content,
+        is_fact: Boolean(m.is_fact)
       }));
       
     } catch (error) {
@@ -296,6 +340,8 @@ class MemoryService {
       const stats = await this.db.get(`
         SELECT 
           COUNT(*) as total_memories,
+          COUNT(CASE WHEN is_fact = 1 THEN 1 END) as fact_count,
+          COUNT(CASE WHEN is_fact = 0 THEN 1 END) as memory_count,
           COUNT(DISTINCT category) as categories_used,
           MAX(updated_at) as last_updated,
           MIN(created_at) as first_created
@@ -310,6 +356,8 @@ class MemoryService {
       
       return {
         totalMemories: stats.total_memories || 0,
+        factCount: stats.fact_count || 0,
+        memoryCount: stats.memory_count || 0,
         categoriesUsed: stats.categories_used || 0,
         lastUpdated: stats.last_updated,
         firstCreated: stats.first_created,
@@ -327,6 +375,66 @@ class MemoryService {
         categoriesUsed: 0,
         byCategory: {}
       };
+    }
+  }
+
+  /**
+   * Get only fact keys (verified factual information)
+   * @returns {Promise<Array<string>>} Array of fact memory keys
+   */
+  async getFactKeys() {
+    try {
+      await this.db.waitForInitialization();
+      
+      // Get from cache if loaded
+      if (this.cacheLoaded) {
+        const facts = [];
+        for (const [key, data] of this.memoryCache.entries()) {
+          if (data.is_fact) {
+            facts.push(key);
+          }
+        }
+        return facts.sort();
+      }
+      
+      // Otherwise query database
+      const facts = await this.db.all('SELECT memory_key FROM memories WHERE is_fact = 1 ORDER BY memory_key');
+      return facts.map(m => m.memory_key);
+      
+    } catch (error) {
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error getting fact keys:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get only regular memory keys (conversation-based observations)
+   * @returns {Promise<Array<string>>} Array of regular memory keys
+   */
+  async getMemoryKeys() {
+    try {
+      await this.db.waitForInitialization();
+      
+      // Get from cache if loaded
+      if (this.cacheLoaded) {
+        const memories = [];
+        for (const [key, data] of this.memoryCache.entries()) {
+          if (!data.is_fact) {
+            memories.push(key);
+          }
+        }
+        return memories.sort();
+      }
+      
+      // Otherwise query database
+      const memories = await this.db.all('SELECT memory_key FROM memories WHERE is_fact = 0 ORDER BY memory_key');
+      return memories.map(m => m.memory_key);
+      
+    } catch (error) {
+      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+      console.error('Error getting memory keys:', error.message);
+      return [];
     }
   }
 }

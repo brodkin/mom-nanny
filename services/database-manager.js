@@ -177,6 +177,12 @@ class DatabaseManager {
       this.applyEmotionalMetricsMigration();
       this.runSync('INSERT INTO migrations (version) VALUES (?)', [5]);
     }
+    
+    // Apply fact memory migration if needed
+    if (currentVersion < 6) {
+      this.applyFactMemoryMigration();
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [6]);
+    }
   }
 
   applyInitialSchema() {
@@ -384,6 +390,31 @@ class DatabaseManager {
       
       -- Composite index for trend analysis
       CREATE INDEX IF NOT EXISTS idx_emotional_metrics_trends ON emotional_metrics(created_at, anxiety_level, agitation_level, comfort_level);
+    `;
+
+    this._execSync(migration);
+  }
+
+  /**
+   * Migration 6: Add is_fact column to memories table for distinguishing caller vs fact memories
+   * 
+   * This migration adds:
+   * - is_fact column (BOOLEAN DEFAULT FALSE) to track memory source
+   * - Performance index on is_fact for filtering queries
+   * 
+   * Existing memories default to FALSE (caller-collected) to maintain current behavior.
+   * New fact-based memories can be marked TRUE for LLM-generated/verified information.
+   */
+  applyFactMemoryMigration() {
+    const migration = `
+      -- Migration 6: Add is_fact column and index to memories table
+      -- Distinguishes between caller-collected memories (FALSE) and fact-based memories (TRUE)
+      
+      -- Add is_fact column with default FALSE for existing memories
+      ALTER TABLE memories ADD COLUMN is_fact BOOLEAN DEFAULT FALSE;
+      
+      -- Create index on is_fact for performance (filtering queries)
+      CREATE INDEX IF NOT EXISTS idx_memories_is_fact ON memories(is_fact);
     `;
 
     this._execSync(migration);
@@ -619,7 +650,9 @@ class DatabaseManager {
       'idx_emotional_metrics_anxiety_level',
       'idx_emotional_metrics_overall_sentiment',
       'idx_emotional_metrics_time_patterns',
-      'idx_emotional_metrics_trends'
+      'idx_emotional_metrics_trends',
+      // Fact memory migration indexes (Migration 6)
+      'idx_memories_is_fact'
     ];
 
     try {

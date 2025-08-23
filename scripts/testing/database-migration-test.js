@@ -8,7 +8,7 @@
  * through all migration versions.
  * 
  * Test Scenarios:
- * 1. Fresh database creation with all migrations (versions 1-4)
+ * 1. Fresh database creation with all migrations (versions 1-6)
  * 2. Applying migrations to empty database
  * 3. Re-running migrations for idempotency validation
  * 4. Schema verification against expected structure
@@ -39,7 +39,8 @@ const EXPECTED_SCHEMA = {
     'messages',
     'analytics',
     'memories',
-    'settings'
+    'settings',
+    'emotional_metrics'
   ],
   indexes: [
     // Initial schema indexes (Migration 1)
@@ -61,7 +62,16 @@ const EXPECTED_SCHEMA = {
     'idx_summaries_created_at',
     'idx_analytics_created_at',
     'idx_messages_role_timestamp',
-    'idx_memories_category_updated'
+    'idx_memories_category_updated',
+    // Emotional metrics migration indexes (Migration 5)
+    'idx_emotional_metrics_conversation_id',
+    'idx_emotional_metrics_created_at',
+    'idx_emotional_metrics_anxiety_level',
+    'idx_emotional_metrics_overall_sentiment',
+    'idx_emotional_metrics_time_patterns',
+    'idx_emotional_metrics_trends',
+    // Fact memory migration indexes (Migration 6)
+    'idx_memories_is_fact'
   ],
   // Automatic indexes created by SQLite for UNIQUE constraints
   autoIndexes: [
@@ -166,8 +176,8 @@ class DatabaseTester {
             
       // Verify migration version
       const version = dbManager.getCurrentMigrationVersion();
-      if (version !== 4) {
-        throw new Error(`Expected migration version 4, got ${version}`);
+      if (version !== 6) {
+        throw new Error(`Expected migration version 6, got ${version}`);
       }
             
       // Test schema verification method
@@ -205,7 +215,7 @@ class DatabaseTester {
             
       // Verify each migration was applied
       const migrations = await dbManager.all('SELECT version FROM migrations ORDER BY version');
-      const expectedVersions = [1, 2, 3, 4];
+      const expectedVersions = [1, 2, 3, 4, 5, 6];
       const actualVersions = migrations.map(m => m.version);
             
       if (!this.arraysEqual(expectedVersions, actualVersions)) {
@@ -477,7 +487,7 @@ class DatabaseTester {
     console.log(`   Expected Tables: ${EXPECTED_SCHEMA.tables.length} (${EXPECTED_SCHEMA.tables.join(', ')})`);
     console.log(`   Expected Explicit Indexes: ${EXPECTED_SCHEMA.indexes.length}`);
     console.log(`   Expected Auto Indexes: ${EXPECTED_SCHEMA.autoIndexes.length} (from UNIQUE constraints)`);
-    console.log(`   Total Expected Indexes: ${EXPECTED_SCHEMA.indexes.length + EXPECTED_SCHEMA.autoIndexes.length} (16 explicit + 4 automatic)`);
+    console.log(`   Total Expected Indexes: ${EXPECTED_SCHEMA.indexes.length + EXPECTED_SCHEMA.autoIndexes.length} (${EXPECTED_SCHEMA.indexes.length} explicit + ${EXPECTED_SCHEMA.autoIndexes.length} automatic)`);
   }
 }
 

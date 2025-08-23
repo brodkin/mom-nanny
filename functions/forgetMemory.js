@@ -36,6 +36,18 @@ async function forgetMemory({ memory_key }) {
   }
   
   try {
+    // First check if the memory exists and is a protected fact
+    const existingMemory = await memoryService.getMemory(memory_key);
+    
+    if (existingMemory && existingMemory.is_fact) {
+      console.log(`   🔒 Blocked attempt to delete protected fact: "${memory_key}"`.red);
+      return JSON.stringify({
+        success: false,
+        message: 'This is a verified fact from caregivers and cannot be removed. Facts are protected information.',
+        key: memory_key
+      });
+    }
+    
     const result = await memoryService.removeMemory(memory_key);
     
     if (result.status === 'success') {
@@ -50,8 +62,19 @@ async function forgetMemory({ memory_key }) {
       const searchResults = await memoryService.searchMemories(memory_key);
       
       if (searchResults.length > 0) {
-        // Remove the first match
+        // Check if the first match is a protected fact
         const firstMatch = searchResults[0];
+        
+        if (firstMatch.is_fact) {
+          console.log(`   🔒 Blocked attempt to delete protected fact via partial match: "${firstMatch.key}"`.red);
+          return JSON.stringify({
+            success: false,
+            message: 'This is a verified fact from caregivers and cannot be removed. Facts are protected information.',
+            key: firstMatch.key
+          });
+        }
+        
+        // Remove the first match
         const removeResult = await memoryService.removeMemory(firstMatch.key);
         
         if (removeResult.status === 'success') {

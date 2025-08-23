@@ -78,14 +78,16 @@ describe('Admin Memories API', () => {
     // Reset memory service cache
     await memoryService.loadMemoriesIntoCache();
     
-    // Add some test memories for most tests
+    // Add some test memories for most tests (mix of facts and regular memories)
     await testDb.run(`
-      INSERT INTO memories (memory_key, memory_content, category, created_at, updated_at)
+      INSERT INTO memories (memory_key, memory_content, category, created_at, updated_at, is_fact)
       VALUES 
-        ('francines-son-ryan', 'Ryan is her son who visits on weekends and lives in Portland', 'family', datetime('now', '-5 days'), datetime('now', '-2 days')),
-        ('favorite-color-blue', 'Francine loves the color blue, especially sky blue', 'preferences', datetime('now', '-3 days'), datetime('now', '-1 day')),
-        ('morning-routine', 'She likes to have coffee at 8am and watch the news', 'preferences', datetime('now', '-2 days'), datetime('now')),
-        ('avoid-medical-topics', 'Avoid discussing serious medical procedures as they cause anxiety', 'topics_to_avoid', datetime('now', '-1 day'), datetime('now'))
+        ('francines-son-ryan', 'Ryan is her son who visits on weekends and lives in Portland', 'family', datetime('now', '-5 days'), datetime('now', '-2 days'), 0),
+        ('favorite-color-blue', 'Francine loves the color blue, especially sky blue', 'preferences', datetime('now', '-3 days'), datetime('now', '-1 day'), 0),
+        ('morning-routine', 'She likes to have coffee at 8am and watch the news', 'preferences', datetime('now', '-2 days'), datetime('now'), 0),
+        ('avoid-medical-topics', 'Avoid discussing serious medical procedures as they cause anxiety', 'topics_to_avoid', datetime('now', '-1 day'), datetime('now'), 0),
+        ('medical-fact-dementia', 'Dementia affects approximately 55 million people worldwide according to WHO', 'health', datetime('now', '-6 days'), datetime('now', '-3 days'), 1),
+        ('care-fact-routine', 'Consistent daily routines help reduce anxiety in dementia patients', 'health', datetime('now', '-4 days'), datetime('now', '-1 day'), 1)
     `);
     
     // Reload cache with test data
@@ -93,7 +95,7 @@ describe('Admin Memories API', () => {
   });
 
   async function setupTestData() {
-    // Create memories table if it doesn't exist
+    // Create memories table if it doesn't exist (updated schema with is_fact column)
     await testDb.run(`
       CREATE TABLE IF NOT EXISTS memories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,7 +104,8 @@ describe('Admin Memories API', () => {
         category TEXT DEFAULT 'general',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_accessed DATETIME DEFAULT CURRENT_TIMESTAMP
+        last_accessed DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_fact BOOLEAN DEFAULT FALSE
       )
     `);
   }
@@ -120,21 +123,22 @@ describe('Admin Memories API', () => {
       
       const { memories, pagination } = response.body.data;
       expect(Array.isArray(memories)).toBe(true);
-      expect(memories).toHaveLength(4);
+      expect(memories).toHaveLength(6);
       expect(pagination).toEqual({
         offset: 0,
         limit: 50,
-        total: 4,
+        total: 6,
         hasMore: false
       });
 
-      // Check memory structure
+      // Check memory structure includes is_fact field
       const memory = memories[0];
       expect(memory).toHaveProperty('key');
       expect(memory).toHaveProperty('content');
       expect(memory).toHaveProperty('category');
       expect(memory).toHaveProperty('created_at');
       expect(memory).toHaveProperty('updated_at');
+      expect(memory).toHaveProperty('is_fact');
     });
 
     it('should support custom pagination with limit and offset', async () => {
@@ -149,7 +153,7 @@ describe('Admin Memories API', () => {
       expect(pagination).toEqual({
         offset: 1,
         limit: 2,
-        total: 4,
+        total: 6,
         hasMore: true
       });
     });
@@ -238,14 +242,15 @@ describe('Admin Memories API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('totalMemories', 4);
-      expect(response.body.data).toHaveProperty('categoriesUsed', 3);
+      expect(response.body.data).toHaveProperty('totalMemories', 6);
+      expect(response.body.data).toHaveProperty('categoriesUsed', 4);
       expect(response.body.data).toHaveProperty('byCategory');
       
       const { byCategory } = response.body.data;
       expect(byCategory).toHaveProperty('family', 1);
       expect(byCategory).toHaveProperty('preferences', 2);
       expect(byCategory).toHaveProperty('topics_to_avoid', 1);
+      expect(byCategory).toHaveProperty('health', 2);
     });
 
     it('should return zero stats when no memories exist', async () => {
@@ -273,6 +278,7 @@ describe('Admin Memories API', () => {
       expect(response.body.data).toHaveProperty('key', 'francines-son-ryan');
       expect(response.body.data).toHaveProperty('content', 'Ryan is her son who visits on weekends and lives in Portland');
       expect(response.body.data).toHaveProperty('category', 'family');
+      expect(response.body.data).toHaveProperty('is_fact', false);
     });
 
     it('should return 404 for non-existent memory', async () => {
@@ -319,6 +325,74 @@ describe('Admin Memories API', () => {
 
       expect(getResponse.body.data.content).toBe(newMemory.content);
       expect(getResponse.body.data.category).toBe(newMemory.category);
+      expect(getResponse.body.data.is_fact).toBe(false); // Default should be false
+    });
+
+    it('should create new fact-based memory when isFact is true', async () => {
+      const newFact = {
+        key: 'alzheimers-fact',
+        content: 'Alzheimers disease accounts for 60-70% of dementia cases worldwide',
+        category: 'health',
+        isFact: true
+      };
+
+      const response = await request(app)
+        .post('/api/admin/memories')
+        .send(newFact)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('key', 'alzheimers-fact');
+      expect(response.body.data).toHaveProperty('action', 'created');
+
+      // Verify fact was stored with is_fact = true
+      const getResponse = await request(app)
+        .get('/api/admin/memories/alzheimers-fact')
+        .expect(200);
+
+      expect(getResponse.body.data.content).toBe(newFact.content);
+      expect(getResponse.body.data.category).toBe(newFact.category);
+      expect(getResponse.body.data.is_fact).toBe(true);
+    });
+
+    it('should create regular memory when isFact is explicitly false', async () => {
+      const newMemory = {
+        key: 'personal-note',
+        content: 'Francine mentioned she had a difficult morning',
+        category: 'general',
+        isFact: false
+      };
+
+      const response = await request(app)
+        .post('/api/admin/memories')
+        .send(newMemory)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify memory stored with is_fact = false
+      const getResponse = await request(app)
+        .get('/api/admin/memories/personal-note')
+        .expect(200);
+
+      expect(getResponse.body.data.is_fact).toBe(false);
+    });
+
+    it('should validate isFact parameter is boolean', async () => {
+      const invalidMemory = {
+        key: 'test-invalid',
+        content: 'Test content',
+        category: 'general',
+        isFact: 'not-a-boolean'
+      };
+
+      const response = await request(app)
+        .post('/api/admin/memories')
+        .send(invalidMemory)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('isFact must be a boolean if provided');
     });
 
     it('should create memory with default category when not specified', async () => {
@@ -434,6 +508,69 @@ describe('Admin Memories API', () => {
 
       expect(getResponse.body.data.content).toBe(updateData.content);
       expect(getResponse.body.data.category).toBe(updateData.category);
+      expect(getResponse.body.data.is_fact).toBe(false); // Should retain original value
+    });
+
+    it('should update memory to fact when isFact is true', async () => {
+      const updateData = {
+        content: 'Updated: Family relationships are important for dementia patient wellbeing',
+        category: 'health',
+        isFact: true
+      };
+
+      const response = await request(app)
+        .put('/api/admin/memories/francines-son-ryan')
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify is_fact was updated to true
+      const getResponse = await request(app)
+        .get('/api/admin/memories/francines-son-ryan')
+        .expect(200);
+
+      expect(getResponse.body.data.content).toBe(updateData.content);
+      expect(getResponse.body.data.category).toBe(updateData.category);
+      expect(getResponse.body.data.is_fact).toBe(true);
+    });
+
+    it('should update fact to regular memory when isFact is false', async () => {
+      const updateData = {
+        content: 'Personal observation: Francine seemed confused about her medications today',
+        category: 'health',
+        isFact: false
+      };
+
+      const response = await request(app)
+        .put('/api/admin/memories/care-fact-routine')
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify is_fact was updated to false
+      const getResponse = await request(app)
+        .get('/api/admin/memories/care-fact-routine')
+        .expect(200);
+
+      expect(getResponse.body.data.content).toBe(updateData.content);
+      expect(getResponse.body.data.is_fact).toBe(false);
+    });
+
+    it('should validate isFact parameter is boolean in PUT', async () => {
+      const invalidUpdate = {
+        content: 'Test content',
+        isFact: 'invalid'
+      };
+
+      const response = await request(app)
+        .put('/api/admin/memories/francines-son-ryan')
+        .send(invalidUpdate)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('isFact must be a boolean if provided');
     });
 
     it('should return 404 for non-existent memory', async () => {
@@ -513,6 +650,54 @@ describe('Admin Memories API', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.key).toBe('francines-son-ryan');
+    });
+  });
+
+  describe('Fact management integration', () => {
+    it('should correctly identify facts and memories in responses', async () => {
+      const response = await request(app)
+        .get('/api/admin/memories')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      const memories = response.body.data.memories;
+
+      // Find a fact and a regular memory
+      const fact = memories.find(m => m.key === 'medical-fact-dementia');
+      const memory = memories.find(m => m.key === 'francines-son-ryan');
+
+      expect(fact).toBeDefined();
+      expect(fact.is_fact).toBe(true);
+      expect(fact.content).toContain('Dementia affects approximately');
+
+      expect(memory).toBeDefined();
+      expect(memory.is_fact).toBe(false);
+      expect(memory.content).toContain('Ryan is her son');
+    });
+
+    it('should handle searching both facts and memories', async () => {
+      const response = await request(app)
+        .get('/api/admin/memories/search?query=dementia')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.memories.length).toBeGreaterThan(0);
+      
+      // Should find the fact about dementia
+      const factResult = response.body.data.memories.find(m => m.is_fact === true);
+      expect(factResult).toBeDefined();
+      expect(factResult.content).toContain('Dementia affects approximately');
+    });
+
+    it('should preserve fact status in existing memory workflow', async () => {
+      // Test that existing fact remains a fact when retrieved individually
+      const response = await request(app)
+        .get('/api/admin/memories/medical-fact-dementia')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.is_fact).toBe(true);
+      expect(response.body.data.category).toBe('health');
     });
   });
 

@@ -234,6 +234,12 @@ class MemoryManager {
         valueB = new Date(valueB).getTime() || 0;
       }
       
+      // Handle boolean fields
+      if (field === 'is_fact') {
+        valueA = valueA ? 1 : 0;
+        valueB = valueB ? 1 : 0;
+      }
+      
       // Handle strings
       if (typeof valueA === 'string') {
         valueA = valueA.toLowerCase();
@@ -290,50 +296,71 @@ class MemoryManager {
     const pageItems = this.filteredMemories.slice(startIndex, endIndex);
     
     // Render rows
-    tbody.innerHTML = pageItems.map(memory => `
-      <tr data-memory-key="${this.escapeHtml(memory.key)}">
-        <td>
-          <div class="memory-key" title="${this.escapeHtml(memory.key)}">
-            ${this.escapeHtml(memory.key)}
-          </div>
-        </td>
-        <td>
-          <span class="category-badge ${memory.category}">
-            ${this.escapeHtml(memory.category)}
-          </span>
-        </td>
-        <td>
-          <div class="content-preview" title="${this.escapeHtml(memory.content)}">
-            ${this.escapeHtml(memory.content)}
-          </div>
-        </td>
-        <td>
-          <time datetime="${memory.last_accessed || ''}" title="${memory.last_accessed ? new Date(memory.last_accessed).toLocaleString() : 'Never'}">
-            ${memory.last_accessed ? this.formatRelativeTime(new Date(memory.last_accessed)) : 'Never'}
-          </time>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button class="btn btn-outline btn-sm btn-view" title="View details">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-              </svg>
-            </button>
-            <button class="btn btn-outline btn-sm btn-edit" title="Edit memory">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-            </button>
-            <button class="btn btn-outline btn-sm btn-danger btn-delete" title="Delete memory">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = pageItems.map(memory => {
+      const isFact = memory.is_fact || false;
+      const typeClass = isFact ? 'fact' : 'memory';
+      const rowClass = isFact ? 'fact-row' : '';
+      
+      return `
+        <tr data-memory-key="${this.escapeHtml(memory.key)}" class="${rowClass}">
+          <td>
+            <div class="memory-key" title="${this.escapeHtml(memory.key)}">
+              ${this.escapeHtml(memory.key)}
+            </div>
+          </td>
+          <td>
+            <span class="memory-type-badge ${typeClass}">
+              ${isFact ? `
+                <svg class="lock-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Fact
+              ` : `
+                <svg class="lock-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Memory
+              `}
+            </span>
+          </td>
+          <td>
+            <span class="category-badge ${memory.category}">
+              ${this.escapeHtml(memory.category)}
+            </span>
+          </td>
+          <td>
+            <div class="content-preview" title="${this.escapeHtml(memory.content)}">
+              ${this.escapeHtml(memory.content)}
+            </div>
+          </td>
+          <td>
+            <time datetime="${memory.last_accessed || ''}" title="${memory.last_accessed ? new Date(memory.last_accessed).toLocaleString() : 'Never'}">
+              ${memory.last_accessed ? this.formatRelativeTime(new Date(memory.last_accessed)) : 'Never'}
+            </time>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-outline btn-sm btn-view" title="View details">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+              <button class="btn btn-outline btn-sm btn-edit" title="Edit memory">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </button>
+              <button class="btn btn-outline btn-sm btn-danger btn-delete" title="Delete memory">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
   /**
@@ -590,6 +617,7 @@ class MemoryManager {
     const key = document.getElementById('memory-key').value.trim();
     const category = document.getElementById('memory-category').value;
     const content = document.getElementById('memory-content').value.trim();
+    const isFact = document.getElementById('memory-is-fact').checked;
     
     try {
       const response = await fetch('/api/admin/memories', {
@@ -597,7 +625,7 @@ class MemoryManager {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ key, category, content })
+        body: JSON.stringify({ key, category, content, isFact })
       });
       
       if (!response.ok) {
@@ -651,6 +679,25 @@ class MemoryManager {
         <div class="detail-group">
           <label class="detail-label">Key</label>
           <div class="detail-value">${this.escapeHtml(memory.key)}</div>
+        </div>
+        
+        <div class="detail-group">
+          <label class="detail-label">Type</label>
+          <div class="detail-value">
+            <span class="memory-type-badge ${memory.is_fact ? 'fact' : 'memory'}">
+              ${memory.is_fact ? `
+                <svg class="lock-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Verified Fact (Cannot be modified by AI)
+              ` : `
+                <svg class="lock-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Memory (Can be updated through conversation)
+              `}
+            </span>
+          </div>
         </div>
         
         <div class="detail-group">
@@ -718,12 +765,14 @@ class MemoryManager {
       const keyInput = document.getElementById('edit-memory-key');
       const categorySelect = document.getElementById('edit-memory-category');
       const contentTextarea = document.getElementById('edit-memory-content');
+      const isFactCheckbox = document.getElementById('edit-memory-is-fact');
       
       // Populate the modal with memory data
       modalTitle.textContent = `Edit Memory: ${memory.key}`;
       keyInput.value = memory.key;
       categorySelect.value = memory.category || '';
       contentTextarea.value = memory.content || '';
+      isFactCheckbox.checked = memory.is_fact || false;
       
       // Setup event listeners for this modal
       this.setupEditModalEventListeners(key);
@@ -791,6 +840,7 @@ class MemoryManager {
     
     const category = document.getElementById('edit-memory-category').value;
     const content = document.getElementById('edit-memory-content').value.trim();
+    const isFact = document.getElementById('edit-memory-is-fact').checked;
     
     try {
       const response = await fetch(`/api/admin/memories/${encodeURIComponent(key)}`, {
@@ -798,7 +848,7 @@ class MemoryManager {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ category, content })
+        body: JSON.stringify({ category, content, isFact })
       });
       
       if (!response.ok) {
