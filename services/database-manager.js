@@ -860,6 +860,82 @@ class DatabaseManager {
     }
   }
 
+  /**
+   * Get today's call statistics including call count and time since last call
+   * 
+   * @returns {Promise<{callsToday: number, lastCallTime: string|null, timeSinceLastCall: string|null}>}
+   */
+  async getTodayCallStats() {
+    await this.waitForInitialization();
+    this._ensureConnection();
+
+    try {
+      // Get today's date in YYYY-MM-DD format (local timezone)
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      
+      // Get count of calls today
+      const callCountQuery = `
+        SELECT COUNT(*) as callsToday 
+        FROM conversations 
+        WHERE DATE(start_time) = ?
+      `;
+      const callCountResult = await this.get(callCountQuery, [todayStr]);
+      const callsToday = callCountResult?.callsToday || 0;
+
+      // Get the most recent call time (if any calls exist)
+      const lastCallQuery = `
+        SELECT start_time, end_time
+        FROM conversations 
+        ORDER BY start_time DESC 
+        LIMIT 1
+      `;
+      const lastCallResult = await this.get(lastCallQuery);
+      
+      let lastCallTime = null;
+      let timeSinceLastCall = null;
+      
+      if (lastCallResult?.start_time) {
+        lastCallTime = lastCallResult.start_time;
+        
+        // Calculate time since last call in human-readable format
+        const lastCall = new Date(lastCallTime);
+        const now = new Date();
+        const diffMs = now - lastCall;
+        
+        // Convert to human-readable format
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffDays > 0) {
+          timeSinceLastCall = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+          timeSinceLastCall = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else if (diffMinutes > 0) {
+          timeSinceLastCall = `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+        } else {
+          timeSinceLastCall = 'just now';
+        }
+      }
+
+      return {
+        callsToday,
+        lastCallTime,
+        timeSinceLastCall
+      };
+
+    } catch (error) {
+      console.error('Error getting today\'s call stats:', error.message);
+      // Return default values on error to prevent system failure
+      return {
+        callsToday: 0,
+        lastCallTime: null,
+        timeSinceLastCall: null
+      };
+    }
+  }
+
   // Health check
   async isHealthy() {
     try {

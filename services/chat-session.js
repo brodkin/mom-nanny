@@ -42,8 +42,8 @@ class ChatSession extends EventEmitter {
     this.transcriptionService = new TranscriptionService(this.debugMode);
     this.ttsService = new TextToSpeechService(this.debugMode);
     
-    // Pass memory service to GPT service
-    this.gptService = new GptService(null, null, this.memoryService); // Pass memory service
+    // Pass memory service and database manager to GPT service
+    this.gptService = new GptService(null, null, this.memoryService, this.databaseManager);
     
     // Set the conversation analyzer in GPT service (following app.js pattern)
     this.gptService.setCallSid(this.callSid);

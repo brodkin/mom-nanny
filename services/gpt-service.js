@@ -13,12 +13,13 @@ tools.forEach((tool) => {
 });
 
 class GptService extends EventEmitter {
-  constructor(markCompletionService, conversationAnalyzer = null, memoryService = null) {
+  constructor(markCompletionService, conversationAnalyzer = null, memoryService = null, databaseManager = null) {
     super();
     this.openai = new OpenAI();
     this.markCompletionService = markCompletionService;
     this.conversationAnalyzer = conversationAnalyzer;
     this.memoryService = memoryService;
+    this.databaseManager = databaseManager;
     this.templateService = new TemplateService();
 
     // Store memory service in global context for functions to access
@@ -50,8 +51,22 @@ class GptService extends EventEmitter {
       }
     }
 
-    // Get the system prompt with memory keys
-    this.systemPrompt = this.templateService.getSystemPrompt(memoryKeys);
+    // Get today's call statistics if database manager is available
+    let callStats = null;
+    if (this.databaseManager) {
+      try {
+        await this.databaseManager.waitForInitialization();
+        callStats = await this.databaseManager.getTodayCallStats();
+        if (callStats.callsToday > 0) {
+          console.log(`📞 Call Frequency -> ${callStats.callsToday} calls today, last call ${callStats.timeSinceLastCall}`.cyan);
+        }
+      } catch (error) {
+        console.error('Error loading call frequency data:', error);
+      }
+    }
+
+    // Get the system prompt with memory keys and call frequency data
+    this.systemPrompt = this.templateService.getSystemPrompt(memoryKeys, callStats);
     
     // Update the system context with the full prompt
     this.userContext[0] = { 'role': 'system', 'content': this.systemPrompt };

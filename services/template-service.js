@@ -59,11 +59,12 @@ class TemplateService {
   }
 
   /**
-   * Get the system prompt with current date/time and available memories
+   * Get the system prompt with current date/time, available memories, and call frequency data
    * @param {Array<string>} memoryKeys - Optional array of available memory keys
+   * @param {Object} callStats - Optional call frequency statistics {callsToday, lastCallTime, timeSinceLastCall}
    * @returns {string} Rendered system prompt
    */
-  getSystemPrompt(memoryKeys = []) {
+  getSystemPrompt(memoryKeys = [], callStats = null) {
     const now = new Date();
     const laTime = now.toLocaleString('en-US', {
       timeZone: 'America/Los_Angeles',
@@ -76,9 +77,13 @@ class TemplateService {
       timeZoneName: 'short'
     });
 
-    // First render the base template
+    // First render the base template with call frequency data
     let systemPrompt = this.render('system-prompt', {
-      currentDateTime: laTime
+      currentDateTime: laTime,
+      callsToday: callStats?.callsToday || 0,
+      timeSinceLastCall: callStats?.timeSinceLastCall || null,
+      hasMultipleCalls: callStats && callStats.callsToday > 1,
+      hasFrequentCalls: callStats && callStats.callsToday >= 3
     });
 
     // Then append memory section if memories are available

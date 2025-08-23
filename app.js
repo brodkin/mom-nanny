@@ -477,7 +477,7 @@ app.ws('/connection', async (ws) => {
       // Continue anyway - memory service will be unavailable but the call should still work
     }
     
-    const gptService = new GptService(markCompletionService, null, memoryService);
+    const gptService = new GptService(markCompletionService, null, memoryService, databaseManager);
     const streamService = new StreamService(ws);
     const transcriptionService = new TranscriptionService();
     const ttsService = new TextToSpeechService({});
