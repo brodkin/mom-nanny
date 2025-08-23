@@ -91,14 +91,15 @@ class TextChatCLI {
 
   /**
    * Show initial AI greeting with progressive delay based on call frequency
+   * This simulates the TwiML delay experience for development testing
    */
   showInitialGreeting() {
-    // Get call frequency stats for progressive delay
+    // Get call frequency stats for progressive delay simulation
     const callStats = this.chatSession.gptService.getCallStats();
     const callsToday = callStats?.callsToday || 1;
     const delayMs = Math.max(3000, callsToday * 3000); // Minimum 3s, 3s per call
 
-    console.log(chalk.magenta(`⏱️  Delaying greeting by ${delayMs/1000}s (call #${callsToday} today)`));
+    console.log(chalk.magenta(`⏱️  Simulating TwiML delay: ${delayMs/1000}s (call #${callsToday} today)`));
 
     setTimeout(() => {
       console.log(chalk.green('🤖 Hi Francine! How are you doing today?'));

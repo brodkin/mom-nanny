@@ -430,12 +430,21 @@ app.get('/api/admin/heartbeat', async (req, res) => {
   }
 });
 
-app.post('/incoming', (req, res) => {
+app.post('/incoming', async (req, res) => {
   try {
+    // Get call frequency for progressive delay
+    const dbManager = DatabaseManager.getInstance();
+    await dbManager.waitForInitialization();
+    const callStats = await dbManager.getTodayCallStats();
+    const callsToday = callStats?.callsToday || 1;
+    
+    // Progressive delay: 3 seconds per call, minimum 3 seconds
+    const delaySeconds = Math.max(3, callsToday * 3);
+    
+    console.log(`⏱️  TwiML progressive delay: ${delaySeconds}s (call #${callsToday} today)`.magenta);
+    
     const response = new VoiceResponse();
-
-    // Simulate 4 rings (each ring cycle is ~5 seconds)
-    response.pause({ length: 18 });
+    response.pause({ length: delaySeconds });
 
     const connect = response.connect();
     connect.stream({ url: `wss://${process.env.SERVER}/connection` });
@@ -443,7 +452,14 @@ app.post('/incoming', (req, res) => {
     res.type('text/xml');
     res.end(response.toString());
   } catch (err) {
-    console.log(err);
+    console.log('Error in /incoming endpoint:', err);
+    // Fallback to minimum delay on error
+    const response = new VoiceResponse();
+    response.pause({ length: 3 });
+    const connect = response.connect();
+    connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    res.type('text/xml');
+    res.end(response.toString());
   }
 });
 
@@ -508,18 +524,8 @@ app.ws('/connection', async (ws) => {
         });
 
         // Set RECORDING_ENABLED='true' in .env to record calls
-        recordingService(ttsService, callSid).then(async () => {
+        recordingService(ttsService, callSid).then(() => {
           console.log(`Twilio -> Starting Media Stream for ${streamSid}`.underline.red);
-
-          // Wait for GPT service to finish initializing to access call stats
-          await gptInitPromise;
-
-          // Get call frequency stats for progressive delay
-          const callStats = gptService.getCallStats();
-          const callsToday = callStats?.callsToday || 1;
-          const delayMs = Math.max(3000, callsToday * 3000); // Minimum 3s, 3s per call
-
-          console.log(`⏱️  Delaying greeting by ${delayMs/1000}s (call #${callsToday} today)`.magenta);
 
           // Variety of natural greetings - like a real person answering
           const greetings = [
@@ -535,12 +541,9 @@ app.ws('/connection', async (ws) => {
             'Hi, how are you?'
           ];
 
-          // Apply progressive delay based on call frequency
-          setTimeout(() => {
-            // Select a random greeting
-            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-            ttsService.generate({partialResponseIndex: null, partialResponse: randomGreeting}, 0);
-          }, delayMs);
+          // Send greeting immediately - delay is now handled by TwiML at /incoming
+          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+          ttsService.generate({partialResponseIndex: null, partialResponse: randomGreeting}, 0);
         });
       } else if (msg.event === 'media') {
         transcriptionService.send(msg.media.payload);
