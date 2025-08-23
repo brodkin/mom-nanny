@@ -29,14 +29,13 @@ router.use('/js', express.static(path.join(adminStaticPath, 'js')));
 router.use('/assets', express.static(path.join(adminStaticPath, 'assets')));
 router.use('/static', express.static(adminStaticPath));
 
-// Admin dashboard route - serve the main admin interface
+// Admin dashboard route - redirect to /admin/dashboard
 router.get('/', (req, res) => {
   try {
-    const adminIndexPath = path.join(__dirname, '..', 'admin', 'index.html');
-    res.sendFile(adminIndexPath);
+    res.redirect('/admin/dashboard');
   } catch (error) {
-    console.error('Error serving admin interface:', error);
-    res.status(500).json({ error: 'Failed to load admin interface' });
+    console.error('Error redirecting to admin dashboard:', error);
+    res.status(500).json({ error: 'Failed to redirect to admin dashboard' });
   }
 });
 
