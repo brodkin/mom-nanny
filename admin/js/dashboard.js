@@ -73,9 +73,16 @@ class Dashboard {
   
   updateOverviewCards(overview) {
     console.log('Updating overview cards with:', overview);
-    // Update stats cards
-    this.updateElement('avgAnxiety', overview.avgAnxiety);
-    this.updateElement('avgComfort', overview.avgComfort);
+    // Update stats cards with styled /10 suffix to match conversations page
+    const avgAnxietyElement = document.getElementById('avgAnxiety');
+    const avgComfortElement = document.getElementById('avgComfort');
+    
+    if (avgAnxietyElement) {
+      avgAnxietyElement.innerHTML = `${overview.avgAnxiety}<span style="opacity: 0.4;">/10</span>`;
+    }
+    if (avgComfortElement) {
+      avgComfortElement.innerHTML = `${overview.avgComfort}<span style="opacity: 0.4;">/10</span>`;
+    }
     this.updateElement('callsToday', overview.callsToday);
     this.updateElement('alertCount', overview.alertCount);
     
@@ -91,7 +98,7 @@ class Dashboard {
     // Update alert count styling based on severity
     const alertElement = document.getElementById('alertCount');
     if (alertElement) {
-      alertElement.className = overview.alertCount > 0 ? 'stats-value alert' : 'stats-value';
+      alertElement.className = overview.alertCount > 0 ? 'stat-value alert' : 'stat-value';
     }
   }
   
