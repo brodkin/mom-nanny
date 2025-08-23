@@ -155,36 +155,31 @@
 .theme-icon {
   position: relative;
   z-index: 2;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
+/* No CSS color overrides needed for img tags */
+
 /* Light mode icon (sun) */
 .theme-icon-light {
-  color: #f59e0b; /* Same as mild anxiety badge color */
-  opacity: 1;
   transform: scale(1);
-  margin-left: 3px;
+  margin-left: 1px;
 }
 
 .theme-toggle.dark .theme-icon-light {
-  opacity: 0.3;
   transform: scale(0.8);
 }
 
 /* Dark mode icon (moon) */
 .theme-icon-dark {
-  color: #6366f1; /* Primary purple color */
-  opacity: 0.3;
   transform: scale(0.8);
   margin-right: 3px;
 }
 
 .theme-toggle.dark .theme-icon-dark {
-  color: #6366f1; /* Keep primary purple color when active */
-  opacity: 1;
   transform: scale(1);
 }
 
