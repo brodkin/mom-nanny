@@ -485,7 +485,10 @@
 }
 
 .table th {
-  background: var(--bg-glass);
+  background: rgba(243, 244, 246, 0.85); /* Slightly darker gray with more opacity for edge definition */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(229, 231, 235, 0.9);
   padding: var(--space-4) var(--space-6);
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
@@ -495,6 +498,12 @@
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+/* Dark mode table headers */
+[data-theme="dark"] .table th {
+  background: rgba(31, 41, 55, 0.8); /* Dark gray with transparency for dark mode */
+  border: 1px solid rgba(75, 85, 99, 0.3);
 }
 
 .table td {

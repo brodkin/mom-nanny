@@ -1085,7 +1085,6 @@
 }
 
 .conversations-table .table th {
-  background: var(--bg-secondary);
   border-bottom: 2px solid var(--border-primary);
   font-weight: 600;
   color: var(--text-primary);
