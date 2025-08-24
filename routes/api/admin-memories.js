@@ -336,7 +336,71 @@ router.put('/:key', async (req, res) => {
     // Use existing isFact value if not provided in request
     const finalIsFact = Object.prototype.hasOwnProperty.call(req.body, 'isFact') ? isFact : existingMemory.is_fact;
     
-    // Update the memory
+    // Generate a new key based on the updated content using GPT
+    let newKey;
+    try {
+      if (service.gptService) {
+        newKey = await service.gptService.generateMemoryKey(content, category);
+        // Normalize the new key
+        newKey = newKey.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      } else {
+        // Fallback if no GPT service available
+        const cleanContent = content.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+        const words = cleanContent.split(/\s+/).slice(0, 2);
+        newKey = `${category}-${words.join('-')}-info`;
+      }
+    } catch (error) {
+      console.error('Failed to generate new memory key:', error.message);
+      // Fallback to simple key generation
+      const cleanContent = content.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      const words = cleanContent.split(/\s+/).slice(0, 2);
+      newKey = `${category}-${words.join('-')}-info`;
+    }
+    
+    // Check if the key needs to change
+    if (newKey !== normalizedKey) {
+      // Key has changed - need to delete old memory and create new one
+      try {
+        // First, create the new memory
+        const createResult = await service.saveMemory(newKey, content, category, finalIsFact);
+        
+        if (createResult.status === 'error') {
+          return res.status(400).json({
+            success: false,
+            error: createResult.message
+          });
+        }
+        
+        // Only delete the old memory if creation was successful
+        const deleteResult = await service.removeMemory(normalizedKey);
+        
+        if (deleteResult.status === 'error') {
+          console.error('Warning: Failed to delete old memory after creating new one:', deleteResult.message);
+          // Don't fail the request since the new memory was created successfully
+        }
+        
+        // Return success with key change information
+        res.json({
+          success: true,
+          data: {
+            key: newKey,
+            oldKey: normalizedKey,
+            action: 'updated_with_key_change',
+            keyChanged: true
+          }
+        });
+        return;
+        
+      } catch (error) {
+        console.error('Error during key migration:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to update memory with new key'
+        });
+      }
+    }
+    
+    // Key hasn't changed - update the memory normally
     const result = await service.saveMemory(normalizedKey, content, category, finalIsFact);
     
     if (result.status === 'error') {
@@ -350,7 +414,9 @@ router.put('/:key', async (req, res) => {
       success: true,
       data: {
         key: result.key,
-        action: result.action
+        oldKey: normalizedKey,
+        action: result.action,
+        keyChanged: false
       }
     });
     

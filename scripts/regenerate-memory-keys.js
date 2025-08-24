@@ -96,7 +96,7 @@ async function regenerateMemoryKeys() {
                 'UPDATE memories SET memory_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
                 [newKey, memory.id]
               );
-              console.log(`   ✅ Updated successfully`);
+              console.log('   ✅ Updated successfully');
               updated++;
             }
           } else {

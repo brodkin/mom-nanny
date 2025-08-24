@@ -12,7 +12,7 @@ require('colors');
 
 async function rememberInformation({ content, category }) {
   // User-visible notification
-  console.log(`💾 Memory -> Storing new information (auto-generating key)`.cyan);
+  console.log('💾 Memory -> Storing new information (auto-generating key)'.cyan);
   
   // Get memory service from global context (will be set by gpt-service)
   const memoryService = global.memoryService;

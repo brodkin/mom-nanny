@@ -438,7 +438,7 @@ describe('Admin Memories API', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Key and content are required');
+      expect(response.body.error).toBe('Content is required');
     });
 
     it('should validate missing content', async () => {
@@ -448,17 +448,20 @@ describe('Admin Memories API', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Key and content are required');
+      expect(response.body.error).toBe('Content is required');
     });
 
-    it('should validate missing key', async () => {
+    it('should auto-generate key when not provided', async () => {
       const response = await request(app)
         .post('/api/admin/memories')
-        .send({ content: 'test content' })
-        .expect(400);
+        .send({ content: 'Test content for auto key generation', category: 'family' })
+        .expect(201);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Key and content are required');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('key');
+      expect(response.body.data).toHaveProperty('keyGenerated', true);
+      expect(response.body.data.key).toBeTruthy();
+      expect(response.body.data.action).toBe('created');
     });
 
     it('should handle duplicate key by updating existing memory', async () => {
@@ -498,12 +501,17 @@ describe('Admin Memories API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('key', 'francines-son-ryan');
-      expect(response.body.data).toHaveProperty('action', 'updated');
+      expect(response.body.data).toHaveProperty('oldKey', 'francines-son-ryan');
+      expect(response.body.data).toHaveProperty('keyChanged', true);
+      expect(response.body.data).toHaveProperty('action', 'updated_with_key_change');
+      
+      const newKey = response.body.data.key;
+      expect(newKey).toBeTruthy();
+      expect(newKey).not.toBe('francines-son-ryan'); // Key should change based on content
 
-      // Verify update
+      // Verify update with new key
       const getResponse = await request(app)
-        .get('/api/admin/memories/francines-son-ryan')
+        .get(`/api/admin/memories/${newKey}`)
         .expect(200);
 
       expect(getResponse.body.data.content).toBe(updateData.content);
@@ -524,10 +532,15 @@ describe('Admin Memories API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('oldKey', 'francines-son-ryan');
+      expect(response.body.data).toHaveProperty('keyChanged', true);
+      
+      const newKey = response.body.data.key;
+      expect(newKey).toBeTruthy();
 
-      // Verify is_fact was updated to true
+      // Verify is_fact was updated to true with new key
       const getResponse = await request(app)
-        .get('/api/admin/memories/francines-son-ryan')
+        .get(`/api/admin/memories/${newKey}`)
         .expect(200);
 
       expect(getResponse.body.data.content).toBe(updateData.content);
@@ -548,10 +561,15 @@ describe('Admin Memories API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('oldKey', 'care-fact-routine');
+      expect(response.body.data).toHaveProperty('keyChanged', true);
+      
+      const newKey = response.body.data.key;
+      expect(newKey).toBeTruthy();
 
-      // Verify is_fact was updated to false
+      // Verify is_fact was updated to false with new key
       const getResponse = await request(app)
-        .get('/api/admin/memories/care-fact-routine')
+        .get(`/api/admin/memories/${newKey}`)
         .expect(200);
 
       expect(getResponse.body.data.content).toBe(updateData.content);
@@ -605,10 +623,15 @@ describe('Admin Memories API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('oldKey', 'francines-son-ryan');
+      expect(response.body.data).toHaveProperty('keyChanged', true);
+      
+      const newKey = response.body.data.key;
+      expect(newKey).toBeTruthy();
 
-      // Verify category defaults to general
+      // Verify category defaults to general with new key
       const getResponse = await request(app)
-        .get('/api/admin/memories/francines-son-ryan')
+        .get(`/api/admin/memories/${newKey}`)
         .expect(200);
 
       expect(getResponse.body.data.category).toBe('general');

@@ -889,14 +889,24 @@ class MemoryManager {
         throw new Error(error.error || 'Failed to update memory');
       }
       
+      const result = await response.json();
+      const { key: updatedKey, oldKey, keyChanged } = result.data;
+      
       // Close the HTML modal
       const modal = document.getElementById('edit-memory-modal');
       modal.style.display = 'none';
       document.body.classList.remove('modal-open');
       
-      Notification.success('Memory updated successfully', {
-        description: `Updated "${key}" in the memory system`
-      });
+      // Show appropriate success message based on whether key changed
+      if (keyChanged) {
+        Notification.success('Memory updated with new key', {
+          description: `Memory key changed from "${oldKey}" to "${updatedKey}" to better match the updated content`
+        });
+      } else {
+        Notification.success('Memory updated successfully', {
+          description: `Updated "${updatedKey}" in the memory system`
+        });
+      }
       
       this.loadMemoriesAndStats();
       
