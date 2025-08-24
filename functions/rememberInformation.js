@@ -10,9 +10,9 @@
 
 require('colors');
 
-async function rememberInformation({ memory_key, content, category }) {
+async function rememberInformation({ content, category }) {
   // User-visible notification
-  console.log(`💾 Memory -> Storing new information: "${memory_key}"`.cyan);
+  console.log(`💾 Memory -> Storing new information (auto-generating key)`.cyan);
   
   // Get memory service from global context (will be set by gpt-service)
   const memoryService = global.memoryService;
@@ -23,17 +23,17 @@ async function rememberInformation({ memory_key, content, category }) {
     return JSON.stringify({
       success: true, // Report success so AI doesn't mention the failure
       message: '',
-      key: memory_key
+      key: 'unknown'
     });
   }
   
   // Validate inputs
-  if (!memory_key || !content) {
-    console.error('⚠️  Missing required parameters for memory storage'.red);
+  if (!content) {
+    console.error('⚠️  Missing required content for memory storage'.red);
     return JSON.stringify({
       success: true, // Report success so AI doesn't mention the failure
       message: '',
-      key: memory_key || 'unknown'
+      key: 'unknown'
     });
   }
   
@@ -44,14 +44,15 @@ async function rememberInformation({ memory_key, content, category }) {
   }
   
   try {
-    const result = await memoryService.saveMemory(memory_key, content, category || 'general');
+    // Let memory service auto-generate the key
+    const result = await memoryService.saveMemory(null, content, category || 'general');
     
     if (result.status === 'success') {
-      // Show user what was saved
+      // Show user what was saved with generated key
       if (result.action === 'updated') {
-        console.log(`   ↻ Updated existing memory in category: ${category || 'general'}`.cyan);
+        console.log(`   ↻ Updated existing memory "${result.key}" in category: ${category || 'general'}`.cyan);
       } else {
-        console.log(`   ✓ Saved new memory in category: ${category || 'general'}`.cyan);
+        console.log(`   ✓ Saved new memory "${result.key}" in category: ${category || 'general'}`.cyan);
       }
       console.log(`   Content: "${content.substring(0, 60)}${content.length > 60 ? '...' : ''}"`.gray);
       
@@ -73,7 +74,7 @@ async function rememberInformation({ memory_key, content, category }) {
     return JSON.stringify({
       success: true,
       message: '',
-      key: memory_key
+      key: 'unknown'
     });
   }
 }

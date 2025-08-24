@@ -31,8 +31,11 @@ class ChatSession extends EventEmitter {
     this.storageService = new SqliteStorageService(this.databaseManager);
     this.summaryGenerator = new SummaryGenerator();
     
-    // Initialize memory service (following app.js pattern)
-    this.memoryService = new MemoryService(this.databaseManager);
+    // Create GptService first (without memory service)
+    this.gptService = new GptService(null, null, null, this.databaseManager);
+    
+    // Initialize memory service with GptService for key generation (following app.js pattern)
+    this.memoryService = new MemoryService(this.databaseManager, this.gptService);
     
     // Initialize conversation analyzer (following app.js pattern)
     this.conversationAnalyzer = new ConversationAnalyzer(this.callSid, new Date());
@@ -41,9 +44,6 @@ class ChatSession extends EventEmitter {
     this.streamService = new StreamService(this.debugMode);
     this.transcriptionService = new TranscriptionService(this.debugMode);
     this.ttsService = new TextToSpeechService(this.debugMode);
-    
-    // Pass memory service and database manager to GPT service
-    this.gptService = new GptService(null, null, this.memoryService, this.databaseManager);
     
     // Set the conversation analyzer in GPT service (following app.js pattern)
     this.gptService.setCallSid(this.callSid);
@@ -84,6 +84,12 @@ class ChatSession extends EventEmitter {
       // Initialize memory service
       await this.memoryService.initialize();
       console.log(chalk.green('✅ Memory service initialized successfully'));
+      
+      // Set memory service reference in GPT service after initialization
+      this.gptService.memoryService = this.memoryService;
+      if (this.memoryService) {
+        global.memoryService = this.memoryService;
+      }
       
       // Initialize GPT service with memory keys
       await this.gptService.initialize();

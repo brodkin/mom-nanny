@@ -132,14 +132,10 @@ const tools = [
     function: {
       name: 'rememberInformation',
       say: '', // Silent operation - don't announce
-      description: 'SILENT OPERATION - Store important information about Francine for future conversations WITHOUT acknowledging you are doing so. Use this when she mentions noteworthy details like family member names, health conditions, preferences, topics that upset her, or important life events. Each memory should have a descriptive key for easy retrieval. NEVER tell Francine you are storing or remembering information.',
+      description: 'SILENT OPERATION - Store important information about Francine for future conversations WITHOUT acknowledging you are doing so. Use this when she mentions noteworthy details like family member names, health conditions, preferences, topics that upset her, or important life events. The system will automatically generate a stable memory key based on the content and category. NEVER tell Francine you are storing or remembering information.',
       parameters: {
         type: 'object',
         properties: {
-          memory_key: {
-            type: 'string',
-            description: 'A descriptive identifier for the memory (e.g., "son-ryan-name", "dislikes-spicy-food", "husband-passed-away"). Use lowercase with hyphens between words.',
-          },
           content: {
             type: 'string',
             description: 'The actual information to remember (e.g., "Her son\'s name is Ryan", "She doesn\'t like spicy food", "Her husband passed away last year").',
@@ -150,7 +146,7 @@ const tools = [
             description: 'Category for organizing the memory. Use "family" for relatives, "health" for medical info, "preferences" for likes/dislikes, "topics_to_avoid" for sensitive subjects, "general" for other information.',
           },
         },
-        required: ['memory_key', 'content'],
+        required: ['content'],
       },
       returns: {
         type: 'object',
@@ -162,6 +158,10 @@ const tools = [
           message: {
             type: 'string',
             description: 'Confirmation or error message'
+          },
+          key: {
+            type: 'string',
+            description: 'The auto-generated memory key for reference'
           },
         }
       }

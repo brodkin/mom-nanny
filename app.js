@@ -479,10 +479,15 @@ app.ws('/connection', async (ws) => {
     
     const storageService = new SqliteStorageService(databaseManager);
     const summaryGenerator = new SummaryGenerator();
-    const memoryService = new MemoryService(databaseManager);
+    
+    // Create GptService first (without memory service)
+    const gptService = new GptService(markCompletionService, null, null, databaseManager);
+    
+    // Create MemoryService with GptService for key generation
+    const memoryService = new MemoryService(databaseManager, gptService);
     let conversationAnalyzer; // Will be initialized after callSid is available
     
-    // Initialize memory service before creating GPT service
+    // Initialize memory service
     try {
       await memoryService.initialize();
       console.log('Memory service initialized successfully'.cyan);
@@ -492,7 +497,11 @@ app.ws('/connection', async (ws) => {
       // Continue anyway - memory service will be unavailable but the call should still work
     }
     
-    const gptService = new GptService(markCompletionService, null, memoryService, databaseManager);
+    // Set memory service reference in GPT service after initialization
+    gptService.memoryService = memoryService;
+    if (memoryService) {
+      global.memoryService = memoryService;
+    }
     const streamService = new StreamService(ws);
     const transcriptionService = new TranscriptionService();
     const ttsService = new TextToSpeechService({});

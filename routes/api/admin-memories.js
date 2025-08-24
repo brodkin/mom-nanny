@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const DatabaseManager = require('../../services/database-manager');
 const MemoryService = require('../../services/memory-service');
+const { GptService } = require('../../services/gpt-service');
 
 /**
  * Admin Memory Management API Routes
@@ -14,14 +15,24 @@ const MemoryService = require('../../services/memory-service');
  * Error: { success: false, error: "message" }
  */
 
-// Initialize memory service - will be created on demand
+// Initialize services - will be created on demand
 let memoryService;
+let gptService;
 
 async function getMemoryService() {
   if (!memoryService) {
     const dbManager = DatabaseManager.getInstance();
     await dbManager.waitForInitialization();
-    memoryService = new MemoryService(dbManager);
+    
+    // Create GPT service for key generation
+    gptService = new GptService(null, null, null, dbManager);
+    
+    // Create memory service with GPT service
+    memoryService = new MemoryService(dbManager, gptService);
+    
+    // Set memory service reference in GPT service
+    gptService.memoryService = memoryService;
+    
     await memoryService.initialize();
   }
   return memoryService;
@@ -204,23 +215,31 @@ router.get('/:key', async (req, res) => {
 /**
  * POST /api/admin/memories
  * Create new memory or update existing one
- * Body: { key: string, content: string, category?: string, isFact?: boolean }
+ * Body: { key?: string, content: string, category?: string, isFact?: boolean }
+ * If no key provided, one will be auto-generated using GPT
  */
 router.post('/', async (req, res) => {
   try {
     const { key, content, category = 'general', isFact = false } = req.body;
     
-    if (!key || !content) {
+    if (!content) {
       return res.status(400).json({
         success: false,
-        error: 'Key and content are required'
+        error: 'Content is required'
       });
     }
     
-    if (typeof key !== 'string' || typeof content !== 'string') {
+    if (typeof content !== 'string') {
       return res.status(400).json({
         success: false,
-        error: 'Key and content must be strings'
+        error: 'Content must be a string'
+      });
+    }
+    
+    if (key && typeof key !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Key must be a string if provided'
       });
     }
     
@@ -233,6 +252,8 @@ router.post('/', async (req, res) => {
     }
     
     const service = await getMemoryService();
+    
+    // Pass key (may be null for auto-generation)
     const result = await service.saveMemory(key, content, category, isFact);
     
     if (result.status === 'error') {
@@ -248,7 +269,8 @@ router.post('/', async (req, res) => {
       success: true,
       data: {
         key: result.key,
-        action: result.action
+        action: result.action,
+        keyGenerated: !key // Indicate if key was auto-generated
       }
     });
     

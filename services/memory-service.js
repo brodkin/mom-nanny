@@ -19,8 +19,9 @@
  * - 'general': Other contextual information
  */
 class MemoryService {
-  constructor(databaseManager) {
+  constructor(databaseManager, gptService = null) {
     this.db = databaseManager;
+    this.gptService = gptService;
     this.memoryCache = new Map(); // In-memory cache for quick access
     this.cacheLoaded = false;
   }
@@ -70,13 +71,36 @@ class MemoryService {
     try {
       await this.db.waitForInitialization();
       
-      // Validate inputs
-      if (!key || !content) {
-        throw new Error('Memory key and content are required');
+      // Validate content is required
+      if (!content) {
+        throw new Error('Memory content is required');
+      }
+
+      let memoryKey = key;
+      
+      // If no key provided, generate one using GPT service
+      if (!memoryKey && this.gptService) {
+        try {
+          memoryKey = await this.gptService.generateMemoryKey(content, category);
+          console.log(`Generated memory key: ${memoryKey}`);
+        } catch (error) {
+          console.error('Failed to generate memory key:', error.message);
+          // Fallback: create a simple key from category and first few words
+          const cleanContent = content.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+          const words = cleanContent.split(/\s+/).slice(0, 2);
+          memoryKey = `${category}-${words.join('-')}-info`;
+          console.log(`Using fallback key: ${memoryKey}`);
+        }
+      } else if (!memoryKey) {
+        // No GPT service available, create fallback key
+        const cleanContent = content.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+        const words = cleanContent.split(/\s+/).slice(0, 2);
+        memoryKey = `${category}-${words.join('-')}-info`;
+        console.log(`No GPT service available, using fallback key: ${memoryKey}`);
       }
 
       // Normalize the key (lowercase, replace spaces with hyphens)
-      const normalizedKey = key.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const normalizedKey = memoryKey.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       
       // Check if memory exists
       const existing = await this.db.get('SELECT id FROM memories WHERE memory_key = ?', [normalizedKey]);

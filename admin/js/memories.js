@@ -496,9 +496,9 @@ class MemoryManager {
     modal.style.display = 'flex';
     document.body.classList.add('modal-open');
     
-    // Focus first input
+    // Focus first input (content field since key is auto-generated)
     setTimeout(() => {
-      document.getElementById('memory-key').focus();
+      document.getElementById('memory-content').focus();
     }, 100);
     
     // Setup event listeners if not already done
@@ -614,10 +614,19 @@ class MemoryManager {
       return;
     }
     
-    const key = document.getElementById('memory-key').value.trim();
+    // Key is no longer required from user input - will be auto-generated
     const category = document.getElementById('memory-category').value;
     const content = document.getElementById('memory-content').value.trim();
     const isFact = document.getElementById('memory-is-fact').checked;
+    
+    // Show loading state
+    const submitBtn = form.querySelector('.submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+    
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'flex';
+    submitBtn.disabled = true;
     
     try {
       const response = await fetch('/api/admin/memories', {
@@ -625,7 +634,7 @@ class MemoryManager {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ key, category, content, isFact })
+        body: JSON.stringify({ category, content, isFact }) // No key - will be auto-generated
       });
       
       if (!response.ok) {
@@ -633,13 +642,32 @@ class MemoryManager {
         throw new Error(error.error || 'Failed to add memory');
       }
       
-      // Close modal
-      const modal = document.getElementById('memory-modal');
-      modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
+      const result = await response.json();
+      const generatedKey = result.data.key;
+      
+      // Show generated key if auto-generated
+      if (result.data.keyGenerated) {
+        const autoKeyInfo = document.getElementById('auto-key-info');
+        const generatedKeyInput = document.getElementById('generated-memory-key');
+        generatedKeyInput.value = generatedKey;
+        autoKeyInfo.style.display = 'block';
+        
+        // Keep modal open briefly to show generated key
+        setTimeout(() => {
+          const modal = document.getElementById('memory-modal');
+          modal.style.display = 'none';
+          document.body.classList.remove('modal-open');
+          autoKeyInfo.style.display = 'none'; // Hide for next time
+        }, 2000);
+      } else {
+        // Close modal immediately if key was provided
+        const modal = document.getElementById('memory-modal');
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+      }
       
       Notification.success('Memory added successfully', {
-        description: `Added "${key}" to the memory system`
+        description: `Added "${generatedKey}" to the memory system`
       });
       
       this.loadMemoriesAndStats();
@@ -649,6 +677,11 @@ class MemoryManager {
       Notification.error('Failed to add memory', {
         description: error.message
       });
+    } finally {
+      // Reset button state
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+      submitBtn.disabled = false;
     }
   }
 
