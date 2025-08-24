@@ -371,8 +371,8 @@ Return structured JSON with exact numeric fields.`;
 CRITICAL: The patient (Francine) is the PRIMARY SUBJECT of most memories unless explicitly about someone else.
 
 KEY STRUCTURE RULES:
-- For memories about the patient/Francine: start with "francine-" or "patient-"
-- For memories about family/others: use relationship (daughter, son, doctor) NOT names
+- For memories about the patient: always start with "patient-"
+- For memories about specific people: use their name (e.g., "ryan-", "gary-", "mary-")
 - Use information types (onset, history, routine, preferences) NOT specific details
 - Never include: locations, jobs, times, quantities, ages, or current states
 - Key must remain valid even if every detail in the memory changes
@@ -381,18 +381,18 @@ Memory content: ${content}
 Category: ${category}
 
 Examples of GOOD patient-centered keys:
-- "francine-dementia-onset" (for "Francine's dementia began in 2024...")
-- "francine-medical-history" (for patient's health conditions)
-- "francine-daily-routine" (for patient's schedule/activities) 
-- "francine-medication-routine" (for patient's medication info)
-- "francine-food-preferences" (for patient's dietary likes/dislikes)
+- "patient-dementia-onset" (for "Patient's dementia began in 2024...")
+- "patient-medical-history" (for patient's health conditions)
+- "patient-daily-routine" (for patient's schedule/activities) 
+- "patient-medication-routine" (for patient's medication info)
+- "patient-food-preferences" (for patient's dietary likes/dislikes)
 - "patient-anxiety-triggers" (for things that cause patient distress)
 - "patient-comfort-strategies" (for what helps calm the patient)
 
 Examples for family/others (when memory is explicitly about someone else):
-- "daughter-basic-information" (for info about daughter Mary)
-- "son-family-information" (for info about son and his family)
-- "caregiver-instructions" (for care provider notes)
+- "mary-basic-information" (for info about Mary, the patient's daughter)
+- "ryan-contact-information" (for info about Ryan and how to reach him)
+- "gary-health-status" (for info about Gary's health issues)
 
 IMPORTANT: Default to patient-centered unless the content is clearly about someone else.
 
