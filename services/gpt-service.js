@@ -367,23 +367,34 @@ Return structured JSON with exact numeric fields.`;
     }
 
     const keyGenerationPrompt = `Generate a stable memory key (3-6 words) that identifies WHAT this memory is about, not the specific changeable details.
-The key should identify the person/relationship and type of information, but NOT include details that might change.
 
-CRITICAL RULES:
-- Use relationship roles (daughter, son, doctor), NOT names in the key
-- Use information types (profile, preferences, routine), NOT specific details
+CRITICAL: The patient (Francine) is the PRIMARY SUBJECT of most memories unless explicitly about someone else.
+
+KEY STRUCTURE RULES:
+- For memories about the patient/Francine: start with "francine-" or "patient-"
+- For memories about family/others: use relationship (daughter, son, doctor) NOT names
+- Use information types (onset, history, routine, preferences) NOT specific details
 - Never include: locations, jobs, times, quantities, ages, or current states
 - Key must remain valid even if every detail in the memory changes
 
 Memory content: ${content}
 Category: ${category}
 
-Examples of GOOD keys:
+Examples of GOOD patient-centered keys:
+- "francine-dementia-onset" (for "Francine's dementia began in 2024...")
+- "francine-medical-history" (for patient's health conditions)
+- "francine-daily-routine" (for patient's schedule/activities) 
+- "francine-medication-routine" (for patient's medication info)
+- "francine-food-preferences" (for patient's dietary likes/dislikes)
+- "patient-anxiety-triggers" (for things that cause patient distress)
+- "patient-comfort-strategies" (for what helps calm the patient)
+
+Examples for family/others (when memory is explicitly about someone else):
 - "daughter-basic-information" (for info about daughter Mary)
-- "medication-routine-description" (for medication schedule)
-- "food-preferences-overview" (for dietary likes/dislikes)
 - "son-family-information" (for info about son and his family)
-- "daily-routine-pattern" (for daily schedule)
+- "caregiver-instructions" (for care provider notes)
+
+IMPORTANT: Default to patient-centered unless the content is clearly about someone else.
 
 Return only the key in lowercase with hyphens, nothing else.`;
 
