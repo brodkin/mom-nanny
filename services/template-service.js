@@ -88,19 +88,26 @@ class TemplateService {
 
     // Then append memory section if memories are available
     if (memoryKeys && memoryKeys.length > 0) {
+      // Group keys by category for better LLM parsing
+      const familyKeys = memoryKeys.filter(key => key.includes('daughter') || key.includes('son') || key.includes('family') || key.includes('mary'));
+      const healthKeys = memoryKeys.filter(key => key.includes('patient') || key.includes('health') || key.includes('allergy') || key.includes('medication'));
+      const preferenceKeys = memoryKeys.filter(key => key.includes('francine') || key.includes('preferences') || key.includes('hobby'));
+      const otherKeys = memoryKeys.filter(key => !familyKeys.includes(key) && !healthKeys.includes(key) && !preferenceKeys.includes(key));
+
       const memorySection = `
 
-## Available Stored Memories
-You have ${memoryKeys.length} stored memories about Francine that you can recall when relevant to the conversation.
+## Available Stored Memories (${memoryKeys.length} total)
+**Use recallMemory with these specific keys when topics arise:**
 
-**Memory Keys Available:**
-${memoryKeys.join(', ')}
+**Family:** ${familyKeys.join(', ')}
+**Health:** ${healthKeys.join(', ')}
+**Preferences:** ${preferenceKeys.join(', ')}
+**Other:** ${otherKeys.join(', ')}
 
-**Important Guidelines:**
-- Do NOT proactively read all memories at the start
-- Only use recallMemory when the specific information becomes relevant
-- Use listAvailableMemories if you need to discover what categories of information are stored
-- When Francine mentions something that contradicts a memory, use forgetMemory then rememberInformation to update it`;
+**Memory Usage:**
+- Use recallMemory("key-name") when conversation topics match the key descriptions
+- Store new information with rememberInformation when they share important details
+- Use listAvailableMemories only as backup if you need to rediscover available memories`;
       
       systemPrompt += memorySection;
     }

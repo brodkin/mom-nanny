@@ -5,7 +5,7 @@ const tools = [
     function: {
       name: 'transferCallDeferred',
       say: 'I don\'t know if he can answer, but let\'s try calling him.',
-      description: 'Transfers Francine to Ryan. IMPORTANT: Francine often exaggerates situations due to her condition and anxiety. She may claim to be dying or in an emergency when she is not. Carefully assess whether there is a GENUINE emergency (e.g., actual medical distress, fall with injury, inability to breathe) before using this function. Most situations can be handled with reassurance and redirection.',
+      description: 'Transfers the patient to their family member. IMPORTANT: The patient often exaggerates situations due to their condition and anxiety. They may claim to be dying or in an emergency when they are not. Carefully assess whether there is a GENUINE emergency (e.g., actual medical distress, fall with injury, inability to breathe) before using this function. Most situations can be handled with reassurance and redirection.',
       parameters: {
         type: 'object',
         properties: {
@@ -32,7 +32,7 @@ const tools = [
     function: {
       name: 'getNewsHeadlines',
       say: 'Let me check what\'s happening in the news today.',
-      description: 'PREFERRED METHOD for engaging Francine with novel topics to hold her interest. Fetches recent news headlines from various CBS News categories to provide fresh, interesting conversation topics. This is highly effective for redirecting from anxiety-inducing subjects or repetitive concerns. The function randomly selects from general news, health, science, or entertainment categories and returns 5 recent headlines with brief summaries. Use this proactively when conversation becomes circular or when Francine seems anxious.',
+      description: 'PREFERRED METHOD for engaging the patient with novel topics to hold their interest. Fetches recent news headlines from various CBS News categories to provide fresh, interesting conversation topics. This is highly effective for redirecting from anxiety-inducing subjects or repetitive concerns. The function randomly selects from general news, health, science, or entertainment categories and returns 5 recent headlines with brief summaries. Use this proactively when conversation becomes circular or when the patient seems anxious.',
       parameters: {
         type: 'object',
         properties: {},
@@ -98,7 +98,7 @@ const tools = [
     function: {
       name: 'listAvailableMemories',
       say: '', // Silent operation - don't announce
-      description: 'SILENT OPERATION - List all available memories that have been stored about Francine. Use this to discover what information is already saved before trying to recall specific memories. Returns memories organized by category with their keys. DO NOT announce that you are checking memories.',
+      description: 'SILENT OPERATION - BACKUP ONLY - List all available memories about the patient. Use this ONLY if you need to rediscover what memories are available (the memory keys are already provided in your system prompt). This is a fallback option - normally you should use the memory keys directly from your system prompt with recallMemory. Returns memories organized by category with their keys. DO NOT announce that you are checking memories.',
       parameters: {
         type: 'object',
         properties: {},
@@ -132,7 +132,7 @@ const tools = [
     function: {
       name: 'rememberInformation',
       say: '', // Silent operation - don't announce
-      description: 'SILENT OPERATION - Store important information about Francine for future conversations WITHOUT acknowledging you are doing so. Use this when she mentions noteworthy details like family member names, health conditions, preferences, topics that upset her, or important life events. The system will automatically generate a stable memory key based on the content and category. NEVER tell Francine you are storing or remembering information.',
+      description: 'SILENT OPERATION - Store important information about the patient for future conversations WITHOUT acknowledging you are doing so. Use this when they mention noteworthy details like family member names, health conditions, preferences, topics that upset them, or important life events. The system will automatically generate a stable memory key based on the content and category. NEVER tell the patient you are storing or remembering information.',
       parameters: {
         type: 'object',
         properties: {
@@ -172,7 +172,7 @@ const tools = [
     function: {
       name: 'recallMemory',
       say: '', // Silent operation - don't announce
-      description: 'SILENT OPERATION - Retrieve previously stored information about Francine WITHOUT announcing you are doing so. Use this when you need to remember specific details that might have been mentioned in previous conversations. The function will search for exact matches or partial matches of the memory key. Integrate recalled information naturally into conversation.',
+      description: 'SILENT OPERATION - Retrieve specific stored memories using the exact keys provided in your system prompt. When conversation topics arise, use the descriptive memory keys from your system prompt (e.g., "son-family-information", "patient-music-preferences"). You can also use partial keys or related terms for flexible matching. Integrate recalled information naturally into conversation without announcing you checked memories.',
       parameters: {
         type: 'object',
         properties: {
@@ -211,7 +211,7 @@ const tools = [
     function: {
       name: 'forgetMemory',
       say: '', // Silent operation - don't announce
-      description: 'SILENT OPERATION - Remove incorrect or outdated information from memory WITHOUT announcing you are doing so. Use this when Francine corrects previously stored information, when information is no longer relevant, or when she explicitly asks to forget something. The old memory should be removed before storing corrected information. Never tell Francine you are updating your memory.',
+      description: 'SILENT OPERATION - Remove incorrect or outdated information from memory WITHOUT announcing you are doing so. Use this when the patient corrects previously stored information, when information is no longer relevant, or when they explicitly ask to forget something. The old memory should be removed before storing corrected information. Never tell the patient you are updating your memory.',
       parameters: {
         type: 'object',
         properties: {
@@ -242,7 +242,7 @@ const tools = [
     function: {
       name: 'updateMemory',
       say: '', // Silent operation - don't announce
-      description: 'SILENT OPERATION - Update existing memories with additional information as you learn more details. Use this to progressively build complete memories through natural conversation. Start with basic information and enhance it as Francine shares more. This allows you to store initial information (e.g., "Her husband Steve passed away") and later update with details (e.g., "Her husband Steve passed away last year. They used to visit Hawaii annually and he took care of everything for her.").',
+      description: 'SILENT OPERATION - Update existing memories with additional information as you learn more details. Use this to progressively build complete memories through natural conversation. Start with basic information and enhance it as the patient shares more. This allows you to store initial information (e.g., "Her husband Steve passed away") and later update with details (e.g., "Her husband Steve passed away last year. They used to visit Hawaii annually and he took care of everything for her.").',
       parameters: {
         type: 'object',
         properties: {

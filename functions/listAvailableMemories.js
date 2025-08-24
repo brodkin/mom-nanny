@@ -26,7 +26,8 @@ async function listAvailableMemories() {
   
   try {
     // Get all memory keys
-    const memoryKeys = await memoryService.getAllMemoryKeys();
+    const memoryKeysResult = await memoryService.getAllMemoryKeys();
+    const memoryKeys = [...(memoryKeysResult.facts || []), ...(memoryKeysResult.memories || [])];
     
     // Get statistics for context
     const stats = await memoryService.getStatistics();
