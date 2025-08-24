@@ -382,4 +382,103 @@ describe('MemoryService with is_fact functionality', () => {
       expect(stats.memoryCount).toBe(1);
     });
   });
+
+  describe('last_accessed field functionality', () => {
+    const recallMemory = require('../functions/recallMemory');
+
+    beforeEach(() => {
+      // Set up global context for recallMemory function
+      global.memoryService = memoryService;
+    });
+
+    afterEach(() => {
+      // Clean up global context
+      delete global.memoryService;
+    });
+
+    test('recallMemory should update last_accessed for exact matches', async () => {
+      // Create a memory
+      await memoryService.saveMemory('test-exact-key', 'Test exact content', 'general');
+      
+      // Get initial last_accessed time
+      const beforeAccess = await testDb.get(
+        'SELECT last_accessed FROM memories WHERE memory_key = ?',
+        ['test-exact-key']
+      );
+      
+      // Wait a moment to ensure timestamp difference
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Call recallMemory (exact match)
+      const result = JSON.parse(await recallMemory({ memory_key: 'test-exact-key' }));
+      
+      // Verify recall was successful
+      expect(result.success).toBe(true);
+      expect(result.content).toBe('Test exact content');
+      
+      // Check that last_accessed was updated
+      const afterAccess = await testDb.get(
+        'SELECT last_accessed FROM memories WHERE memory_key = ?',
+        ['test-exact-key']
+      );
+      
+      expect(afterAccess.last_accessed).not.toBe(beforeAccess.last_accessed);
+    });
+
+    test('recallMemory should update last_accessed for partial matches', async () => {
+      // Create a memory with a specific key
+      await memoryService.saveMemory('birthday-francine-july', 'Francine\'s birthday is July 15th', 'family');
+      
+      // Get initial last_accessed time
+      const beforeAccess = await testDb.get(
+        'SELECT last_accessed FROM memories WHERE memory_key = ?',
+        ['birthday-francine-july']
+      );
+      
+      // Wait a moment to ensure timestamp difference
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Call recallMemory with partial match (should find the birthday memory)
+      const result = JSON.parse(await recallMemory({ memory_key: 'birthday' }));
+      
+      // Verify partial match was successful
+      expect(result.success).toBe(true);
+      expect(result.key).toBe('birthday-francine-july');
+      expect(result.content).toBe('Francine\'s birthday is July 15th');
+      expect(result.note).toContain('Found as partial match');
+      
+      // Check that last_accessed was updated for the partial match
+      const afterAccess = await testDb.get(
+        'SELECT last_accessed FROM memories WHERE memory_key = ?',
+        ['birthday-francine-july']
+      );
+      
+      expect(afterAccess.last_accessed).not.toBe(beforeAccess.last_accessed);
+    });
+
+    test('recallMemory should not update last_accessed when no match found', async () => {
+      // Create a memory
+      await memoryService.saveMemory('test-no-match', 'Test content', 'general');
+      
+      // Get initial last_accessed time
+      const beforeAccess = await testDb.get(
+        'SELECT last_accessed FROM memories WHERE memory_key = ?',
+        ['test-no-match']
+      );
+      
+      // Call recallMemory with non-matching key
+      const result = JSON.parse(await recallMemory({ memory_key: 'nonexistent-key' }));
+      
+      // Verify recall failed as expected
+      expect(result.success).toBe(false);
+      
+      // Check that last_accessed was NOT updated
+      const afterAccess = await testDb.get(
+        'SELECT last_accessed FROM memories WHERE memory_key = ?',
+        ['test-no-match']
+      );
+      
+      expect(afterAccess.last_accessed).toBe(beforeAccess.last_accessed);
+    });
+  });
 });

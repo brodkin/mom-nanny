@@ -60,6 +60,12 @@ async function recallMemory({ memory_key }) {
         console.log(`   ⚡ Found partial match: "${firstMatch.key}" in category: ${firstMatch.category}`.magenta);
         console.log(`   Content: "${firstMatch.content.substring(0, 60)}${firstMatch.content.length > 60 ? '...' : ''}"`.gray);
         
+        // Update last accessed time for the partial match (don't wait for completion)
+        memoryService.db.run(
+          'UPDATE memories SET last_accessed = CURRENT_TIMESTAMP WHERE memory_key = ?', 
+          [firstMatch.key]
+        ).catch(err => console.error('Error updating last_accessed for partial match:', err));
+        
         return JSON.stringify({
           success: true,
           key: firstMatch.key,
