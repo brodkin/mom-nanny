@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
+const TimezoneUtils = require('../utils/timezone-utils');
 
 /**
  * DatabaseManager implements a singleton pattern to ensure consistent database access
@@ -891,6 +892,7 @@ class DatabaseManager {
 
   /**
    * Get today's call statistics including call count and time since last call
+   * Uses the configured timezone to determine "today" (not UTC)
    * 
    * @returns {Promise<{callsToday: number, lastCallTime: string|null, timeSinceLastCall: string|null}>}
    */
@@ -899,17 +901,17 @@ class DatabaseManager {
     this._ensureConnection();
 
     try {
-      // Get today's date in YYYY-MM-DD format (local timezone)
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      // Get the configured timezone (defaults to America/Los_Angeles)
+      const timezone = process.env.TIMEZONE || 'America/Los_Angeles';
       
-      // Get count of calls today
+      // For now, use SQLite's localtime function since it matches the system timezone
+      // TODO: Implement proper IANA timezone support for non-system timezones
       const callCountQuery = `
         SELECT COUNT(*) as callsToday 
         FROM conversations 
-        WHERE DATE(start_time) = ?
+        WHERE DATE(start_time, 'localtime') = DATE('now', 'localtime')
       `;
-      const callCountResult = await this.get(callCountQuery, [todayStr]);
+      const callCountResult = await this.get(callCountQuery);
       const callsToday = callCountResult?.callsToday || 0;
 
       // Get the most recent call time (if any calls exist)
