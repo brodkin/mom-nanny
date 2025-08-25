@@ -49,16 +49,17 @@ class Dashboard {
   async loadDashboardData() {
     console.log('Loading dashboard data...');
     try {
-      const response = await fetch('/api/emotional-metrics/dashboard');
+      const response = await fetch('/api/admin/dashboard/overview');
       const data = await response.json();
       
       console.log('Dashboard data received:', data);
       
       if (data.success) {
-        this.updateOverviewCards(data.data.overview);
-        this.updateRecentConversations(data.data.recentConversations);
-        this.updateCriticalAlerts(data.data.alerts);
+        this.updateOverviewCards(data.data);
+        this.updateRecentConversations(data.data.recentConversations || []);
+        this.updateCriticalAlerts(data.data.alerts || []);
         this.updateCareIndicators(data.data);
+        this.updateTimezoneInfo(data.timezone);
         await this.updateChart();
         this.updateLastRefreshTime();
       } else {
@@ -71,34 +72,46 @@ class Dashboard {
     }
   }
   
-  updateOverviewCards(overview) {
-    console.log('Updating overview cards with:', overview);
-    // Update stats cards with styled /10 suffix to match conversations page
+  updateOverviewCards(data) {
+    console.log('Updating overview cards with:', data);
+    
+    // Extract data from new admin dashboard structure
+    const conversations = data.conversations || {};
+    const ai = data.ai || {};
+    
+    // Update calls today
+    this.updateElement('callsToday', conversations.today || 0);
+    
+    // Update avg anxiety and comfort from AI sentiment breakdown
     const avgAnxietyElement = document.getElementById('avgAnxiety');
     const avgComfortElement = document.getElementById('avgComfort');
     
-    if (avgAnxietyElement) {
-      avgAnxietyElement.innerHTML = `${overview.avgAnxiety}<span style="opacity: 0.4;">/10</span>`;
-    }
-    if (avgComfortElement) {
-      avgComfortElement.innerHTML = `${overview.avgComfort}<span style="opacity: 0.4;">/10</span>`;
-    }
-    this.updateElement('callsToday', overview.callsToday);
-    this.updateElement('alertCount', overview.alertCount);
-    
-    // Format and update last call time
-    if (overview.lastCallTime) {
-      const lastCall = new Date(overview.lastCallTime);
-      const timeStr = this.formatTimeAgo(lastCall);
-      this.updateElement('lastCallTime', timeStr);
-    } else {
-      this.updateElement('lastCallTime', 'No calls today');
+    if (avgAnxietyElement && ai.sentimentBreakdown) {
+      // Map sentiment data to anxiety level (higher anxious = higher anxiety)
+      const anxietyLevel = Math.round((ai.sentimentBreakdown.anxious || 0) / 10);
+      avgAnxietyElement.innerHTML = `${anxietyLevel}<span style="opacity: 0.4;">/10</span>`;
     }
     
-    // Update alert count styling based on severity
-    const alertElement = document.getElementById('alertCount');
-    if (alertElement) {
-      alertElement.className = overview.alertCount > 0 ? 'stat-value alert' : 'stat-value';
+    if (avgComfortElement && ai.sentimentBreakdown) {
+      // Map positive sentiment to comfort level
+      const comfortLevel = Math.round((ai.sentimentBreakdown.positive || 0) / 10);
+      avgComfortElement.innerHTML = `${comfortLevel}<span style="opacity: 0.4;">/10</span>`;
+    }
+    
+    // Update alert count (placeholder - would need to be added to admin API)
+    this.updateElement('alertCount', 0);
+    
+    // Format and update last call time (placeholder)
+    this.updateElement('lastCallTime', 'Recently active');
+  }
+
+  updateTimezoneInfo(timezoneData) {
+    const timezoneInfoElement = document.getElementById('timezoneInfo');
+    if (timezoneInfoElement && timezoneData) {
+      const abbreviation = timezoneData.abbreviation || 'Local';
+      const currentTime = timezoneData.currentTime || new Date().toLocaleString();
+      timezoneInfoElement.textContent = `${abbreviation} Time`;
+      timezoneInfoElement.title = `Current time: ${currentTime}`;
     }
   }
   

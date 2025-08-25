@@ -14,6 +14,7 @@
  */
 
 const _ConversationAnalyzer = require('./conversation-analyzer');
+const CallStatsUtils = require('../utils/call-stats-utils');
 
 class DashboardDataService {
   constructor(databaseManager) {
@@ -338,31 +339,34 @@ class DashboardDataService {
   // Private helper methods
 
   /**
-   * Get basic conversation statistics
+   * Get basic conversation statistics using centralized timezone-aware call stats
    * @private
    */
   async _getConversationStats(today, weekAgo, monthAgo) {
+    // Use centralized call stats utility for consistent timezone handling
+    const todayCount = await CallStatsUtils.getTodayCallCount(this.db);
+    
+    // Calculate date ranges in YYYY-MM-DD format for the utility functions
+    const todayDate = new Date().toISOString().split('T')[0];
+    const weekAgoDate = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const monthAgoDate = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    
     const totalQuery = 'SELECT COUNT(*) as total FROM conversations';
-    // Use DATE() to compare just the date portion in local time
-    const todayQuery = 'SELECT COUNT(*) as today FROM conversations WHERE DATE(created_at) = DATE(\'now\', \'localtime\')';
-    const weekQuery = 'SELECT COUNT(*) as week FROM conversations WHERE created_at >= ?';
-    const monthQuery = 'SELECT COUNT(*) as month FROM conversations WHERE created_at >= ?';
     const avgDurationQuery = 'SELECT AVG(duration) as avg_duration FROM conversations WHERE duration IS NOT NULL';
     const successRateQuery = `
       SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN end_time IS NOT NULL THEN 1 ELSE 0 END) as completed
       FROM conversations
-      WHERE created_at >= ?
+      WHERE DATE(created_at, 'localtime') >= ?
     `;
 
-    const [total, todayCount, weekCount, monthCount, avgDuration, successData] = await Promise.all([
+    const [weekCount, monthCount, total, avgDuration, successData] = await Promise.all([
+      CallStatsUtils.getCallsByDateRange(this.db, { startDate: weekAgoDate, timeField: 'created_at' }),
+      CallStatsUtils.getCallsByDateRange(this.db, { startDate: monthAgoDate, timeField: 'created_at' }),
       this.db.get(totalQuery),
-      this.db.get(todayQuery), // No parameter needed for today query
-      this.db.get(weekQuery, [weekAgo]),
-      this.db.get(monthQuery, [monthAgo]),
       this.db.get(avgDurationQuery),
-      this.db.get(successRateQuery, [weekAgo])
+      this.db.get(successRateQuery, [weekAgoDate])
     ]);
 
     const successRate = successData.total > 0 ? 
@@ -370,9 +374,9 @@ class DashboardDataService {
 
     return {
       total: total.total || 0,
-      today: todayCount.today || 0,
-      thisWeek: weekCount.week || 0,
-      thisMonth: monthCount.month || 0,
+      today: todayCount,
+      thisWeek: weekCount,
+      thisMonth: monthCount,
       averageDuration: Math.round(avgDuration.avg_duration || 0),
       successRate: parseFloat(successRate)
     };

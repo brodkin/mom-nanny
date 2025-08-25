@@ -15,6 +15,7 @@ const express = require('express');
 const router = express.Router();
 const DatabaseManager = require('../../services/database-manager');
 const TimezoneUtils = require('../../utils/timezone-utils');
+const CallStatsUtils = require('../../utils/call-stats-utils');
 
 // Get database manager instance (will be singleton instance)
 function getDbManager() {
@@ -100,15 +101,10 @@ router.get('/', async (req, res) => {
     const conditions = [];
     const params = [];
     
-    if (dateFrom) {
-      conditions.push('DATE(c.start_time) >= ?');
-      params.push(dateFrom);
-    }
-    
-    if (dateTo) {
-      conditions.push('DATE(c.start_time) <= ?');
-      params.push(dateTo);
-    }
+    // Use timezone-aware date filtering from centralized utility
+    const dateFilter = CallStatsUtils.buildTimezoneAwareDateFilter(dateFrom, dateTo, 'c.start_time');
+    conditions.push(...dateFilter.conditions);
+    params.push(...dateFilter.params);
     
     if (minDuration) {
       conditions.push('c.duration >= ?');
@@ -323,15 +319,10 @@ router.get('/analytics', async (req, res) => {
     const conditions = [];
     const params = [];
     
-    if (dateFrom) {
-      conditions.push('DATE(c.start_time) >= ?');
-      params.push(dateFrom);
-    }
-    
-    if (dateTo) {
-      conditions.push('DATE(c.start_time) <= ?');
-      params.push(dateTo);
-    }
+    // Use timezone-aware date filtering from centralized utility
+    const analyticsDateFilter = CallStatsUtils.buildTimezoneAwareDateFilter(dateFrom, dateTo, 'c.start_time');
+    conditions.push(...analyticsDateFilter.conditions);
+    params.push(...analyticsDateFilter.params);
     
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     
@@ -342,7 +333,7 @@ router.get('/analytics', async (req, res) => {
         AVG(em.confusion_level) as avg_confusion,
         AVG(em.agitation_level) as avg_agitation,
         AVG(em.comfort_level) as avg_comfort,
-        DATE(c.start_time) as call_date,
+        DATE(c.start_time, 'localtime') as call_date,
         em.anxiety_level as anxiety,
         em.confusion_level as confusion,
         em.agitation_level as agitation,
@@ -495,13 +486,13 @@ router.get('/analytics', async (req, res) => {
       staffRelated
     };
     
-    // Get time-based statistics
+    // Get time-based statistics using timezone-aware dates
     const timeStatsSql = `
       SELECT 
         AVG(c.duration) as avg_duration,
-        strftime('%H', c.start_time) as hour,
-        strftime('%w', c.start_time) as day_of_week,
-        DATE(c.start_time) as call_date,
+        strftime('%H', c.start_time, 'localtime') as hour,
+        strftime('%w', c.start_time, 'localtime') as day_of_week,
+        DATE(c.start_time, 'localtime') as call_date,
         COUNT(*) as call_count,
         c.duration
       FROM conversations c

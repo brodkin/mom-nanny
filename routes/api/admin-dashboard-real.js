@@ -35,6 +35,10 @@ router.get('/overview', async (req, res) => {
   try {
     const overview = await dashboardService.getOverviewStats();
     
+    // Get recent conversations and alerts for the dashboard
+    const recentConversations = await getRecentConversations(dashboardService.db);
+    const alerts = await getCriticalAlerts(dashboardService.db);
+    
     res.json({
       success: true,
       data: {
@@ -49,6 +53,8 @@ router.get('/overview', async (req, res) => {
         performance: overview.performance,
         services: overview.services,
         memories: overview.memories,
+        recentConversations,
+        alerts,
         ai: {
           modelVersion: 'gpt-4',
           contextLength: 8192,
@@ -547,6 +553,209 @@ function _generateTrendData(dailyPatterns, indicatorType) {
     default: return 0;
     }
   });
+}
+
+/**
+ * Helper function to get recent conversations
+ */
+async function getRecentConversations(dbManager) {
+  try {
+    const sql = `
+      SELECT 
+        c.id,
+        c.call_sid,
+        c.start_time,
+        c.duration,
+        em.anxiety_level,
+        em.agitation_level,
+        em.confusion_level,
+        em.comfort_level,
+        em.overall_sentiment,
+        em.mentions_pain,
+        em.mentions_staff_complaint,
+        em.mentions_medication,
+        em.mentions_family,
+        em.time_of_day,
+        em.sentiment_score,
+        s.summary_text
+      FROM conversations c
+      LEFT JOIN emotional_metrics em ON c.id = em.conversation_id
+      LEFT JOIN summaries s ON c.id = s.conversation_id
+      ORDER BY c.start_time DESC
+      LIMIT 5
+    `;
+    
+    const conversations = await dbManager.all(sql);
+    
+    return conversations.map(conv => ({
+      id: conv.id,
+      callSid: conv.call_sid,
+      startTime: conv.start_time,
+      duration: formatDurationHumanReadable(conv.duration),
+      anxietyLevel: conv.anxiety_level,
+      agitationLevel: conv.agitation_level,
+      confusionLevel: conv.confusion_level,
+      comfortLevel: conv.comfort_level,
+      sentiment: conv.overall_sentiment,
+      sentimentScore: conv.sentiment_score,
+      timeOfDay: conv.time_of_day,
+      mentionsPain: conv.mentions_pain,
+      mentionsMedication: conv.mentions_medication,
+      mentionsFamily: conv.mentions_family,
+      hasCareIndicators: conv.mentions_pain || conv.mentions_staff_complaint,
+      emotionalState: determineEmotionalState(conv),
+      callTitle: generateCallTitle(conv)
+    }));
+  } catch (error) {
+    console.error('Error getting recent conversations:', error);
+    return [];
+  }
+}
+
+/**
+ * Helper function to get critical alerts
+ */
+async function getCriticalAlerts(dbManager) {
+  try {
+    const alerts = [];
+    const yesterday = new Date(Date.now() - (24 * 60 * 60 * 1000)).toISOString();
+    const week = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)).toISOString();
+    
+    // Check for high anxiety patterns (last 24 hours)
+    const highAnxietyCount = await dbManager.get(`
+      SELECT COUNT(*) as count
+      FROM conversations c
+      JOIN emotional_metrics em ON c.id = em.conversation_id
+      WHERE c.start_time >= ? AND em.anxiety_level >= 8
+    `, [yesterday]);
+    
+    if ((highAnxietyCount?.count || 0) >= 2) {
+      alerts.push({
+        id: 'high_anxiety_pattern',
+        type: 'warning',
+        severity: 'high',
+        title: 'Elevated Anxiety Pattern Detected',
+        message: `${highAnxietyCount.count} conversations with high anxiety in the last 24 hours`,
+        timestamp: new Date().toISOString(),
+        action: 'Consider contacting care team'
+      });
+    }
+    
+    // Check for pain mentions (last 7 days)
+    const painMentions = await dbManager.get(`
+      SELECT COUNT(*) as count, MAX(c.start_time) as last_mention
+      FROM conversations c
+      JOIN emotional_metrics em ON c.id = em.conversation_id
+      WHERE c.start_time >= ? AND em.mentions_pain = 1
+    `, [week]);
+    
+    if ((painMentions?.count || 0) > 0) {
+      alerts.push({
+        id: 'pain_mentions',
+        type: 'error',
+        severity: 'critical',
+        title: 'Pain Mentioned in Conversations',
+        message: `Pain mentioned in ${painMentions.count} conversation(s) this week`,
+        timestamp: painMentions.last_mention,
+        action: 'Review pain management plan'
+      });
+    }
+    
+    return alerts;
+  } catch (error) {
+    console.error('Error getting critical alerts:', error);
+    return [];
+  }
+}
+
+function formatDurationHumanReadable(seconds) {
+  if (!seconds || seconds < 1) return 'Less than 1 second';
+  
+  const totalSeconds = Math.round(seconds);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+  
+  if (minutes === 0) {
+    return `${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''}`;
+  } else if (remainingSeconds === 0) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  } else {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}, ${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''}`;
+  }
+}
+
+function determineEmotionalState(conversation) {
+  // Determine emotional state based on metrics
+  const anxiety = conversation.anxiety_level || 0;
+  const agitation = conversation.agitation_level || 0;
+  const confusion = conversation.confusion_level || 0;
+  const comfort = conversation.comfort_level || 0;
+  
+  // Priority: Critical states first
+  if (anxiety >= 8 || agitation >= 8) return 'critical';
+  if (confusion >= 7) return 'concerning';
+  if (anxiety >= 5 || agitation >= 5) return 'elevated';
+  if (comfort >= 7) return 'positive';
+  if (anxiety <= 3 && agitation <= 3 && confusion <= 3) return 'stable';
+  
+  return 'neutral';
+}
+
+function generateCallTitle(conversation) {
+  // Extract key insights from summary data if available
+  let title = null;
+  
+  if (conversation.summary_text) {
+    try {
+      const summary = JSON.parse(conversation.summary_text);
+      
+      // Check for specific concerns in care indicators
+      if (summary.careIndicators) {
+        const indicators = summary.careIndicators;
+        if (indicators.painMentioned) {
+          title = 'Pain Concern Discussed';
+        } else if (indicators.medicationConcerns) {
+          title = 'Medication Questions';
+        } else if (indicators.staffComplaints) {
+          title = 'Staff Concerns Mentioned';
+        }
+      }
+      
+      // Fallback to emotional state or general conversation theme
+      if (!title && summary.mentalState) {
+        if (summary.mentalState.anxiety === 'high') {
+          title = 'High Anxiety Call';
+        } else if (summary.mentalState.confusion === 'high') {
+          title = 'Confusion Episode';
+        } else if (summary.mentalState.agitation === 'high') {
+          title = 'Agitated State';
+        }
+      }
+    } catch (e) {
+      // Ignore JSON parsing errors
+    }
+  }
+  
+  // Final fallback based on emotional metrics
+  if (!title) {
+    if (conversation.mentions_pain) {
+      title = 'Pain Mentioned';
+    } else if (conversation.mentions_medication) {
+      title = 'Medication Discussion';
+    } else if (conversation.anxiety_level >= 7) {
+      title = 'High Anxiety';
+    } else if (conversation.agitation_level >= 7) {
+      title = 'Agitated Call';
+    } else if (conversation.confusion_level >= 7) {
+      title = 'Confusion Present';
+    } else if (conversation.comfort_level >= 7) {
+      title = 'Comfort & Support';
+    } else {
+      title = 'General Conversation';
+    }
+  }
+  
+  return title;
 }
 
 module.exports = router;
