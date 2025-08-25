@@ -26,6 +26,7 @@ const adminRouter = require('./routes/admin');
 const adminStatsRouter = require('./routes/api/admin-stats');
 const adminConfigRouter = require('./routes/api/admin-config');
 const adminMemoriesRouter = require('./routes/api/admin-memories');
+const adminDashboardRealRouter = require('./routes/api/admin-dashboard-real');
 const emotionalMetricsRouter = require('./routes/api/emotional-metrics');
 const conversationsRouter = require('./routes/api/conversations');
 const searchRouter = require('./routes/api/search');
@@ -318,15 +319,13 @@ app.get('/', (req, res) => {
 app.use('/admin', express.json());
 app.use('/api/admin', express.json());
 
-// Import dashboard real data router
-const adminDashboardRealRouter = require('./routes/api/admin-dashboard-real');
 
 // Mount admin routes
 app.use('/admin', adminRouter);
 app.use('/api/admin/stats', adminStatsRouter);
 app.use('/api/admin/config', adminConfigRouter);
-app.use('/api/admin/dashboard', adminDashboardRealRouter);
 app.use('/api/admin/memories', adminMemoriesRouter);
+app.use('/api/admin/dashboard', adminDashboardRealRouter);
 
 // Mount emotional metrics API routes
 app.use('/api/emotional-metrics', emotionalMetricsRouter);

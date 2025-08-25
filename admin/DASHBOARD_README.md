@@ -33,15 +33,11 @@ The Compassionate Care Dashboard provides real-time insights into the mental sta
 ## Access
 
 ### Dashboard URLs
-- **Main Admin Interface**: `/admin/`
 - **Compassionate Care Dashboard**: `/admin/dashboard`
 
 ### API Endpoints
-- **Overview Data**: `/api/admin/dashboard/overview`
-- **Mental State**: `/api/admin/dashboard/mental-state?days=7`
-- **Care Indicators**: `/api/admin/dashboard/care-indicators?days=30`
-- **Conversation Trends**: `/api/admin/dashboard/conversation-trends?days=30`
-- **Real-time Data**: `/api/admin/dashboard/real-time`
+- **Overview Data**: `/api/emotional-metrics/overview`
+- **Trend Data**: `/api/emotional-metrics/trends?days=7`
 
 ## Technical Details
 
