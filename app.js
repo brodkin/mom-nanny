@@ -508,6 +508,107 @@ app.ws('/connection', async (ws) => {
 
     let marks = [];
     let interactionCount = 0;
+    
+    // Silence detection variables
+    let silenceTimer = null;
+    let isWaitingForResponse = false;
+    let hasAskedIfPresent = false;
+
+    // Helper functions for silence detection
+    const clearSilenceTimer = () => {
+      if (silenceTimer) {
+        console.log('Clearing silence timer - user is responsive'.cyan);
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
+      isWaitingForResponse = false;
+    };
+
+    const startSilenceDetection = () => {
+      // Don't start if we're already waiting or if there are still active marks
+      if (isWaitingForResponse || markCompletionService.getActiveMarkCount() > 0) {
+        console.log(`Skipping silence detection: waiting=${isWaitingForResponse}, activeMarks=${markCompletionService.getActiveMarkCount()}`.gray);
+        return;
+      }
+      
+      console.log('Starting 5-second silence timer'.cyan);
+      isWaitingForResponse = true;
+      silenceTimer = setTimeout(() => {
+        console.log('5-second silence timeout reached'.yellow);
+        if (!isWaitingForResponse) {
+          console.log('Timer fired but no longer waiting for response - ignoring'.gray);
+          return;
+        }
+        if (!hasAskedIfPresent) {
+          // First silence timeout - ask if user is still there
+          hasAskedIfPresent = true;
+          console.log('Silence detected - asking if user is still there'.yellow);
+          
+          const checkMessages = [
+            'Hello? Are you still there?',
+            'I\'m still here if you need me.',
+            'Is everything okay?',
+            'Are you still with me?'
+          ];
+          
+          const randomMessage = checkMessages[Math.floor(Math.random() * checkMessages.length)];
+          
+          // Directly generate TTS for the check message
+          ttsService.generate({
+            partialResponseIndex: null,
+            partialResponse: randomMessage,
+            isFinal: true
+          }, interactionCount);
+          
+          // Track this message in the conversation analyzer
+          if (conversationAnalyzer) {
+            conversationAnalyzer.trackAssistantResponse(randomMessage, new Date());
+          }
+          
+          interactionCount += 1;
+          
+          // Start another timer for final timeout
+          silenceTimer = setTimeout(() => {
+            console.log('Final 5-second timeout reached'.yellow);
+            if (isWaitingForResponse) {
+              console.log('No response received - ending call gracefully'.yellow);
+              
+              const goodbyeMessages = [
+                'I\'ll let you go for now. Take care!',
+                'Goodbye for now. I\'m here whenever you need me.',
+                'Have a wonderful day. Call me anytime!',
+                'Take care, and don\'t hesitate to call if you need anything.'
+              ];
+              
+              const randomGoodbye = goodbyeMessages[Math.floor(Math.random() * goodbyeMessages.length)];
+              
+              // Send goodbye message
+              ttsService.generate({
+                partialResponseIndex: null,
+                partialResponse: randomGoodbye,
+                isFinal: true
+              }, interactionCount);
+              
+              // Track goodbye in conversation analyzer
+              if (conversationAnalyzer) {
+                conversationAnalyzer.trackAssistantResponse(randomGoodbye, new Date());
+              }
+              
+              interactionCount += 1;
+              
+              // End the call after the goodbye message completes
+              // Wait for the goodbye audio to finish playing, then close the connection
+              setTimeout(() => {
+                if (ws.readyState === ws.OPEN) {
+                  console.log('Closing call due to unresponsive user'.yellow);
+                  ws.close();
+                }
+              }, 3000); // Give time for the goodbye message to play
+            }
+          }, 5000); // 5 second final timeout
+        }
+      }, 5000); // 5 second initial timeout
+    };
 
     // Incoming from MediaStream
     ws.on('message', function message(data) {
@@ -568,6 +669,10 @@ app.ws('/connection', async (ws) => {
     });
 
     transcriptionService.on('utterance', async (text) => {
+      // NOTE: Do NOT clear silence timer here - utterance events can be triggered by 
+      // audio processing artifacts or background noise, not actual user speech.
+      // Only clear on actual transcription events.
+      
       // This is a bit of a hack to filter out empty utterances
       if(marks.length > 0 && text?.length > 5) {
         console.log('Twilio -> Interruption, Clearing stream'.red);
@@ -591,6 +696,13 @@ app.ws('/connection', async (ws) => {
     transcriptionService.on('transcription', async (text) => {
       if (!text) { return; }
       console.log(`Interaction ${interactionCount} – STT -> GPT: ${text}`.yellow);
+      
+      // User provided input - clear silence detection only if we're waiting for response to silence
+      if (isWaitingForResponse) {
+        console.log('User provided transcription response to silence - clearing timer'.green);
+        clearSilenceTimer();
+        hasAskedIfPresent = false; // Reset since user is responsive
+      }
       
       // Track user utterance in analyzer
       if (conversationAnalyzer) {
@@ -623,9 +735,21 @@ app.ws('/connection', async (ws) => {
       markCompletionService.addMark(markLabel);
     });
 
+    // Listen for when all audio has completed playing
+    markCompletionService.on('all-marks-complete', () => {
+      console.log('All audio completed - starting silence detection'.cyan);
+      // Small delay to ensure marks array is updated
+      setTimeout(() => {
+        startSilenceDetection();
+      }, 100);
+    });
+
     // Clean up when WebSocket closes
     ws.on('close', async () => {
       console.log('WebSocket closed, cleaning up services'.cyan);
+      
+      // Clear silence detection timer
+      clearSilenceTimer();
       
       // Generate and save conversation summary and messages
       if (conversationAnalyzer) {
