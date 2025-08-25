@@ -454,7 +454,7 @@ Return only the key in lowercase with hyphens, nothing else.`;
       setTimeout(() => {
         this.emit('gptreply', {
           partialResponseIndex: 0,
-          partialResponse: `Hi there! • I understand you said "${text}" • How can I help you today?`,
+          partialResponse: `Hi there! I understand you said "${text}" How can I help you today?`,
           isFinal: true
         }, interactionCount);
       }, 10);
@@ -530,14 +530,17 @@ Return only the key in lowercase with hyphens, nothing else.`;
         const toolData = tools.find(tool => tool.function.name === functionName);
         const say = toolData.function.say;
 
+        // Remove bullets from function call messages before emitting
+        const cleanedSay = say ? say.replace(/•/g, '').trim() : '';
+
         this.emit('gptreply', {
           partialResponseIndex: null,
-          partialResponse: say
+          partialResponse: cleanedSay
         }, interactionCount);
         
         // Track function call pre-message in analyzer
         if (this.conversationAnalyzer) {
-          this.conversationAnalyzer.trackAssistantResponse(say, new Date());
+          this.conversationAnalyzer.trackAssistantResponse(cleanedSay, new Date());
         }
 
         // For transfer and endCall functions, pass the markCompletionService
@@ -588,9 +591,12 @@ Return only the key in lowercase with hyphens, nothing else.`;
         
         // Check if content ends with a bullet point (indicating a complete chunk)
         if (content.trim().endsWith('•')) {
+          // Remove bullets from the response before emitting
+          const cleanedResponse = partialResponse.trim().replace(/•$/, '').trim();
+          
           const gptReply = {
             partialResponseIndex: this.partialResponseIndex,
-            partialResponse: partialResponse.trim(),
+            partialResponse: cleanedResponse,
             isFinal: false
           };
 
@@ -607,9 +613,12 @@ Return only the key in lowercase with hyphens, nothing else.`;
         
         // Emit final response when stream ends
         if (finishReason === 'stop' && partialResponse.trim()) {
+          // Remove any trailing bullets from final response
+          const cleanedResponse = partialResponse.trim().replace(/•$/, '').trim();
+          
           const gptReply = {
             partialResponseIndex: this.partialResponseIndex,
-            partialResponse: partialResponse.trim(),
+            partialResponse: cleanedResponse,
             isFinal: true
           };
 
