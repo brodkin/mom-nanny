@@ -39,19 +39,20 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       await memoryService.saveMemory('family_memory', 'Talked about son', 'family', false);
       await memoryService.saveMemory('mood_memory', 'Was anxious yesterday', 'general', false);
 
-      // Get all memory keys (current approach)
+      // Get all memory keys (getAllMemoryKeys returns {facts, memories})
       const allKeys = await memoryService.getAllMemoryKeys();
+      const flatKeys = allKeys.facts.concat(allKeys.memories);
       
-      const systemPrompt = templateService.getSystemPrompt(allKeys);
+      const systemPrompt = templateService.getSystemPrompt(flatKeys);
       
       expect(systemPrompt).toContain('Available Stored Memories');
-      expect(systemPrompt).toContain('family_fact');
-      expect(systemPrompt).toContain('health_fact');
-      expect(systemPrompt).toContain('family_memory');
-      expect(systemPrompt).toContain('mood_memory');
+      expect(systemPrompt).toContain('familyfact'); // Keys are normalized (underscores removed)
+      expect(systemPrompt).toContain('healthfact');
+      expect(systemPrompt).toContain('familymemory');
+      expect(systemPrompt).toContain('moodmemory');
       
       // Should show total count
-      expect(systemPrompt).toContain('4 stored memories');
+      expect(systemPrompt).toContain('4 total');
     });
 
     test('should support separated fact and memory keys (future enhancement)', async () => {
@@ -62,7 +63,7 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       await memoryService.saveMemory('conversation_memory', 'Asked about grandchildren', 'family', false);
 
       // Get separated keys
-      const memoryKeys = await memoryService.getMemoryKeys();
+      const memoryKeys = await memoryService.getAllMemoryKeys();
       const factKeys = memoryKeys.facts || [];
       const conversationKeys = memoryKeys.memories || [];
 
@@ -70,8 +71,8 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       // const systemPrompt = templateService.getSystemPromptWithSeparation(factKeys, conversationKeys);
 
       // For now, test that the data is properly separated
-      expect(factKeys).toEqual(expect.arrayContaining(['name_fact', 'address_fact']));
-      expect(conversationKeys).toEqual(expect.arrayContaining(['mood_memory', 'conversation_memory']));
+      expect(factKeys).toEqual(expect.arrayContaining(['namefact', 'addressfact'])); // Keys are normalized
+      expect(conversationKeys).toEqual(expect.arrayContaining(['moodmemory', 'conversationmemory']));
       expect(factKeys.length).toBe(2);
       expect(conversationKeys.length).toBe(2);
     });
@@ -81,7 +82,7 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       
       expect(systemPrompt).toBeDefined();
       expect(systemPrompt).not.toContain('Available Stored Memories');
-      expect(systemPrompt).toContain('Current date and time:');
+      expect(systemPrompt).toContain('Current date and time in La Palma');
     });
 
     test('should handle null/undefined memory keys', async () => {
@@ -95,42 +96,20 @@ describe('TemplateService - Facts vs Memories Separation', () => {
     });
   });
 
-  describe('Enhanced System Prompt with Fact Distinction (Future)', () => {
-    test('should provide different guidance for facts vs memories', async () => {
-      // This test documents expected future behavior
+  describe('Basic System Prompt with Memory Keys', () => {
+    test('should include both facts and memories in prompt', async () => {
+      // Test current behavior: all keys included together
       await memoryService.saveMemory('verified_fact', 'Born March 15, 1940', 'family', true);
       await memoryService.saveMemory('recent_memory', 'Mentioned feeling tired', 'health', false);
 
-      const memoryKeys = await memoryService.getMemoryKeys();
-      
-      // Future enhancement: Different instructions for facts vs memories
-      const systemPrompt = templateService.getSystemPrompt(
-        [...memoryKeys.facts, ...memoryKeys.memories]
-      );
+      const memoryKeys = await memoryService.getAllMemoryKeys();
+      const flatKeys = memoryKeys.facts.concat(memoryKeys.memories);
+      const systemPrompt = templateService.getSystemPrompt(flatKeys);
 
       // Current behavior includes all keys together
-      expect(systemPrompt).toContain('verified_fact');
-      expect(systemPrompt).toContain('recent_memory');
-
-      // Future enhancement could include:
-      // - Different recall strategies for facts vs memories
-      // - Fact stability guidance (don't update facts casually)
-      // - Memory volatility guidance (memories can be updated/forgotten)
-    });
-
-    test('should provide fact protection guidance in system prompt', async () => {
-      await memoryService.saveMemory('permanent_fact', 'Has son named Ryan Brodkin', 'family', true);
-      
-      const memoryKeys = await memoryService.getMemoryKeys();
-      const systemPrompt = templateService.getSystemPrompt(memoryKeys.facts);
-
-      // Current system prompt doesn't distinguish facts
-      expect(systemPrompt).toContain('permanent_fact');
-
-      // Future enhancement could include instructions like:
-      // - "Facts are verified information - do not use forgetMemory on fact keys"
-      // - "Use updateMemory carefully with facts - prefer creating new memories"
-      // - "Facts represent stable, verified information about Francine"
+      expect(systemPrompt).toContain('verifiedfact'); // Normalized key
+      expect(systemPrompt).toContain('recentmemory');
+      expect(systemPrompt).toContain('Available Stored Memories');
     });
   });
 
@@ -141,7 +120,7 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       await memoryService.saveMemory('fact2', 'Fact content 2', 'health', true);
       await memoryService.saveMemory('memory1', 'Memory content 1', 'general', false);
 
-      const memoryKeys = await memoryService.getMemoryKeys();
+      const memoryKeys = await memoryService.getAllMemoryKeys();
       
       // Future enhancement: Template could include fact/memory statistics
       const templateData = {
@@ -167,7 +146,7 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       }
       await memoryService.saveMemory('single_memory', 'One memory', 'general', false);
 
-      const memoryKeys = await memoryService.getMemoryKeys();
+      const memoryKeys = await memoryService.getAllMemoryKeys();
       const isFactHeavy = memoryKeys.facts.length > memoryKeys.memories.length * 2;
       
       expect(isFactHeavy).toBe(true);
@@ -191,19 +170,19 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       await memoryService.saveMemory('family_memory_1', 'Misses family', 'family', false);
       await memoryService.saveMemory('general_memory_1', 'Likes tea', 'general', false);
 
-      const memoryKeys = await memoryService.getMemoryKeys();
+      const memoryKeys = await memoryService.getAllMemoryKeys();
       
       // Future enhancement: Organize keys by category and type
       const organized = {
         facts: {
-          family: memoryKeys.facts.filter(k => k.startsWith('family_')),
-          health: memoryKeys.facts.filter(k => k.startsWith('health_')),
-          general: memoryKeys.facts.filter(k => k.startsWith('general_'))
+          family: memoryKeys.facts.filter(k => k.startsWith('family')),
+          health: memoryKeys.facts.filter(k => k.startsWith('health')),
+          general: memoryKeys.facts.filter(k => k.startsWith('general'))
         },
         memories: {
-          family: memoryKeys.memories.filter(k => k.startsWith('family_')),
-          health: memoryKeys.memories.filter(k => k.startsWith('health_')),
-          general: memoryKeys.memories.filter(k => k.startsWith('general_'))
+          family: memoryKeys.memories.filter(k => k.startsWith('family')),
+          health: memoryKeys.memories.filter(k => k.startsWith('health')),
+          general: memoryKeys.memories.filter(k => k.startsWith('general'))
         }
       };
 
@@ -224,14 +203,15 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       const allKeys = await memoryService.getAllMemoryKeys();
       
       // Keys should be consistently formatted (normalized)
-      expect(allKeys).toContain('test_key_fact');
-      expect(allKeys).toContain('test key memory');
+      expect(allKeys.facts).toContain('testkeyfact'); // 'test_key_fact' -> 'testkeyfact' 
+      expect(allKeys.memories).toContain('test-key-memory'); // 'test key memory' -> 'test-key-memory'
       
-      const systemPrompt = templateService.getSystemPrompt(allKeys);
+      const flatKeys = allKeys.facts.concat(allKeys.memories);
+      const systemPrompt = templateService.getSystemPrompt(flatKeys);
       
       // System prompt should handle keys with different formats
-      expect(systemPrompt).toContain('test_key_fact');
-      expect(systemPrompt).toContain('test key memory');
+      expect(systemPrompt).toContain('testkeyfact');
+      expect(systemPrompt).toContain('test-key-memory');
     });
   });
 
@@ -240,40 +220,40 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       await memoryService.saveMemory('frequent_topic', 'Often talks about weather', 'preferences', false);
       
       const memoryKeys = await memoryService.getAllMemoryKeys();
+      const flatKeys = memoryKeys.facts.concat(memoryKeys.memories);
       const callStats = {
         callsToday: 3,
         lastCallTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
         timeSinceLastCall: '2 hours ago'
       };
 
-      const systemPrompt = templateService.getSystemPrompt(memoryKeys, callStats);
+      const systemPrompt = templateService.getSystemPrompt(flatKeys, callStats);
       
-      expect(systemPrompt).toContain('frequent_topic');
+      expect(systemPrompt).toContain('frequenttopic'); // Normalized key
       expect(systemPrompt).toContain('3'); // callsToday
-      expect(systemPrompt).toContain('2 hours ago');
-      
-      // Should indicate multiple calls today
-      expect(systemPrompt).toMatch(/multiple|several|frequent/i);
+      // With 3+ calls (frequent calls), timeSinceLastCall is not displayed in template
+      expect(systemPrompt).toContain('Francine has called 3 times today');
     });
 
     test('should adjust memory guidance based on call frequency', async () => {
       await memoryService.saveMemory('repetitive_concern', 'Worries about medication', 'health', false);
       
       const memoryKeys = await memoryService.getAllMemoryKeys();
+      const flatKeys = memoryKeys.facts.concat(memoryKeys.memories);
       
-      // High frequency calls might need different memory strategies
+      // Test different call frequencies  
       const highFreqStats = { callsToday: 5, timeSinceLastCall: '10 minutes ago' };
       const lowFreqStats = { callsToday: 1, timeSinceLastCall: null };
       
-      const highFreqPrompt = templateService.getSystemPrompt(memoryKeys, highFreqStats);
-      const lowFreqPrompt = templateService.getSystemPrompt(memoryKeys, lowFreqStats);
+      const highFreqPrompt = templateService.getSystemPrompt(flatKeys, highFreqStats);
+      const lowFreqPrompt = templateService.getSystemPrompt(flatKeys, lowFreqStats);
       
-      expect(highFreqPrompt).toContain('repetitive_concern');
-      expect(lowFreqPrompt).toContain('repetitive_concern');
+      expect(highFreqPrompt).toContain('repetitiveconcern'); // Normalized key
+      expect(lowFreqPrompt).toContain('repetitiveconcern');
       
-      // Future enhancement: Different instructions for high/low frequency
-      // High frequency: "Be aware of repetitive concerns mentioned earlier today"
-      // Low frequency: "Use stored memories to provide continuity"
+      // Both should include call frequency information
+      expect(highFreqPrompt).toContain('5');
+      expect(lowFreqPrompt).toContain('1');
     });
   });
 
@@ -314,14 +294,16 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       await Promise.all(promises);
 
       const allKeys = await memoryService.getAllMemoryKeys();
-      expect(allKeys.length).toBe(200);
+      const flatKeys = allKeys.facts.concat(allKeys.memories);
+      const totalCount = flatKeys.length;
+      expect(totalCount).toBe(200);
 
       const start = Date.now();
-      const systemPrompt = templateService.getSystemPrompt(allKeys);
+      const systemPrompt = templateService.getSystemPrompt(flatKeys);
       const end = Date.now();
 
       expect(systemPrompt).toBeDefined();
-      expect(systemPrompt).toContain('200 stored memories');
+      expect(systemPrompt).toContain('200 total'); // Should show "200 total" in memory section
       
       // Should handle large numbers efficiently
       const executionTime = end - start;
@@ -337,7 +319,7 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       
       // Should not crash and should produce valid output
       expect(systemPrompt).toBeDefined();
-      expect(systemPrompt).toContain('Current date and time:');
+      expect(systemPrompt).toContain('Current date and time in La Palma');
       
       // Should filter out malformed keys
       expect(systemPrompt).not.toContain('null');
@@ -372,12 +354,12 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       
       await memoryService.saveMemory('high_confidence_fact', 'Son is Ryan Brodkin', 'family', true);
       
-      const memoryKeys = await memoryService.getMemoryKeys();
+      const memoryKeys = await memoryService.getAllMemoryKeys();
       
       // Future data structure could include:
       // { key: 'high_confidence_fact', confidence: 'high', is_fact: true }
       
-      expect(memoryKeys.facts).toContain('high_confidence_fact');
+      expect(memoryKeys.facts).toContain('highconfidencefact'); // Normalized key
       
       // Future template could include confidence-based instructions
     });
@@ -391,12 +373,12 @@ describe('TemplateService - Facts vs Memories Separation', () => {
       
       await memoryService.saveMemory('caller_reported', 'Feeling better today', 'health', false);
       
-      const memoryKeys = await memoryService.getMemoryKeys();
+      const memoryKeys = await memoryService.getAllMemoryKeys();
       
       // Future data could include source metadata
       // { key: 'caller_reported', source: 'conversation', reliability: 'medium' }
       
-      expect(memoryKeys.memories).toContain('caller_reported');
+      expect(memoryKeys.memories).toContain('callerreported'); // Normalized key
     });
   });
 });

@@ -88,15 +88,19 @@ class TemplateService {
 
     // Then append memory section if memories are available
     if (memoryKeys && memoryKeys.length > 0) {
-      // Group keys by category for better LLM parsing
-      const familyKeys = memoryKeys.filter(key => key.includes('daughter') || key.includes('son') || key.includes('family') || key.includes('mary'));
-      const healthKeys = memoryKeys.filter(key => key.includes('patient') || key.includes('health') || key.includes('allergy') || key.includes('medication'));
-      const preferenceKeys = memoryKeys.filter(key => key.includes('francine') || key.includes('preferences') || key.includes('hobby'));
-      const otherKeys = memoryKeys.filter(key => !familyKeys.includes(key) && !healthKeys.includes(key) && !preferenceKeys.includes(key));
+      // Filter out malformed keys (ensure they are strings)
+      const validKeys = memoryKeys.filter(key => typeof key === 'string' && key.trim().length > 0);
+      
+      if (validKeys.length > 0) {
+        // Group keys by category for better LLM parsing
+        const familyKeys = validKeys.filter(key => key.includes('daughter') || key.includes('son') || key.includes('family') || key.includes('mary'));
+        const healthKeys = validKeys.filter(key => key.includes('patient') || key.includes('health') || key.includes('allergy') || key.includes('medication'));
+        const preferenceKeys = validKeys.filter(key => key.includes('francine') || key.includes('preferences') || key.includes('hobby'));
+        const otherKeys = validKeys.filter(key => !familyKeys.includes(key) && !healthKeys.includes(key) && !preferenceKeys.includes(key));
 
-      const memorySection = `
+        const memorySection = `
 
-## Available Stored Memories (${memoryKeys.length} total)
+## Available Stored Memories (${validKeys.length} total)
 **Use recallMemory with these specific keys when topics arise:**
 
 **Family:** ${familyKeys.join(', ')}
@@ -108,8 +112,9 @@ class TemplateService {
 - Use recallMemory("key-name") when conversation topics match the key descriptions
 - Store new information with rememberInformation when they share important details
 - Use listAvailableMemories only as backup if you need to rediscover available memories`;
-      
-      systemPrompt += memorySection;
+        
+        systemPrompt += memorySection;
+      }
     }
 
     return systemPrompt;

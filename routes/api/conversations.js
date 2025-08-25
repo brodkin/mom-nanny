@@ -206,7 +206,6 @@ router.get('/', async (req, res) => {
     
     // Transform and enrich conversation data
     const enrichedConversations = conversations.map(conv => {
-      let summary = null;
       let emotionalState = 'unknown';
       let anxietyLevel = null;  // Keep as null for unknown states
       let confusionLevel = null;
@@ -232,25 +231,6 @@ router.get('/', async (req, res) => {
           emotionalState = 'moderate_anxiety';
         } else if (anxietyLevel >= 8 && anxietyLevel <= 10) {
           emotionalState = 'high_anxiety';
-        }
-      }
-      // Fallback to summary data if no emotional_metrics available
-      else if (conv.summary_text) {
-        try {
-          summary = JSON.parse(conv.summary_text);
-          if (summary.mentalStateIndicators) {
-            emotionalState = summary.mentalStateIndicators.overallMoodTrend || 'unknown';
-            anxietyLevel = summary.mentalStateIndicators.anxietyLevel || null;
-          }
-          if (summary.careIndicators) {
-            careIndicators = {
-              medicationConcerns: summary.careIndicators.medicationConcerns || [],
-              painLevel: summary.careIndicators.painLevel || 0,
-              staffComplaints: summary.careIndicators.staffComplaints || []
-            };
-          }
-        } catch (error) {
-          console.error('Error parsing summary JSON:', error);
         }
       }
       
@@ -326,7 +306,7 @@ router.get('/analytics', async (req, res) => {
     
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     
-    // Get emotional trends data from emotional_metrics table (0-10 scale)
+    // Try emotional_metrics table first (GPT-based, 0-10 scale)
     const emotionalTrendsSql = `
       SELECT 
         AVG(em.anxiety_level) as avg_anxiety,
@@ -347,12 +327,12 @@ router.get('/analytics', async (req, res) => {
     
     const emotionalData = await dbManager.all(emotionalTrendsSql, params);
     
-    // Calculate averages (data is already in 0-10 scale from emotional_metrics)
+    // Calculate averages
     let totalAnxiety = 0, totalConfusion = 0, totalAgitation = 0, totalComfort = 0, count = 0;
     const trendOverTime = [];
     
     emotionalData.forEach(row => {
-      if (row.avg_anxiety !== null) {
+      if (row.avg_anxiety !== null && row.avg_anxiety !== undefined) {
         // Add to trend over time (using already averaged values per day)
         trendOverTime.push({
           date: row.call_date,
@@ -377,8 +357,8 @@ router.get('/analytics', async (req, res) => {
       averageConfusion: count > 0 ? totalConfusion / count : 0,
       averageAgitation: count > 0 ? totalAgitation / count : 0,
       averageComfort: count > 0 ? totalComfort / count : 0,
-      trendOverTime: trendOverTime.sort((a, b) => a.date.localeCompare(b.date)),
-      dataSource: 'emotional_metrics' // Indicate we're using the new GPT-based metrics
+      averagePositiveEngagement: count > 0 ? totalComfort / count : 0, // Alias for backward compatibility
+      trendOverTime: trendOverTime.sort((a, b) => a.date.localeCompare(b.date))
     };
     
     // Get pattern analysis

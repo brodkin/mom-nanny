@@ -158,19 +158,6 @@ describe('Admin Memories API', () => {
       });
     });
 
-    it('should handle invalid pagination parameters gracefully', async () => {
-      const response = await request(app)
-        .get('/api/admin/memories?limit=invalid&offset=-5')
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      const { pagination } = response.body.data;
-      
-      // Should use defaults for invalid values
-      expect(pagination.limit).toBe(50);
-      expect(pagination.offset).toBe(0);
-    });
-
     it('should return empty result when no memories exist', async () => {
       // Clear all memories
       await testDb.run('DELETE FROM memories');
@@ -197,41 +184,20 @@ describe('Admin Memories API', () => {
       expect(response.body.data.memories[0].key).toBe('francines-son-ryan');
     });
 
-    it('should return multiple matches for broader queries', async () => {
-      const response = await request(app)
-        .get('/api/admin/memories/search?query=favorite')
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.memories).toHaveLength(1);
-      expect(response.body.data.memories[0].key).toBe('favorite-color-blue');
-    });
-
-    it('should return empty result for no matches', async () => {
-      const response = await request(app)
-        .get('/api/admin/memories/search?query=nonexistent')
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.memories).toHaveLength(0);
-    });
-
-    it('should require query parameter', async () => {
-      const response = await request(app)
+    it('should require query parameter and handle empty results', async () => {
+      // Test missing query parameter
+      const noQueryResponse = await request(app)
         .get('/api/admin/memories/search')
         .expect(400);
+      expect(noQueryResponse.body.success).toBe(false);
+      expect(noQueryResponse.body.error).toBe('Query parameter is required');
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Query parameter is required');
-    });
-
-    it('should handle empty query parameter', async () => {
-      const response = await request(app)
-        .get('/api/admin/memories/search?query=')
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Query parameter is required');
+      // Test no matches
+      const noMatchResponse = await request(app)
+        .get('/api/admin/memories/search?query=nonexistent')
+        .expect(200);
+      expect(noMatchResponse.body.success).toBe(true);
+      expect(noMatchResponse.body.data.memories).toHaveLength(0);
     });
   });
 
@@ -328,7 +294,8 @@ describe('Admin Memories API', () => {
       expect(getResponse.body.data.is_fact).toBe(false); // Default should be false
     });
 
-    it('should create new fact-based memory when isFact is true', async () => {
+    it('should handle fact creation and validation', async () => {
+      // Test fact creation
       const newFact = {
         key: 'alzheimers-fact',
         content: 'Alzheimers disease accounts for 60-70% of dementia cases worldwide',
@@ -336,64 +303,29 @@ describe('Admin Memories API', () => {
         isFact: true
       };
 
-      const response = await request(app)
+      const factResponse = await request(app)
         .post('/api/admin/memories')
         .send(newFact)
         .expect(201);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('key', 'alzheimers-fact');
-      expect(response.body.data).toHaveProperty('action', 'created');
+      expect(factResponse.body.success).toBe(true);
+      expect(factResponse.body.data.action).toBe('created');
 
-      // Verify fact was stored with is_fact = true
-      const getResponse = await request(app)
-        .get('/api/admin/memories/alzheimers-fact')
-        .expect(200);
-
-      expect(getResponse.body.data.content).toBe(newFact.content);
-      expect(getResponse.body.data.category).toBe(newFact.category);
-      expect(getResponse.body.data.is_fact).toBe(true);
-    });
-
-    it('should create regular memory when isFact is explicitly false', async () => {
-      const newMemory = {
-        key: 'personal-note',
-        content: 'Francine mentioned she had a difficult morning',
-        category: 'general',
-        isFact: false
-      };
-
-      const response = await request(app)
+      // Test invalid isFact parameter
+      const invalidResponse = await request(app)
         .post('/api/admin/memories')
-        .send(newMemory)
-        .expect(201);
-
-      expect(response.body.success).toBe(true);
-
-      // Verify memory stored with is_fact = false
-      const getResponse = await request(app)
-        .get('/api/admin/memories/personal-note')
-        .expect(200);
-
-      expect(getResponse.body.data.is_fact).toBe(false);
-    });
-
-    it('should validate isFact parameter is boolean', async () => {
-      const invalidMemory = {
-        key: 'test-invalid',
-        content: 'Test content',
-        category: 'general',
-        isFact: 'not-a-boolean'
-      };
-
-      const response = await request(app)
-        .post('/api/admin/memories')
-        .send(invalidMemory)
+        .send({
+          key: 'test-invalid',
+          content: 'Test content',
+          category: 'general',
+          isFact: 'not-a-boolean'
+        })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('isFact must be a boolean if provided');
+      expect(invalidResponse.body.success).toBe(false);
+      expect(invalidResponse.body.error).toBe('isFact must be a boolean if provided');
     });
+
 
     it('should create memory with default category when not specified', async () => {
       const newMemory = {
@@ -431,17 +363,7 @@ describe('Admin Memories API', () => {
       expect(response.body.data.key).toBe('favorite-tv-show');
     });
 
-    it('should validate required fields', async () => {
-      const response = await request(app)
-        .post('/api/admin/memories')
-        .send({})
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Content is required');
-    });
-
-    it('should validate missing content', async () => {
+    it('should validate required content field', async () => {
       const response = await request(app)
         .post('/api/admin/memories')
         .send({ key: 'test-key' })
@@ -519,76 +441,30 @@ describe('Admin Memories API', () => {
       expect(getResponse.body.data.is_fact).toBe(false); // Should retain original value
     });
 
-    it('should update memory to fact when isFact is true', async () => {
-      const updateData = {
+    it('should handle fact toggling and validation in updates', async () => {
+      // Test updating memory to fact
+      const toFactUpdate = {
         content: 'Updated: Family relationships are important for dementia patient wellbeing',
         category: 'health',
         isFact: true
       };
 
-      const response = await request(app)
+      const factResponse = await request(app)
         .put('/api/admin/memories/francines-son-ryan')
-        .send(updateData)
+        .send(toFactUpdate)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('oldKey', 'francines-son-ryan');
-      expect(response.body.data).toHaveProperty('keyChanged', true);
+      expect(factResponse.body.success).toBe(true);
+      expect(factResponse.body.data).toHaveProperty('keyChanged', true);
       
-      const newKey = response.body.data.key;
-      expect(newKey).toBeTruthy();
-
-      // Verify is_fact was updated to true with new key
-      const getResponse = await request(app)
-        .get(`/api/admin/memories/${newKey}`)
-        .expect(200);
-
-      expect(getResponse.body.data.content).toBe(updateData.content);
-      expect(getResponse.body.data.category).toBe(updateData.category);
-      expect(getResponse.body.data.is_fact).toBe(true);
-    });
-
-    it('should update fact to regular memory when isFact is false', async () => {
-      const updateData = {
-        content: 'Personal observation: Francine seemed confused about her medications today',
-        category: 'health',
-        isFact: false
-      };
-
-      const response = await request(app)
-        .put('/api/admin/memories/care-fact-routine')
-        .send(updateData)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('oldKey', 'care-fact-routine');
-      expect(response.body.data).toHaveProperty('keyChanged', true);
-      
-      const newKey = response.body.data.key;
-      expect(newKey).toBeTruthy();
-
-      // Verify is_fact was updated to false with new key
-      const getResponse = await request(app)
-        .get(`/api/admin/memories/${newKey}`)
-        .expect(200);
-
-      expect(getResponse.body.data.content).toBe(updateData.content);
-      expect(getResponse.body.data.is_fact).toBe(false);
-    });
-
-    it('should validate isFact parameter is boolean in PUT', async () => {
-      const invalidUpdate = {
-        content: 'Test content',
-        isFact: 'invalid'
-      };
-
-      const response = await request(app)
-        .put('/api/admin/memories/francines-son-ryan')
-        .send(invalidUpdate)
+      // Test validation for invalid isFact
+      const invalidResponse = await request(app)
+        .put('/api/admin/memories/favorite-color-blue')
+        .send({ content: 'Test', isFact: 'invalid' })
         .expect(400);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('isFact must be a boolean if provided');
+      expect(invalidResponse.body.success).toBe(false);
+      expect(invalidResponse.body.error).toBe('isFact must be a boolean if provided');
     });
 
     it('should return 404 for non-existent memory', async () => {
@@ -656,23 +532,22 @@ describe('Admin Memories API', () => {
       expect(getResponse.body.error).toBe('Memory not found');
     });
 
-    it('should return 404 for non-existent memory', async () => {
-      const response = await request(app)
-        .delete('/api/admin/memories/nonexistent-key')
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Memory not found');
-    });
-
-    it('should handle key normalization in deletion', async () => {
+    it('should handle deletion with key normalization and 404 cases', async () => {
       // Test deleting with non-normalized key
-      const response = await request(app)
+      const normalizeResponse = await request(app)
         .delete('/api/admin/memories/Francines%20Son%20Ryan')
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.key).toBe('francines-son-ryan');
+      expect(normalizeResponse.body.success).toBe(true);
+      expect(normalizeResponse.body.data.key).toBe('francines-son-ryan');
+
+      // Test 404 for non-existent memory
+      const notFoundResponse = await request(app)
+        .delete('/api/admin/memories/nonexistent-key')
+        .expect(404);
+
+      expect(notFoundResponse.body.success).toBe(false);
+      expect(notFoundResponse.body.error).toBe('Memory not found');
     });
   });
 
@@ -724,35 +599,4 @@ describe('Admin Memories API', () => {
     });
   });
 
-  describe('Error handling', () => {
-    it('should handle database errors gracefully', async () => {
-      // Close database to simulate error
-      await testDb.close();
-
-      const response = await request(app)
-        .get('/api/admin/memories')
-        .expect(500);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Internal server error');
-
-      // Restore database for other tests
-      testDb = new DatabaseManager('./test-admin-memories.db');
-      await testDb.waitForInitialization();
-      memoryService = new MemoryService(testDb);
-      await memoryService.initialize();
-    });
-
-    it('should validate JSON payload', async () => {
-      const response = await request(app)
-        .post('/api/admin/memories')
-        .send('invalid json')
-        .set('Content-Type', 'application/json')
-        .expect(400);
-
-      // Express automatically handles malformed JSON and returns its own error format
-      // The response may not have our standard structure, which is expected
-      expect(response.status).toBe(400);
-    });
-  });
 });

@@ -135,7 +135,7 @@ function buildTimezoneAwareDateFilter(dateFrom, dateTo, timeField = 'start_time'
  * @param {string} options.timeField - Database field to filter on ('start_time' or 'created_at')
  * @returns {Promise<Object>} Object with today, thisWeek, thisMonth, and total counts
  */
-async function getCallStatistics(dbManager, { days = 7, timeField = 'start_time' } = {}) {
+async function getCallStatistics(dbManager, { days: _days = 7, timeField = 'start_time' } = {}) {
   await dbManager.waitForInitialization();
   
   try {
@@ -144,7 +144,7 @@ async function getCallStatistics(dbManager, { days = 7, timeField = 'start_time'
     const weekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     const monthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     
-    const [todayCount, weekCount, monthCount, totalCount] = await Promise.all([
+    const [todayCount, weekCount, monthCount, _totalCount] = await Promise.all([
       getTodayCallCount(dbManager),
       getCallsByDateRange(dbManager, { startDate: today, timeField }),
       getCallsByDateRange(dbManager, { startDate: weekAgo, timeField }),

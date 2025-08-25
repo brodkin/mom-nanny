@@ -21,7 +21,7 @@ class MockDatabaseManager {
     return Promise.resolve();
   }
 
-  async get(query, params = []) {
+  async get(query, _params = []) {
     if (query.includes('COUNT(*)') && query.includes('DATE(start_time, \'localtime\')') && query.includes('callsToday')) {
       // Mock today's call count query
       return { callsToday: this.testData.todayCallCount };
@@ -160,10 +160,10 @@ describe('CallStatsUtils', () => {
       );
       
       expect(filter.conditions).toHaveLength(2);
-      expect(filter.conditions[0]).toBe("DATE(start_time, 'localtime') >= ?");
-      expect(filter.conditions[1]).toBe("DATE(start_time, 'localtime') <= ?");
+      expect(filter.conditions[0]).toBe('DATE(start_time, \'localtime\') >= ?');
+      expect(filter.conditions[1]).toBe('DATE(start_time, \'localtime\') <= ?');
       expect(filter.params).toEqual(['2024-01-01', '2024-01-31']);
-      expect(filter.whereClause).toBe("WHERE DATE(start_time, 'localtime') >= ? AND DATE(start_time, 'localtime') <= ?");
+      expect(filter.whereClause).toBe('WHERE DATE(start_time, \'localtime\') >= ? AND DATE(start_time, \'localtime\') <= ?');
     });
 
     it('should build filter with only start date', () => {
@@ -174,9 +174,9 @@ describe('CallStatsUtils', () => {
       );
       
       expect(filter.conditions).toHaveLength(1);
-      expect(filter.conditions[0]).toBe("DATE(created_at, 'localtime') >= ?");
+      expect(filter.conditions[0]).toBe('DATE(created_at, \'localtime\') >= ?');
       expect(filter.params).toEqual(['2024-01-01']);
-      expect(filter.whereClause).toBe("WHERE DATE(created_at, 'localtime') >= ?");
+      expect(filter.whereClause).toBe('WHERE DATE(created_at, \'localtime\') >= ?');
     });
 
     it('should build filter with only end date', () => {
@@ -187,9 +187,9 @@ describe('CallStatsUtils', () => {
       );
       
       expect(filter.conditions).toHaveLength(1);
-      expect(filter.conditions[0]).toBe("DATE(start_time, 'localtime') <= ?");
+      expect(filter.conditions[0]).toBe('DATE(start_time, \'localtime\') <= ?');
       expect(filter.params).toEqual(['2024-01-31']);
-      expect(filter.whereClause).toBe("WHERE DATE(start_time, 'localtime') <= ?");
+      expect(filter.whereClause).toBe('WHERE DATE(start_time, \'localtime\') <= ?');
     });
 
     it('should return empty filter when no dates provided', () => {
@@ -308,7 +308,7 @@ describe('CallStatsUtils', () => {
       
       // Verify filter generation uses configured timezone context
       const filter = CallStatsUtils.buildTimezoneAwareDateFilter('2024-01-01', null, 'start_time');
-      expect(filter.conditions[0]).toContain("DATE(start_time, 'localtime')");
+      expect(filter.conditions[0]).toContain('DATE(start_time, \'localtime\')');
     });
 
     it('should handle invalid timezone gracefully by falling back to default', () => {
@@ -349,17 +349,17 @@ describe('CallStatsUtils', () => {
   describe('SQL injection prevention', () => {
     it('should use parameterized queries in date filters', () => {
       const filter = CallStatsUtils.buildTimezoneAwareDateFilter(
-        "'; DROP TABLE conversations; --", 
-        "2024-01-31'; DELETE FROM conversations; --"
+        '\'; DROP TABLE conversations; --', 
+        '2024-01-31\'; DELETE FROM conversations; --'
       );
       
       // Conditions should use placeholders, not direct string interpolation
-      expect(filter.conditions[0]).toBe("DATE(start_time, 'localtime') >= ?");
-      expect(filter.conditions[1]).toBe("DATE(start_time, 'localtime') <= ?");
+      expect(filter.conditions[0]).toBe('DATE(start_time, \'localtime\') >= ?');
+      expect(filter.conditions[1]).toBe('DATE(start_time, \'localtime\') <= ?');
       
       // Malicious input should be in params array, not in SQL string
-      expect(filter.params[0]).toBe("'; DROP TABLE conversations; --");
-      expect(filter.params[1]).toBe("2024-01-31'; DELETE FROM conversations; --");
+      expect(filter.params[0]).toBe('\'; DROP TABLE conversations; --');
+      expect(filter.params[1]).toBe('2024-01-31\'; DELETE FROM conversations; --');
     });
   });
 });

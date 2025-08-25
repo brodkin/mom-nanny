@@ -2,13 +2,13 @@ const { MarkCompletionService } = require('../services/mark-completion-service.j
 
 describe('Silence Detection Integration', () => {
   let markCompletionService;
-  let mockStartSilenceDetection;
-  let mockClearSilenceTimer;
+  let _mockStartSilenceDetection;
+  let _mockClearSilenceTimer;
   
   beforeEach(() => {
     markCompletionService = new MarkCompletionService();
-    mockStartSilenceDetection = jest.fn();
-    mockClearSilenceTimer = jest.fn();
+    _mockStartSilenceDetection = jest.fn();
+    _mockClearSilenceTimer = jest.fn();
   });
 
   test('should start silence detection when all marks complete', (done) => {

@@ -213,8 +213,13 @@ class ConversationAnalyzer {
    * @private
    */
   _calculateTextSimilarity(text1, text2) {
-    // Handle undefined or null inputs
-    if (!text1 || !text2) {
+    // Handle both empty strings as identical
+    if ((!text1 || text1.trim() === '') && (!text2 || text2.trim() === '')) {
+      return 1;
+    }
+    
+    // Handle one empty, one not empty
+    if (!text1 || text1.trim() === '' || !text2 || text2.trim() === '') {
       return 0;
     }
     
@@ -223,7 +228,7 @@ class ConversationAnalyzer {
     const words2 = new Set(text2.toLowerCase().split(/\s+/).filter(w => w.length > 2));
     
     if (words1.size === 0 && words2.size === 0) {
-      return 1; // Both empty
+      return 1; // Both empty after filtering
     }
     
     if (words1.size === 0 || words2.size === 0) {

@@ -24,14 +24,23 @@ async function getMemoryService() {
     const dbManager = DatabaseManager.getInstance();
     await dbManager.waitForInitialization();
     
-    // Create GPT service for key generation
-    gptService = new GptService(null, null, null, dbManager);
+    // Create GPT service for key generation only if OPENAI_API_KEY is available
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        gptService = new GptService(null, null, null, dbManager);
+      } catch (error) {
+        console.warn('Failed to create GPT service for admin memories:', error.message);
+        gptService = null;
+      }
+    }
     
-    // Create memory service with GPT service
+    // Create memory service with or without GPT service
     memoryService = new MemoryService(dbManager, gptService);
     
-    // Set memory service reference in GPT service
-    gptService.memoryService = memoryService;
+    // Set memory service reference in GPT service if available
+    if (gptService) {
+      gptService.memoryService = memoryService;
+    }
     
     await memoryService.initialize();
   }
@@ -45,6 +54,14 @@ async function getMemoryService() {
 function normalizeKey(key) {
   if (!key || typeof key !== 'string') return '';
   return key.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+/**
+ * Reset cached services (for testing)
+ */
+function resetServices() {
+  memoryService = null;
+  gptService = null;
 }
 
 /**
@@ -478,4 +495,6 @@ router.delete('/:key', async (req, res) => {
   }
 });
 
+// Export router and test utilities
 module.exports = router;
+module.exports.resetServices = resetServices;

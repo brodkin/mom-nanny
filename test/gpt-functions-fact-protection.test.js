@@ -50,23 +50,22 @@ describe('GPT Functions - Fact Protection', () => {
       expect(result.success).toBe(true);
       
       // Verify memory is deleted
-      const recalled = await memoryService.recallMemory('family_memory');
-      expect(recalled.found).toBe(false);
+      const recalled = await memoryService.getMemory('family_memory');
+      expect(recalled).toBeNull();
     });
 
     test('should protect facts from deletion', async () => {
-      // Note: Current implementation doesn't have fact protection yet
-      // This test documents the expected behavior
+      // Fact protection should prevent deletion
       const result = JSON.parse(await forgetMemory({ memory_key: 'family_fact' }));
       
-      // With fact protection, this should fail or be ignored
-      // For now, documenting current behavior
-      expect(result).toBeDefined();
+      // Expect fact protection to block deletion
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('verified fact');
       
-      // Verify fact still exists (this will need to be implemented)
-      const recalled = await memoryService.recallMemory('family_fact');
-      // TODO: Should be true when fact protection is implemented
-      expect(recalled.found).toBe(true); // Current: false, Expected: true
+      // Verify fact still exists
+      const recalled = await memoryService.getMemory('family_fact');
+      expect(recalled).not.toBeNull();
+      expect(recalled.is_fact).toBe(true);
     });
 
     test('should handle partial matches appropriately with facts', async () => {
@@ -90,55 +89,58 @@ describe('GPT Functions - Fact Protection', () => {
 
     test('should store new conversation memories without affecting facts', async () => {
       const result = JSON.parse(await rememberInformation({ 
-        memory_key: 'son_mood', 
         content: 'Son seemed worried during call',
         category: 'family'
       }));
       
       expect(result.success).toBe(true);
+      expect(result.key).toBeDefined();
       
-      // Verify both exist
-      const fact = await memoryService.recallMemory('son_name');
-      const memory = await memoryService.recallMemory('son_mood');
+      // Verify fact exists and memory was created  
+      const fact = await memoryService.getMemory('son_name');
+      const memory = await memoryService.getMemory(result.key);
       
-      expect(fact.found).toBe(true);
+      expect(fact).not.toBeNull();
       expect(fact.is_fact).toBe(true);
-      expect(memory.found).toBe(true);
+      expect(memory).not.toBeNull();
       expect(memory.is_fact).toBe(false);
     });
 
     test('should store memories with is_fact=false by default', async () => {
-      await rememberInformation({ 
-        memory_key: 'new_observation', 
+      const result = JSON.parse(await rememberInformation({ 
         content: 'Seemed anxious today',
         category: 'general'
-      });
+      }));
       
-      const recalled = await memoryService.recallMemory('new_observation');
-      expect(recalled.found).toBe(true);
+      expect(result.success).toBe(true);
+      expect(result.key).toBeDefined();
+      
+      const recalled = await memoryService.getMemory(result.key);
+      expect(recalled).not.toBeNull();
       expect(recalled.is_fact).toBe(false);
     });
 
     test('should handle memory key conflicts with facts gracefully', async () => {
-      // Try to remember something with same key as existing fact
+      // Auto-generated keys should not conflict with existing facts
       const result = JSON.parse(await rememberInformation({ 
-        memory_key: 'son_name', 
         content: 'Son called today and seemed happy',
         category: 'family'
       }));
       
-      // Should either:
-      // 1. Create a different key to avoid conflict, or
-      // 2. Append to existing information without changing fact status
-      // Current behavior may overwrite - this needs fact protection
       expect(result.success).toBe(true);
+      expect(result.key).toBeDefined();
+      expect(result.key).not.toBe('son_name'); // Should generate different key
       
-      const recalled = await memoryService.recallMemory('son_name');
-      expect(recalled.found).toBe(true);
+      // Original fact should be preserved
+      const fact = await memoryService.getMemory('son_name');
+      expect(fact).not.toBeNull();
+      expect(fact.is_fact).toBe(true);
+      expect(fact.content).toBe('Son is Ryan Brodkin');
       
-      // With fact protection, should still be a fact
-      // TODO: Implement fact protection logic
-      expect(recalled.is_fact).toBe(true); // Current: may be false, Expected: true
+      // New memory should exist separately
+      const memory = await memoryService.getMemory(result.key);
+      expect(memory).not.toBeNull();
+      expect(memory.is_fact).toBe(false);
     });
   });
 
@@ -151,34 +153,30 @@ describe('GPT Functions - Fact Protection', () => {
     test('should update regular memories successfully', async () => {
       const result = JSON.parse(await updateMemory({ 
         memory_key: 'changeable_memory', 
-        new_information: 'Is feeling better today'
+        updated_content: 'Is feeling better today'
       }));
       
       expect(result.success).toBe(true);
       
-      const updated = await memoryService.recallMemory('changeable_memory');
-      expect(updated.found).toBe(true);
+      const updated = await memoryService.getMemory('changeable_memory');
+      expect(updated).not.toBeNull();
       expect(updated.content).toContain('feeling better today');
       expect(updated.is_fact).toBe(false);
     });
 
     test('should protect facts from casual updates', async () => {
-      const _result = JSON.parse(await updateMemory({ 
+      const result = JSON.parse(await updateMemory({ 
         memory_key: 'verified_fact', 
-        new_information: 'Moved to different facility'
+        updated_content: 'Moved to different facility'
       }));
       
-      // With fact protection, this should either:
-      // 1. Fail with appropriate message
-      // 2. Create a separate memory entry
-      // 3. Require special authorization
+      // Should fail to update protected fact
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('verified fact');
       
-      // Current behavior may update - this needs fact protection
-      const recalled = await memoryService.recallMemory('verified_fact');
-      expect(recalled.found).toBe(true);
-      
-      // TODO: Implement fact protection
-      // Should maintain fact status and possibly original content
+      const recalled = await memoryService.getMemory('verified_fact');
+      expect(recalled).not.toBeNull();
+      expect(recalled.content).toBe('Lives at Sunset Manor'); // Original content preserved
       expect(recalled.is_fact).toBe(true);
     });
   });
@@ -189,8 +187,8 @@ describe('GPT Functions - Fact Protection', () => {
       await memoryService.saveMemory('test_memory', 'Test memory content', 'general', false);
       
       // Functions should be aware of fact status for better decision making
-      const fact = await memoryService.recallMemory('test_fact');
-      const memory = await memoryService.recallMemory('test_memory');
+      const fact = await memoryService.getMemory('test_fact');
+      const memory = await memoryService.getMemory('test_memory');
       
       expect(fact.is_fact).toBe(true);
       expect(memory.is_fact).toBe(false);
@@ -216,32 +214,6 @@ describe('GPT Functions - Fact Protection', () => {
     });
   });
 
-  describe('Future Enhancements - Fact Creation Functions', () => {
-    // These tests document expected behavior for future fact creation functions
-    test('should support admin-level fact creation function', async () => {
-      // Future function: createFact or promoteToFact
-      // This would allow creating or promoting memories to facts
-      
-      // For now, facts are created through admin interface or direct service calls
-      await memoryService.saveMemory('admin_fact', 'Created by admin', 'family', true);
-      
-      const fact = await memoryService.recallMemory('admin_fact');
-      expect(fact.found).toBe(true);
-      expect(fact.is_fact).toBe(true);
-    });
-
-    test('should support fact verification workflow', async () => {
-      // Future enhancement: Verify facts with external sources or confirmation
-      await memoryService.saveMemory('unverified_info', 'Needs verification', 'health', false);
-      
-      // Future workflow could promote this to fact after verification
-      const unverified = await memoryService.recallMemory('unverified_info');
-      expect(unverified.is_fact).toBe(false);
-      
-      // After verification (future implementation):
-      // await memoryService.promoteToFact('unverified_info');
-    });
-  });
 
   describe('Error Handling and Edge Cases', () => {
     test('should handle malformed function calls gracefully', async () => {
@@ -254,12 +226,11 @@ describe('GPT Functions - Fact Protection', () => {
     });
 
     test('should handle database errors during fact protection', async () => {
-      // Mock database error
-      const originalRun = dbManager.run;
-      dbManager.run = jest.fn().mockRejectedValue(new Error('Database error'));
+      // Mock database error by making saveMemory throw
+      const originalSaveMemory = memoryService.saveMemory;
+      memoryService.saveMemory = jest.fn().mockRejectedValue(new Error('Database error'));
       
       const result = JSON.parse(await rememberInformation({ 
-        memory_key: 'error_test', 
         content: 'test content'
       }));
       
@@ -267,7 +238,7 @@ describe('GPT Functions - Fact Protection', () => {
       expect(result.success).toBe(true); // Current implementation reports success on error
       
       // Restore original method
-      dbManager.run = originalRun;
+      memoryService.saveMemory = originalSaveMemory;
     });
   });
 

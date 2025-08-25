@@ -342,12 +342,12 @@ class DashboardDataService {
    * Get basic conversation statistics using centralized timezone-aware call stats
    * @private
    */
-  async _getConversationStats(today, weekAgo, monthAgo) {
+  async _getConversationStats(_today, _weekAgo, _monthAgo) {
     // Use centralized call stats utility for consistent timezone handling
     const todayCount = await CallStatsUtils.getTodayCallCount(this.db);
     
     // Calculate date ranges in YYYY-MM-DD format for the utility functions
-    const todayDate = new Date().toISOString().split('T')[0];
+    const _todayDate = new Date().toISOString().split('T')[0];
     const weekAgoDate = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     const monthAgoDate = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     

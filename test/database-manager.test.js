@@ -202,9 +202,9 @@ describe('DatabaseManager', () => {
       // Apply migrations again - should be idempotent
       await dbManager.applyMigrations();
       
-      // Version should still be 5 (with emotional metrics)
+      // Version should still be 6 (latest migration)
       version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(5);
+      expect(version).toBe(6);
 
       // Index count should be unchanged
       const finalIndexes = await dbManager.all(`

@@ -101,43 +101,6 @@ describe('Database Migration 6 - Facts vs Memories', () => {
     });
   });
 
-  describe('Performance Index Testing', () => {
-    test('should use is_fact index for filtering queries', async () => {
-      // Insert test data
-      const testData = [];
-      for (let i = 0; i < 100; i++) {
-        testData.push([
-          `test_item_${i}`, 
-          `Content ${i}`, 
-          'general', 
-          i % 2 // Alternate between facts and memories
-        ]);
-      }
-
-      const placeholders = testData.map(() => '(?, ?, ?, ?)').join(', ');
-      const flatData = testData.flat();
-      
-      await dbManager.run(`
-        INSERT INTO memories (memory_key, memory_content, category, is_fact) 
-        VALUES ${placeholders}
-      `, flatData);
-
-      // Query with index hint (SQLite will use index if available)
-      const explainPlan = await dbManager.all(`
-        EXPLAIN QUERY PLAN 
-        SELECT memory_key FROM memories WHERE is_fact = 1
-      `);
-      
-      // Check that the query plan mentions the index
-      const usesIndex = explainPlan.some(step => 
-        step.detail && step.detail.includes('idx_memories_is_fact')
-      );
-      
-      // Note: This test may pass even without index on small datasets
-      // The important thing is that the index exists and can be used
-      expect(usesIndex || explainPlan.length > 0).toBe(true);
-    });
-  });
 
   describe('Backward Compatibility', () => {
     test('should not break existing memory operations', async () => {

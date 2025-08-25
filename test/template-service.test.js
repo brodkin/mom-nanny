@@ -88,11 +88,11 @@ describe('TemplateService', () => {
       expect(prompt).toContain('Time Awareness');
       expect(prompt).toContain('Limitations and Boundaries');
       expect(prompt).toContain('Handling Common Concerns');
-      expect(prompt).toContain('Medical Concerns');
-      expect(prompt).toContain('Dementia-Related Behaviors');
+      expect(prompt).toContain('Professional Boundaries');
+      expect(prompt).toContain('Memory Management - MANDATORY USAGE');
       expect(prompt).toContain('Safe Topics and Conversation Guidelines');
       expect(prompt).toContain('Handling Difficult Situations');
-      expect(prompt).toContain('Graceful Exit Phrases');
+      expect(prompt).toContain('Storytelling & Engagement');
       expect(prompt).toContain('Ending Calls');
       expect(prompt).toContain('Text-to-Speech Formatting');
     });

@@ -1,7 +1,6 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
-const TimezoneUtils = require('../utils/timezone-utils');
 
 /**
  * DatabaseManager implements a singleton pattern to ensure consistent database access
@@ -902,7 +901,7 @@ class DatabaseManager {
 
     try {
       // Get the configured timezone (defaults to America/Los_Angeles)
-      const timezone = process.env.TIMEZONE || 'America/Los_Angeles';
+      const _timezone = process.env.TIMEZONE || 'America/Los_Angeles';
       
       // For now, use SQLite's localtime function since it matches the system timezone
       // TODO: Implement proper IANA timezone support for non-system timezones
