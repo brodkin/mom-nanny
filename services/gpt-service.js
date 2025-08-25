@@ -585,12 +585,32 @@ Return only the key in lowercase with hyphens, nothing else.`;
         completeResponse += content;
         // We use partialResponse to provide a chunk for TTS
         partialResponse += content;
-        // Emit last partial response and add complete response to userContext
-        if (content.trim().slice(-1) === '•' || finishReason === 'stop') {
+        
+        // Check if content ends with a bullet point (indicating a complete chunk)
+        if (content.trim().endsWith('•')) {
           const gptReply = {
             partialResponseIndex: this.partialResponseIndex,
-            partialResponse,
-            isFinal: finishReason === 'stop'
+            partialResponse: partialResponse.trim(),
+            isFinal: false
+          };
+
+          this.emit('gptreply', gptReply, interactionCount);
+          
+          // Track assistant response in analyzer
+          if (this.conversationAnalyzer) {
+            this.conversationAnalyzer.trackAssistantResponse(gptReply.partialResponse, new Date());
+          }
+          
+          this.partialResponseIndex++;
+          partialResponse = '';
+        }
+        
+        // Emit final response when stream ends
+        if (finishReason === 'stop' && partialResponse.trim()) {
+          const gptReply = {
+            partialResponseIndex: this.partialResponseIndex,
+            partialResponse: partialResponse.trim(),
+            isFinal: true
           };
 
           this.emit('gptreply', gptReply, interactionCount);
