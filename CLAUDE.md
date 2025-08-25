@@ -614,3 +614,5 @@ The indexed `emotional_metrics` table is ready for:
 - **Testing Matters**: Use chat interface extensively
 - **Compassion First**: Technical excellence serves emotional care
 - **Use MCP tools**: They can help with thinking and browser testing. Serena has an index of the entire project for you.
+
+- Always run eslint after completing edits on any javascript file
