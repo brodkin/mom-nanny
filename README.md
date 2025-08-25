@@ -237,6 +237,52 @@ npm run test:dashboard
 ```
 Tests the admin interface APIs and statistics endpoints.
 
+## Data Management Tools
+
+### Call Removal Script
+For administrative purposes, you can safely remove specific calls and their associated data from the system:
+
+```bash
+# Remove call by call_sid (exact or partial match)
+node scripts/remove-call.js CA123456
+
+# Remove call by conversation ID
+node scripts/remove-call.js --id 42
+
+# Preview what would be deleted (dry run)
+node scripts/remove-call.js CA123456 --dry-run
+
+# Force deletion without confirmation prompt
+node scripts/remove-call.js CA123456 --force
+```
+
+**What gets removed:**
+- The conversation record
+- All messages in the conversation
+- All summaries for the conversation
+- All analytics data for the conversation
+- All emotional metrics for the conversation
+
+**What is preserved:**
+- Memories (shared across all calls)
+- Other conversations and their data
+- System settings and configuration
+
+The script includes safety features:
+- Interactive confirmation before deletion
+- Detailed preview of what will be removed
+- Transaction-based deletion for data integrity
+- Comprehensive error handling and logging
+
+### Database Cleanup Scripts
+```bash
+# Remove conversations shorter than 1 second
+node scripts/cleanup-short-conversations.js
+
+# Preview cleanup without making changes
+node scripts/cleanup-short-conversations.js --dry-run
+```
+
 ## Database & Persistence
 
 The system uses SQLite for reliable local storage with automatic schema migrations:

@@ -252,6 +252,59 @@ npm run dev # Nodemon auto-reload
 npm test # Jest tests with in-memory SQLite databases
 ```
 
+## Data Management & Maintenance Tools
+
+### Call Removal Script (remove-call.js)
+**Purpose**: Safely remove specific calls and all associated data from the database while preserving shared data like memories.
+
+**Location**: `scripts/remove-call.js`
+
+**Usage Examples**:
+```bash
+# Remove by call_sid (exact or partial match)
+node scripts/remove-call.js CA123456abcdef
+
+# Remove by conversation ID
+node scripts/remove-call.js --id 42
+
+# Preview deletion without making changes (dry run)
+node scripts/remove-call.js CA123456 --dry-run
+
+# Skip confirmation prompt (use with caution)
+node scripts/remove-call.js CA123456 --force
+```
+
+**Deletion Order** (respects foreign key constraints):
+1. `emotional_metrics` (references conversations)
+2. `analytics` (references conversations)
+3. `messages` (references conversations)
+4. `summaries` (references conversations)
+5. `conversations` (parent record)
+
+**Data Preservation**:
+- ✅ Memories (shared across all calls) - NEVER deleted
+- ✅ Other conversations and their associated data
+- ✅ System settings and configuration
+
+**Safety Features**:
+- Interactive confirmation prompt (unless `--force`)
+- Detailed preview showing exactly what will be deleted
+- Transaction-based deletion for atomicity
+- Comprehensive error handling and rollback on failure
+- Support for both call_sid and conversation ID lookup
+- Multiple call detection with user guidance
+
+**Implementation Pattern**: Follows the same class-based structure as `cleanup-short-conversations.js` with DatabaseManager singleton usage and proper transaction handling.
+
+### Database Cleanup Scripts
+```bash
+# Remove conversations shorter than 1 second
+node scripts/cleanup-short-conversations.js
+
+# Preview cleanup without making changes
+node scripts/cleanup-short-conversations.js --dry-run
+```
+
 **Test Database Strategy**:
 - All tests use SQLite in-memory databases (`:memory:`)
 - No physical database files are created during testing
