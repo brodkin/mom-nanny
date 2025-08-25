@@ -17,16 +17,30 @@ describe('Search Integration - "Sometimes" Issue Resolution', () => {
   let dbManager;
 
   beforeEach(async () => {
-    // Get fresh database instance for each test (after global cleanup)
+    // Reset singleton to get fresh in-memory database for each test
+    DatabaseManager.resetInstance();
+    
+    // Get fresh database instance (will use in-memory database from global setup)
+    // This relies on SQLITE_DB_PATH being set to ':memory:' in jest-global-setup.js
     dbManager = DatabaseManager.getInstance();
     await dbManager.waitForInitialization();
     
     // Create test data for search functionality testing
     await setupTestData();
   });
+  
+  afterEach(() => {
+    // Reset singleton after each test
+    DatabaseManager.resetInstance();
+  });
 
   async function setupTestData() {
-    // Insert test conversations with specific search terms
+    // Clear existing data first to ensure clean state (order matters for foreign keys)
+    await dbManager.run('DELETE FROM messages');
+    await dbManager.run('DELETE FROM conversations');
+    
+    // Insert test conversations and capture their IDs
+    const conversationIds = [];
     const conversations = [
       {
         call_sid: 'test-call-sometimes-1',
@@ -49,30 +63,31 @@ describe('Search Integration - "Sometimes" Issue Resolution', () => {
     ];
 
     for (const conv of conversations) {
-      await dbManager.run(
+      const result = await dbManager.run(
         'INSERT INTO conversations (call_sid, start_time, end_time, duration) VALUES (?, ?, ?, ?)',
         [conv.call_sid, conv.start_time, conv.end_time, conv.duration]
       );
+      conversationIds.push(result.lastID);
     }
 
-    // Insert messages with search terms
+    // Insert messages with search terms using actual conversation IDs
     const messages = [
       // Conversation 1: Contains "Sometimes" in user message
-      { conversation_id: 1, role: 'user', content: 'Sometimes I feel confused about where I am', timestamp: '2024-01-15 10:30:30' },
-      { conversation_id: 1, role: 'assistant', content: 'I understand that can be worrying. You are safe and cared for.', timestamp: '2024-01-15 10:30:45' },
-      { conversation_id: 1, role: 'user', content: 'Sometimes I forget things', timestamp: '2024-01-15 10:31:00' },
+      { conversation_id: conversationIds[0], role: 'user', content: 'Sometimes I feel confused about where I am', timestamp: '2024-01-15 10:30:30' },
+      { conversation_id: conversationIds[0], role: 'assistant', content: 'I understand that can be worrying. You are safe and cared for.', timestamp: '2024-01-15 10:30:45' },
+      { conversation_id: conversationIds[0], role: 'user', content: 'Sometimes I forget things', timestamp: '2024-01-15 10:31:00' },
       
       // Conversation 2: Contains "medication" in multiple messages  
-      { conversation_id: 2, role: 'user', content: 'I need my medication but I cannot find it', timestamp: '2024-01-15 14:20:30' },
-      { conversation_id: 2, role: 'assistant', content: 'Let me help you with that medication concern.', timestamp: '2024-01-15 14:20:45' },
-      { conversation_id: 2, role: 'user', content: 'The nurse said my medication was changed', timestamp: '2024-01-15 14:21:00' },
+      { conversation_id: conversationIds[1], role: 'user', content: 'I need my medication but I cannot find it', timestamp: '2024-01-15 14:20:30' },
+      { conversation_id: conversationIds[1], role: 'assistant', content: 'Let me help you with that medication concern.', timestamp: '2024-01-15 14:20:45' },
+      { conversation_id: conversationIds[1], role: 'user', content: 'The nurse said my medication was changed', timestamp: '2024-01-15 14:21:00' },
       
       // Conversation 3: Contains both terms deeper in conversation
-      { conversation_id: 3, role: 'user', content: 'Hello, how are you today?', timestamp: '2024-01-15 16:10:30' },
-      { conversation_id: 3, role: 'assistant', content: 'Hello! I am doing well, thank you for asking.', timestamp: '2024-01-15 16:10:45' },
-      { conversation_id: 3, role: 'user', content: 'I sometimes worry about my medication schedule', timestamp: '2024-01-15 16:11:00' },
-      { conversation_id: 3, role: 'assistant', content: 'That is a very reasonable concern to have.', timestamp: '2024-01-15 16:11:15' },
-      { conversation_id: 3, role: 'user', content: 'Sometimes the staff forgets to give me my pills', timestamp: '2024-01-15 16:11:30' }
+      { conversation_id: conversationIds[2], role: 'user', content: 'Hello, how are you today?', timestamp: '2024-01-15 16:10:30' },
+      { conversation_id: conversationIds[2], role: 'assistant', content: 'Hello! I am doing well, thank you for asking.', timestamp: '2024-01-15 16:10:45' },
+      { conversation_id: conversationIds[2], role: 'user', content: 'I sometimes worry about my medication schedule', timestamp: '2024-01-15 16:11:00' },
+      { conversation_id: conversationIds[2], role: 'assistant', content: 'That is a very reasonable concern to have.', timestamp: '2024-01-15 16:11:15' },
+      { conversation_id: conversationIds[2], role: 'user', content: 'Sometimes the staff forgets to give me my pills', timestamp: '2024-01-15 16:11:30' }
     ];
 
     for (const msg of messages) {

@@ -10,21 +10,14 @@
 
 const MemoryService = require('../services/memory-service');
 const DatabaseManager = require('../services/database-manager');
-const fs = require('fs');
 
 describe('MemoryService with is_fact functionality', () => {
   let testDb;
   let memoryService;
-  const testDbPath = './test-memory-service.db';
 
   beforeEach(async () => {
-    // Remove test database if it exists
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-    }
-
-    // Create fresh test database
-    testDb = new DatabaseManager(testDbPath);
+    // Create fresh in-memory database for each test
+    testDb = new DatabaseManager(':memory:');
     await testDb.waitForInitialization();
     
     // Create MemoryService instance
@@ -33,10 +26,6 @@ describe('MemoryService with is_fact functionality', () => {
   });
 
   afterEach(async () => {
-    // Clean up test database
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-    }
     DatabaseManager.resetInstance();
   });
 

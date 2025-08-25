@@ -32,13 +32,13 @@ describe('Admin Memories API', () => {
     const _originalGetInstance = DatabaseManager.getInstance;
     DatabaseManager.getInstance = () => {
       if (!testDb) {
-        testDb = new DatabaseManager('./test-admin-memories.db');
+        testDb = new DatabaseManager(':memory:');
       }
       return testDb;
     };
     
-    // Create test database instance
-    testDb = new DatabaseManager('./test-admin-memories.db');
+    // Create test database instance with in-memory database
+    testDb = new DatabaseManager(':memory:');
     await testDb.waitForInitialization();
 
     // Create MemoryService instance

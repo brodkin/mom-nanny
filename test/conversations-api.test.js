@@ -28,13 +28,13 @@ describe('Conversations API', () => {
     const _originalGetInstance = DatabaseManager.getInstance;
     DatabaseManager.getInstance = () => {
       if (!testDb) {
-        testDb = new DatabaseManager('./test-conversations.db');
+        testDb = new DatabaseManager(':memory:');
       }
       return testDb;
     };
     
-    // Create test database instance
-    testDb = new DatabaseManager('./test-conversations.db');
+    // Create test database instance with in-memory database
+    testDb = new DatabaseManager(':memory:');
     await testDb.waitForInitialization();
 
     // Create Express app with conversations router
@@ -65,23 +65,6 @@ describe('Conversations API', () => {
     
     // Reset singleton instance
     DatabaseManager.resetInstance();
-    
-    // Remove test database file
-    const fs = require('fs');
-    try {
-      if (fs.existsSync('./test-conversations.db')) {
-        fs.unlinkSync('./test-conversations.db');
-      }
-      // Also clean up WAL files
-      if (fs.existsSync('./test-conversations.db-wal')) {
-        fs.unlinkSync('./test-conversations.db-wal');
-      }
-      if (fs.existsSync('./test-conversations.db-shm')) {
-        fs.unlinkSync('./test-conversations.db-shm');
-      }
-    } catch (error) {
-      console.error('Error removing test database files:', error);
-    }
   });
 
   async function setupTestData() {

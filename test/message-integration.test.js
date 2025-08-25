@@ -1,29 +1,19 @@
 const SqliteStorageService = require('../services/sqlite-storage-service');
 const DatabaseManager = require('../services/database-manager');
-const fs = require('fs');
 
 describe('Message Integration Tests', () => {
   let storageService;
   let dbManager;
-  const testDbPath = './test-message-integration.db';
 
   beforeEach(() => {
-    // Remove test database if it exists
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-    }
-    
-    dbManager = new DatabaseManager(testDbPath);
+    // Create fresh in-memory database for each test
+    dbManager = new DatabaseManager(':memory:');
     storageService = new SqliteStorageService(dbManager);
   });
 
   afterEach(() => {
     if (dbManager) {
       dbManager.close();
-    }
-    // Clean up test database
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
     }
   });
 

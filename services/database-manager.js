@@ -33,9 +33,15 @@ class DatabaseManager {
     // Use environment variable or provided path, defaulting to './conversation-summaries.db'
     const relativePath = dbPath || process.env.SQLITE_DB_PATH || './conversation-summaries.db';
     
-    // Resolve to absolute path relative to project root (one level up from services/)
-    const projectRoot = path.resolve(__dirname, '..');
-    const targetPath = path.resolve(projectRoot, relativePath);
+    // Special handling for in-memory database
+    let targetPath;
+    if (relativePath === ':memory:') {
+      targetPath = ':memory:';  // Keep as-is for SQLite
+    } else {
+      // Resolve to absolute path relative to project root (one level up from services/)
+      const projectRoot = path.resolve(__dirname, '..');
+      targetPath = path.resolve(projectRoot, relativePath);
+    }
     
     // If no instance exists, create one
     if (!DatabaseManager._instance) {
@@ -106,10 +112,12 @@ class DatabaseManager {
     }
 
     try {
-      // Ensure directory exists
-      const dbDir = path.dirname(this.dbPath);
-      if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
+      // Ensure directory exists (skip for in-memory databases)
+      if (this.dbPath !== ':memory:') {
+        const dbDir = path.dirname(this.dbPath);
+        if (!fs.existsSync(dbDir)) {
+          fs.mkdirSync(dbDir, { recursive: true });
+        }
       }
 
       // Create database connection with better-sqlite3

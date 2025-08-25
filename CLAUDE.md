@@ -249,8 +249,15 @@ npm run dev # Nodemon auto-reload
 
 ### Unit Testing
 ```bash
-npm test # Jest tests for functions
+npm test # Jest tests with in-memory SQLite databases
 ```
+
+**Test Database Strategy**:
+- All tests use SQLite in-memory databases (`:memory:`)
+- No physical database files are created during testing
+- Each test gets a fresh, isolated database instance
+- Tests run faster and don't require file cleanup
+- Jest configuration automatically sets `SQLITE_DB_PATH=:memory:`
 
 ## File Organization & Dependencies
 
@@ -428,8 +435,9 @@ Migration 5: Emotional metrics table for GPT-based analysis
 # Comprehensive migration testing
 node test-database-reset.js
 
-# Manual testing with fresh database
-sqlite3 test.db < database-schema-backup.sql
+# Manual testing with in-memory database
+const testDb = new DatabaseManager(':memory:');
+await testDb.waitForInitialization();
 
 # Verify schema after changes
 const db = DatabaseManager.getInstance();
@@ -446,9 +454,16 @@ console.log(result); // {isValid: true, missingTables: [], missingIndexes: []}
 const dbManager = DatabaseManager.getInstance();
 await dbManager.waitForInitialization();
 
-// TESTING ONLY - Direct instantiation allowed for test isolation
-const testDb = new DatabaseManager('./test.db');
+// TESTING - All tests use in-memory databases for isolation
+const testDb = new DatabaseManager(':memory:');
 ```
+
+**Testing Strategy**:
+- **In-Memory Only**: ALL tests MUST use `:memory:` databases
+- **No Physical Files**: Tests never create database files on disk
+- **True Isolation**: Each test gets a completely fresh database
+- **Performance**: In-memory databases are much faster than file-based
+- **CI/CD Friendly**: No file permissions or cleanup issues
 
 **Singleton Benefits**:
 - **Consistent Path**: SQLITE_DB_PATH environment variable honored globally
@@ -461,9 +476,10 @@ const testDb = new DatabaseManager('./test.db');
 - Path is determined by: `process.env.SQLITE_DB_PATH || './storage/conversation-summaries.db'`
 - Relative paths are resolved to absolute paths from project root
 - All services share the same database connection
-- Test files may use direct instantiation for isolation
+- Test files use `new DatabaseManager(':memory:')` for in-memory databases
 - Use `DatabaseManager.resetInstance()` only in test teardown
 - Minimum conversation duration: 2 seconds (shorter calls are not saved)
+- In-memory databases (`:memory:`) skip directory creation
 
 ## Performance Considerations
 
