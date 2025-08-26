@@ -15,6 +15,7 @@ const SqliteStorageService = require('./services/sqlite-storage-service');
 const DatabaseManager = require('./services/database-manager');
 const SummaryGenerator = require('./services/summary-generator');
 const MemoryService = require('./services/memory-service');
+const CallRoutingService = require('./services/call-routing-service');
 
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
@@ -430,34 +431,41 @@ app.get('/api/admin/heartbeat', async (req, res) => {
 
 app.post('/incoming', async (req, res) => {
   try {
-    // Get call frequency for progressive delay
+    // Initialize routing service and get call statistics
+    const routingService = new CallRoutingService();
     const dbManager = DatabaseManager.getInstance();
     await dbManager.waitForInitialization();
     const callStats = await dbManager.getTodayCallStats();
-    const callsToday = callStats?.callsToday || 1;
     
-    // Progressive delay: 3 seconds per call, minimum 3 seconds
-    const delaySeconds = Math.max(3, callsToday * 3);
+    // Determine routing based on call conditions
+    const routingDecision = routingService.determineRoute(callStats);
+    console.log(`📋 Routing decision: ${routingDecision.type} - ${routingDecision.reason}`.cyan);
     
-    console.log(`⏱️  TwiML progressive delay: ${delaySeconds}s (call #${callsToday} today)`.magenta);
-    
-    const response = new VoiceResponse();
-    response.pause({ length: delaySeconds });
-
-    const connect = response.connect();
-    connect.stream({ url: `wss://${process.env.SERVER}/connection` });
-
+    // Build and send TwiML response
+    const response = routingService.buildTwiMLResponse(routingDecision);
     res.type('text/xml');
     res.end(response.toString());
+    
   } catch (err) {
     console.log('Error in /incoming endpoint:', err);
-    // Fallback to minimum delay on error
-    const response = new VoiceResponse();
-    response.pause({ length: 3 });
-    const connect = response.connect();
-    connect.stream({ url: `wss://${process.env.SERVER}/connection` });
-    res.type('text/xml');
-    res.end(response.toString());
+    
+    // Fallback to routing service's error response
+    try {
+      const routingService = new CallRoutingService();
+      const response = routingService.createFallbackResponse();
+      res.type('text/xml');
+      res.end(response.toString());
+    } catch (fallbackErr) {
+      console.log('Error in fallback response:', fallbackErr);
+      
+      // Ultimate fallback - inline minimal response
+      const response = new VoiceResponse();
+      response.pause({ length: 3 });
+      const connect = response.connect();
+      connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+      res.type('text/xml');
+      res.end(response.toString());
+    }
   }
 });
 
