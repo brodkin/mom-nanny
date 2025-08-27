@@ -47,17 +47,17 @@ class CallRoutingService {
    * @param {Object} routingDecision - Decision from determineRoute()
    * @returns {VoiceResponse} TwiML response object
    */
-  buildTwiMLResponse(routingDecision) {
+  buildTwiMLResponse(routingDecision, persona = 'jessica') {
     switch (routingDecision.type) {
     case 'connect':
-      return this.createConnectResponse(routingDecision.delaySeconds);
+      return this.createConnectResponse(routingDecision.delaySeconds, persona);
       
     case 'ring_forever':
       return this.createRingForeverResponse();
       
     default:
       console.log(`⚠️  Unknown routing type: ${routingDecision.type}, falling back to connect`.yellow);
-      return this.createConnectResponse(3); // Fallback to minimum delay
+      return this.createConnectResponse(3, persona); // Fallback to minimum delay
     }
   }
   
@@ -67,13 +67,16 @@ class CallRoutingService {
    * @param {number} delaySeconds - Seconds to pause before connecting
    * @returns {VoiceResponse} TwiML response for connection
    */
-  createConnectResponse(delaySeconds) {
-    console.log(`🔗 Creating connect response with ${delaySeconds}s delay`.magenta);
+  createConnectResponse(delaySeconds, persona = 'jessica') {
+    console.log(`🔗 Creating connect response with ${delaySeconds}s delay, persona: ${persona}`.magenta);
     
     const response = new VoiceResponse();
     response.pause({ length: delaySeconds });
     const connect = response.connect();
-    connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    const stream = connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    
+    // Pass persona as custom parameter to WebSocket connection
+    stream.parameter({ name: 'persona', value: persona });
     
     return response;
   }
@@ -99,13 +102,16 @@ class CallRoutingService {
    * Always provides minimum viable connection to prevent complete failure
    * @returns {VoiceResponse} Fallback TwiML response
    */
-  createFallbackResponse() {
-    console.log('🆘 Creating fallback response (3s delay + connect)'.yellow);
+  createFallbackResponse(persona = 'jessica') {
+    console.log(`🆘 Creating fallback response (3s delay + connect), persona: ${persona}`.yellow);
     
     const response = new VoiceResponse();
     response.pause({ length: 3 });
     const connect = response.connect();
-    connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    const stream = connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    
+    // Pass persona as custom parameter to WebSocket connection
+    stream.parameter({ name: 'persona', value: persona });
     
     return response;
   }

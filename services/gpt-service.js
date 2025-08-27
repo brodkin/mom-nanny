@@ -13,13 +13,14 @@ tools.forEach((tool) => {
 });
 
 class GptService extends EventEmitter {
-  constructor(markCompletionService, conversationAnalyzer = null, memoryService = null, databaseManager = null) {
+  constructor(markCompletionService, conversationAnalyzer = null, memoryService = null, databaseManager = null, persona = 'jessica') {
     super();
     this.openai = new OpenAI();
     this.markCompletionService = markCompletionService;
     this.conversationAnalyzer = conversationAnalyzer;
     this.memoryService = memoryService;
     this.databaseManager = databaseManager;
+    this.persona = persona; // Store persona for template service
     this.templateService = new TemplateService();
 
     // Store memory service in global context for functions to access
@@ -65,8 +66,8 @@ class GptService extends EventEmitter {
       }
     }
 
-    // Get the system prompt with memory keys and call frequency data
-    this.systemPrompt = this.templateService.getSystemPrompt(memoryKeys, this.callStats);
+    // Get the system prompt with memory keys, call frequency data, and persona
+    this.systemPrompt = this.templateService.getSystemPrompt(memoryKeys, this.callStats, this.persona);
     
     // Update the system context with the full prompt
     this.userContext[0] = { 'role': 'system', 'content': this.systemPrompt };

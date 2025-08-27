@@ -59,12 +59,13 @@ class TemplateService {
   }
 
   /**
-   * Get the system prompt with current date/time, available memories, and call frequency data
+   * Get the system prompt with current date/time, available memories, call frequency data, and persona
    * @param {Array<string>} memoryKeys - Optional array of available memory keys
    * @param {Object} callStats - Optional call frequency statistics {callsToday, lastCallTime, timeSinceLastCall}
+   * @param {string} persona - Persona name (default: 'jessica')
    * @returns {string} Rendered system prompt
    */
-  getSystemPrompt(memoryKeys = [], callStats = null) {
+  getSystemPrompt(memoryKeys = [], callStats = null, persona = 'jessica') {
     const now = new Date();
     const laTime = now.toLocaleString('en-US', {
       timeZone: 'America/Los_Angeles',
@@ -77,9 +78,11 @@ class TemplateService {
       timeZoneName: 'short'
     });
 
-    // First render the base template with call frequency data
+    // First render the base template with call frequency data and persona
     let systemPrompt = this.render('system-prompt', {
       currentDateTime: laTime,
+      persona: persona,  // Pass raw persona value
+      isJessica: persona === 'jessica',  // Helper flag for conditional template
       callsToday: callStats?.callsToday || 0,
       timeSinceLastCall: callStats?.timeSinceLastCall || null,
       hasMultipleCalls: callStats && callStats.callsToday > 1,

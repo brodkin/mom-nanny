@@ -16,6 +16,87 @@ class TextChatCLI {
     this.chatSession = null;
     this.rl = null;
     this.isRunning = false;
+    this.persona = null; // Will be set during initialization
+  }
+
+  /**
+   * Parse command line arguments
+   */
+  parseArguments() {
+    const args = process.argv.slice(2);
+    let persona = null;
+    
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--persona' || args[i] === '-p') {
+        if (i + 1 < args.length) {
+          persona = args[i + 1];
+          i++; // Skip the next argument as it's the persona value
+        } else {
+          console.log(chalk.red('❌ Error: --persona requires a value'));
+          process.exit(1);
+        }
+      }
+    }
+    
+    return { persona };
+  }
+
+  /**
+   * Get available personas
+   */
+  getAvailablePersonas() {
+    return [
+      { name: 'jessica', description: 'Licensed nurse and Ryan\'s friend from Chicago' }
+      // Future personas can be added here
+    ];
+  }
+
+  /**
+   * Prompt user to select a persona interactively
+   */
+  async selectPersonaInteractively() {
+    const personas = this.getAvailablePersonas();
+    
+    console.log(chalk.blue.bold('\n🎭 Persona Selection'));
+    console.log(chalk.gray('Choose which persona the AI should use:'));
+    console.log();
+    
+    personas.forEach((persona, index) => {
+      console.log(chalk.cyan(`  ${index + 1}. ${persona.name} - ${persona.description}`));
+    });
+    
+    console.log();
+    
+    return new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      
+      const askForSelection = () => {
+        rl.question(chalk.yellow('Enter selection (1 or press Enter for default): '), (answer) => {
+          const trimmed = answer.trim();
+          
+          if (trimmed === '') {
+            // Default to first persona
+            rl.close();
+            resolve(personas[0].name);
+            return;
+          }
+          
+          const selection = parseInt(trimmed);
+          if (selection >= 1 && selection <= personas.length) {
+            rl.close();
+            resolve(personas[selection - 1].name);
+          } else {
+            console.log(chalk.red('❌ Invalid selection. Please try again.'));
+            askForSelection();
+          }
+        });
+      };
+      
+      askForSelection();
+    });
   }
 
   /**
@@ -24,6 +105,26 @@ class TextChatCLI {
   async start() {
     console.clear();
     this.showWelcome();
+    
+    // Parse command line arguments
+    const { persona: cmdLinePersona } = this.parseArguments();
+    
+    // Determine persona: command line argument takes precedence
+    if (cmdLinePersona) {
+      const availablePersonas = this.getAvailablePersonas().map(p => p.name);
+      if (availablePersonas.includes(cmdLinePersona)) {
+        this.persona = cmdLinePersona;
+        console.log(chalk.green(`✅ Using persona: ${this.persona} (from command line)`));
+      } else {
+        console.log(chalk.red(`❌ Unknown persona: ${cmdLinePersona}`));
+        console.log(chalk.gray(`Available personas: ${availablePersonas.join(', ')}`));
+        process.exit(1);
+      }
+    } else {
+      // Interactive selection
+      this.persona = await this.selectPersonaInteractively();
+      console.log(chalk.green(`✅ Selected persona: ${this.persona}`));
+    }
     
     // Check environment
     if (!this.checkEnvironment()) {
@@ -37,8 +138,8 @@ class TextChatCLI {
       prompt: chalk.cyan('You: ')
     });
 
-    // Initialize chat session and wait for it to complete
-    this.chatSession = new ChatSession();
+    // Initialize chat session with selected persona and wait for it to complete
+    this.chatSession = new ChatSession(false, this.persona); // debugMode=false, persona=selected
     await this.chatSession.initializeAsync();
     
     this.setupEventHandlers();
@@ -224,6 +325,12 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
   console.log(chalk.white('Usage:'));
   console.log(chalk.gray('  npm run chat'));
   console.log(chalk.gray('  node scripts/text-chat.js'));
+  console.log(chalk.gray('  node scripts/text-chat.js --persona jessica'));
+  console.log(chalk.gray('  node scripts/text-chat.js -p jessica'));
+  console.log();
+  console.log(chalk.white('Options:'));
+  console.log(chalk.gray('  --persona, -p    - Select persona (jessica)'));
+  console.log(chalk.gray('                     If not specified, interactive selection'));
   console.log();
   console.log(chalk.white('Interactive Commands:'));
   console.log(chalk.gray('  /help     - Show help information'));

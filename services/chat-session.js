@@ -16,11 +16,14 @@ const MemoryService = require('./memory-service');
  * Integrates all mock services and tracks conversation state with usage analytics
  */
 class ChatSession extends EventEmitter {
-  constructor(debugMode = false) {
+  constructor(debugMode = false, persona = 'jessica') {
     super();
     
     // Debug mode flag
     this.debugMode = debugMode;
+    
+    // Persona selection
+    this.persona = persona;
     
     // Generate a simulated call SID for the chat session
     this.callSid = `CHAT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -31,8 +34,8 @@ class ChatSession extends EventEmitter {
     this.storageService = new SqliteStorageService(this.databaseManager);
     this.summaryGenerator = new SummaryGenerator();
     
-    // Create GptService first (without memory service)
-    this.gptService = new GptService(null, null, null, this.databaseManager);
+    // Create GptService with persona parameter
+    this.gptService = new GptService(null, null, null, this.databaseManager, this.persona);
     
     // Initialize memory service with GptService for key generation (following app.js pattern)
     this.memoryService = new MemoryService(this.databaseManager, this.gptService);
@@ -69,7 +72,7 @@ class ChatSession extends EventEmitter {
     // Set up event handlers
     this.setupEventHandlers();
     
-    console.log(chalk.cyan('💬 Chat Session initialized'));
+    console.log(chalk.cyan(`🤖 Chat Session initialized (Persona: ${this.persona})`));
     console.log(chalk.gray('Type your messages or use commands: /help, /stats, /context, /debug, /reset, /exit'));
   }
 
@@ -403,7 +406,8 @@ class ChatSession extends EventEmitter {
    * Show help information
    */
   showHelp() {
-    console.log(chalk.blue.bold('\n💡 Available Commands:'));
+    const personaName = this.persona.charAt(0).toUpperCase() + this.persona.slice(1); // Capitalize first letter
+    console.log(chalk.blue.bold(`\n💡 Available Commands (Persona: ${personaName}):`));
     console.log(chalk.blue('   /help     - Show this help message'));
     console.log(chalk.blue('   /stats    - Show session statistics'));
     console.log(chalk.blue('   /context  - Show conversation context'));
@@ -412,7 +416,7 @@ class ChatSession extends EventEmitter {
     console.log(chalk.blue('   /reset    - Reset the conversation'));
     console.log(chalk.blue('   /storage  - Show recent stored conversation summaries'));
     console.log(chalk.blue('   /exit     - End the chat session'));
-    console.log(chalk.gray('\n💬 Just type your message to chat with Jessica!'));
+    console.log(chalk.gray(`\n💬 Just type your message to chat with ${personaName}!`));
   }
 
   /**

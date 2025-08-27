@@ -429,7 +429,11 @@ app.get('/api/admin/heartbeat', async (req, res) => {
   }
 });
 
-app.post('/incoming', async (req, res) => {
+/**
+ * Handle incoming calls with routing logic (voicemail behavior)
+ * Uses CallRoutingService to determine routing based on call frequency
+ */
+async function handleIncomingWithRouting(req, res, endpointName = '/incoming', persona = 'jessica') {
   try {
     // Initialize routing service and get call statistics
     const routingService = new CallRoutingService();
@@ -439,34 +443,84 @@ app.post('/incoming', async (req, res) => {
     
     // Determine routing based on call conditions
     const routingDecision = routingService.determineRoute(callStats);
-    console.log(`📋 Routing decision: ${routingDecision.type} - ${routingDecision.reason}`.cyan);
+    console.log(`📋 Routing decision for ${endpointName}: ${routingDecision.type} - ${routingDecision.reason}`.cyan);
     
-    // Build and send TwiML response
-    const response = routingService.buildTwiMLResponse(routingDecision);
+    // Build and send TwiML response with persona parameter
+    const response = routingService.buildTwiMLResponse(routingDecision, persona);
     res.type('text/xml');
     res.end(response.toString());
     
   } catch (err) {
-    console.log('Error in /incoming endpoint:', err);
+    console.log(`Error in ${endpointName} endpoint:`, err);
     
     // Fallback to routing service's error response
     try {
       const routingService = new CallRoutingService();
-      const response = routingService.createFallbackResponse();
+      const response = routingService.createFallbackResponse(persona);
       res.type('text/xml');
       res.end(response.toString());
     } catch (fallbackErr) {
       console.log('Error in fallback response:', fallbackErr);
       
-      // Ultimate fallback - inline minimal response
+      // Ultimate fallback - inline minimal response with persona
       const response = new VoiceResponse();
       response.pause({ length: 3 });
       const connect = response.connect();
-      connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+      const stream = connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+      stream.parameter({ name: 'persona', value: persona });
       res.type('text/xml');
       res.end(response.toString());
     }
   }
+}
+
+/**
+ * Handle incoming calls with direct connection (persona behavior)
+ * Skips routing logic and connects immediately to GPT
+ */
+async function handleIncomingDirectConnect(req, res, personaName = 'jessica') {
+  try {
+    console.log(`🎭 Direct connect to persona: ${personaName}`.magenta);
+    
+    // Create immediate connection response (no routing delays)
+    const response = new VoiceResponse();
+    const connect = response.connect();
+    const stream = connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    
+    // Pass persona as custom parameter to WebSocket connection
+    stream.parameter({ name: 'persona', value: personaName });
+    
+    res.type('text/xml');
+    res.end(response.toString());
+    
+  } catch (err) {
+    console.log(`Error in /incoming/persona/${personaName} endpoint:`, err);
+    
+    // Fallback - still connect immediately but log the error
+    const response = new VoiceResponse();
+    const connect = response.connect();
+    const stream = connect.stream({ url: `wss://${process.env.SERVER}/connection` });
+    // Include persona parameter in fallback too
+    stream.parameter({ name: 'persona', value: personaName });
+    res.type('text/xml');
+    res.end(response.toString());
+  }
+}
+
+// DEPRECATED: Original /incoming endpoint - will be replaced by /incoming/voicemail
+app.post('/incoming', async (req, res) => {
+  console.log('⚠️  DEPRECATED: /incoming endpoint used. Consider migrating to /incoming/voicemail'.yellow);
+  await handleIncomingWithRouting(req, res, '/incoming');
+});
+
+// NEW: Voicemail behavior (same as original /incoming)
+app.post('/incoming/voicemail', async (req, res) => {
+  await handleIncomingWithRouting(req, res, '/incoming/voicemail');
+});
+
+// NEW: Direct connection to Jessica persona (no routing delays)
+app.post('/incoming/persona/jessica', async (req, res) => {
+  await handleIncomingDirectConnect(req, res, 'jessica');
 });
 
 app.ws('/connection', async (ws) => {
@@ -487,28 +541,14 @@ app.ws('/connection', async (ws) => {
     const storageService = new SqliteStorageService(databaseManager);
     const summaryGenerator = new SummaryGenerator();
     
-    // Create GptService first (without memory service)
-    const gptService = new GptService(markCompletionService, null, null, databaseManager);
+    // Create GptService first (without memory service) - persona will be set after start message
+    let gptService;
     
-    // Create MemoryService with GptService for key generation
-    const memoryService = new MemoryService(databaseManager, gptService);
+    // Create MemoryService (will be linked to GptService after start message)
+    let memoryService;
     let conversationAnalyzer; // Will be initialized after callSid is available
     
-    // Initialize memory service
-    try {
-      await memoryService.initialize();
-      console.log('Memory service initialized successfully'.cyan);
-    } catch (error) {
-      // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
-      console.error('Error initializing memory service:', error.message);
-      // Continue anyway - memory service will be unavailable but the call should still work
-    }
-    
-    // Set memory service reference in GPT service after initialization
-    gptService.memoryService = memoryService;
-    if (memoryService) {
-      global.memoryService = memoryService;
-    }
+    // Services will be initialized after start message with persona information
     const streamService = new StreamService(ws);
     const transcriptionService = new TranscriptionService();
     const ttsService = new TextToSpeechService({});
@@ -618,11 +658,40 @@ app.ws('/connection', async (ws) => {
     };
 
     // Incoming from MediaStream
-    ws.on('message', function message(data) {
+    ws.on('message', async function message(data) {
       const msg = JSON.parse(data);
       if (msg.event === 'start') {
         streamSid = msg.start.streamSid;
         callSid = msg.start.callSid;
+
+        // Extract persona from custom parameters (default to 'jessica')
+        let persona = 'jessica';
+        if (msg.start.customParameters && msg.start.customParameters.persona) {
+          persona = msg.start.customParameters.persona;
+        }
+        console.log(`🎭 Using persona: ${persona}`.magenta);
+
+        // Now create GptService with persona information
+        gptService = new GptService(markCompletionService, null, null, databaseManager, persona);
+        
+        // Create MemoryService with GptService for key generation
+        memoryService = new MemoryService(databaseManager, gptService);
+        
+        // Initialize memory service
+        try {
+          await memoryService.initialize();
+          console.log('Memory service initialized successfully'.cyan);
+        } catch (error) {
+          // HIPAA COMPLIANCE: Never log full error object as it may contain patient memory data (PHI)
+          console.error('Error initializing memory service:', error.message);
+          // Continue anyway - memory service will be unavailable but the call should still work
+        }
+        
+        // Set memory service reference in GPT service after initialization
+        gptService.memoryService = memoryService;
+        if (memoryService) {
+          global.memoryService = memoryService;
+        }
 
         streamService.setStreamSid(streamSid);
         gptService.setCallSid(callSid);
@@ -637,6 +706,38 @@ app.ws('/connection', async (ws) => {
         }).catch(error => {
           // HIPAA COMPLIANCE: Never log full error object as it may contain patient data (PHI)
           console.error('Error initializing GPT service:', error.message);
+        });
+
+        // Set up service event handlers after services are created
+        gptService.on('gptreply', async (gptReply, icount) => {
+          console.log(`Interaction ${icount}: GPT -> TTS: ${gptReply.partialResponse}`.green );
+          
+          // Track assistant response in analyzer
+          if (conversationAnalyzer && gptReply.partialResponse) {
+            conversationAnalyzer.trackAssistantResponse(gptReply.partialResponse, new Date());
+          }
+          
+          ttsService.generate(gptReply, icount);
+        });
+
+        ttsService.on('speech', (responseIndex, audio, label, icount) => {
+          console.log(`Interaction ${icount}: TTS -> TWILIO: ${label}`.blue);
+
+          streamService.buffer(responseIndex, audio);
+        });
+
+        streamService.on('audiosent', (markLabel) => {
+          marks.push(markLabel);
+          markCompletionService.addMark(markLabel);
+        });
+
+        // Listen for when all audio has completed playing
+        markCompletionService.on('all-marks-complete', () => {
+          console.log('All audio completed - starting silence detection'.cyan);
+          // Small delay to ensure marks array is updated
+          setTimeout(() => {
+            startSilenceDetection();
+          }, 100);
         });
 
         // Set RECORDING_ENABLED='true' in .env to record calls
@@ -718,37 +819,6 @@ app.ws('/connection', async (ws) => {
       
       gptService.completion(text, interactionCount);
       interactionCount += 1;
-    });
-
-    gptService.on('gptreply', async (gptReply, icount) => {
-      console.log(`Interaction ${icount}: GPT -> TTS: ${gptReply.partialResponse}`.green );
-      
-      // Track assistant response in analyzer
-      if (conversationAnalyzer && gptReply.partialResponse) {
-        conversationAnalyzer.trackAssistantResponse(gptReply.partialResponse, new Date());
-      }
-      
-      ttsService.generate(gptReply, icount);
-    });
-
-    ttsService.on('speech', (responseIndex, audio, label, icount) => {
-      console.log(`Interaction ${icount}: TTS -> TWILIO: ${label}`.blue);
-
-      streamService.buffer(responseIndex, audio);
-    });
-
-    streamService.on('audiosent', (markLabel) => {
-      marks.push(markLabel);
-      markCompletionService.addMark(markLabel);
-    });
-
-    // Listen for when all audio has completed playing
-    markCompletionService.on('all-marks-complete', () => {
-      console.log('All audio completed - starting silence detection'.cyan);
-      // Small delay to ensure marks array is updated
-      setTimeout(() => {
-        startSilenceDetection();
-      }, 100);
     });
 
     // Clean up when WebSocket closes

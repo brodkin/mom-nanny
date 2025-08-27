@@ -23,11 +23,28 @@ This file provides comprehensive technical guidance for LLMs working on this com
 ## Communication Flows
 
 ### Production Flow (Phone Calls via Twilio)
+
+#### Voicemail Behavior (Recommended)
+```
+Entry Point: POST /incoming/voicemail
+Flow: Twilio → CallRoutingService → WebSocket /connection → Audio Pipeline
+Pipeline: Routing Logic → Progressive Delay → Twilio Media Stream → Deepgram STT → OpenAI GPT → Deepgram TTS → Twilio
+Key Features: Call frequency management, progressive delays, ring-forever protection, real-time streaming
+```
+
+#### Direct Persona Connection  
+```
+Entry Point: POST /incoming/persona/jessica
+Flow: Twilio → Direct Connection → WebSocket /connection → Audio Pipeline  
+Pipeline: Immediate Connect → Twilio Media Stream → Deepgram STT → OpenAI GPT → Deepgram TTS → Twilio
+Key Features: No routing delays, instant connection, optimized for immediate AI interaction
+```
+
+#### Legacy Endpoint (Deprecated)
 ```
 Entry Point: POST /incoming
-Flow: Twilio → WebSocket /connection → Audio Pipeline
-Pipeline: Twilio Media Stream → Deepgram STT → OpenAI GPT → Deepgram TTS → Twilio
-Key Features: Real-time streaming, interruption handling, mark-based audio tracking
+Flow: Same as /incoming/voicemail with deprecation warnings
+Status: Maintained for backward compatibility, shows deprecation warnings in logs
 ```
 
 ### Development Flow (Text Chat)

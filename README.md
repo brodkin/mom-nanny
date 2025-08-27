@@ -84,7 +84,10 @@ npm run dev
 # In another terminal, start ngrok
 ngrok http 3000
 
-# Update your Twilio webhook URL to: https://your-ngrok-url.ngrok.io/incoming
+# Update your Twilio webhook URL to one of:
+# - https://your-ngrok-url.ngrok.io/incoming/voicemail    (recommended - voicemail behavior)
+# - https://your-ngrok-url.ngrok.io/incoming/persona/jessica  (direct connect to Jessica persona)
+# - https://your-ngrok-url.ngrok.io/incoming               (deprecated but functional)
 
 # Test with automated calls
 npm run inbound   # Simulated incoming call
@@ -108,6 +111,32 @@ The system coordinates data flow between multiple services to create seamless, c
 3. GPT processes text → Generates compassionate response with memory context
 4. Response chunks sent to Deepgram → Text-to-speech conversion
 5. Audio streams back to caller → Natural conversation flow
+```
+
+### Entry Points & Call Routing
+
+The system provides multiple webhook endpoints for different call handling behaviors:
+
+#### `/incoming/voicemail` (Recommended)
+- **Behavior**: Smart call routing with frequency-based delays
+- **Use Case**: Standard voicemail replacement with gentle management
+- **Features**: Progressive delays (3s, 6s, 9s...) and call limits (>10 calls/day = ring forever)
+
+#### `/incoming/persona/jessica` 
+- **Behavior**: Immediate connection to Jessica persona
+- **Use Case**: Direct access to AI companion without delays
+- **Features**: Instant connection, no call frequency checks
+
+#### `/incoming` (Deprecated)
+- **Behavior**: Same as `/incoming/voicemail` 
+- **Status**: Maintained for backward compatibility, will show deprecation warnings
+
+**Configuration Example:**
+```bash
+# In your Twilio Console, set webhook URL to:
+https://your-domain.com/incoming/voicemail        # For standard behavior
+# or
+https://your-domain.com/incoming/persona/jessica  # For immediate connection
 ```
 
 ### Key Technical Features
