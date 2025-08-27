@@ -3,6 +3,7 @@ require('colors');
 
 const express = require('express');
 const ExpressWs = require('express-ws');
+const path = require('path');
 
 const { GptService } = require('./services/gpt-service');
 const { StreamService } = require('./services/stream-service');
@@ -16,6 +17,8 @@ const DatabaseManager = require('./services/database-manager');
 const SummaryGenerator = require('./services/summary-generator');
 const MemoryService = require('./services/memory-service');
 const CallRoutingService = require('./services/call-routing-service');
+const VoicemailRecordingService = require('./services/voicemail-recording-service');
+const VoicemailTranscriptionCache = require('./services/voicemail-transcription-cache');
 
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
@@ -33,6 +36,10 @@ const conversationsRouter = require('./routes/api/conversations');
 const searchRouter = require('./routes/api/search');
 
 const PORT = process.env.PORT || 3000;
+
+// Initialize voicemail services
+const voicemailRecordingService = new VoicemailRecordingService();
+const voicemailTranscriptionCache = new VoicemailTranscriptionCache();
 
 // Welcome page route - serves the main landing page
 app.get('/', (req, res) => {
@@ -320,6 +327,9 @@ app.get('/', (req, res) => {
 app.use('/admin', express.json());
 app.use('/api/admin', express.json());
 
+// Serve voicemail audio assets 
+const assetsPath = path.join(__dirname, 'assets');
+app.use('/assets', express.static(assetsPath));
 
 // Mount admin routes
 app.use('/admin', adminRouter);
@@ -507,20 +517,121 @@ async function handleIncomingDirectConnect(req, res, personaName = 'jessica') {
   }
 }
 
+/**
+ * Handle voicemail recording flow with user greeting and "Message sent!" confirmation
+ * Implements the complete voicemail experience:
+ * 1. Ring simulation (30 seconds)
+ * 2. User's greeting + beep
+ * 3. Recording (up to 15 seconds)
+ * 4. "Message sent!" confirmation
+ * 5. Seamless transition to conversation
+ */
+async function handleVoicemailRecording(req, res) {
+  try {
+    console.log('📞 Starting voicemail recording flow'.cyan);
+    
+    // Step 1: Initial ring simulation
+    const ringResponse = voicemailRecordingService.createInitialRingResponse();
+    
+    res.type('text/xml');
+    res.end(ringResponse);
+    
+  } catch (err) {
+    console.log('❌ Error in voicemail recording flow:', err);
+    
+    // Fallback to legacy behavior if voicemail fails
+    console.log('⚠️  Falling back to legacy voicemail flow'.yellow);
+    await handleIncomingWithRouting(req, res, '/incoming/voicemail-legacy');
+  }
+}
+
 // DEPRECATED: Original /incoming endpoint - will be replaced by /incoming/voicemail
 app.post('/incoming', async (req, res) => {
   console.log('⚠️  DEPRECATED: /incoming endpoint used. Consider migrating to /incoming/voicemail'.yellow);
   await handleIncomingWithRouting(req, res, '/incoming');
 });
 
-// NEW: Voicemail behavior (same as original /incoming)
+// PRESERVED: Legacy voicemail behavior (same as original /incoming)
+app.post('/incoming/voicemail-legacy', async (req, res) => {
+  await handleIncomingWithRouting(req, res, '/incoming/voicemail-legacy');
+});
+
+// NEW: Voicemail recording flow with user greeting and "Message sent!" confirmation
 app.post('/incoming/voicemail', async (req, res) => {
-  await handleIncomingWithRouting(req, res, '/incoming/voicemail');
+  await handleVoicemailRecording(req, res);
 });
 
 // NEW: Direct connection to Jessica persona (no routing delays)
 app.post('/incoming/persona/jessica', async (req, res) => {
   await handleIncomingDirectConnect(req, res, 'jessica');
+});
+
+// Voicemail webhook endpoints - add URL-encoded parsing for Twilio webhooks
+app.use('/voicemail/*', express.urlencoded({ extended: false }));
+
+app.post('/voicemail/start-recording', async (req, res) => {
+  try {
+    console.log('🎙️ Starting voicemail recording phase'.cyan);
+    
+    // Create recording response with user's greeting + beep
+    const recordingResponse = voicemailRecordingService.createRecordingResponse();
+    
+    res.type('text/xml');
+    res.end(recordingResponse);
+    
+  } catch (err) {
+    console.log('❌ Error starting voicemail recording:', err);
+    
+    // Fallback to error response
+    const errorResponse = voicemailRecordingService.createErrorFallbackResponse();
+    res.type('text/xml');
+    res.end(errorResponse);
+  }
+});
+
+app.post('/voicemail/recording-complete', async (req, res) => {
+  try {
+    const { CallSid, RecordingUrl, RecordingDuration } = req.body;
+    console.log(`📼 Voicemail recording complete for ${CallSid}`.green);
+    
+    // Store recording metadata
+    voicemailRecordingService.handleRecordingComplete(CallSid, RecordingUrl, RecordingDuration);
+    
+    // Connect to conversation WebSocket
+    const connectionResponse = voicemailRecordingService.createConnectionResponse(CallSid);
+    
+    res.type('text/xml');
+    res.end(connectionResponse);
+    
+  } catch (err) {
+    console.log('❌ Error handling recording completion:', err);
+    
+    // Fallback to error response
+    const errorResponse = voicemailRecordingService.createErrorFallbackResponse();
+    res.type('text/xml');
+    res.end(errorResponse);
+  }
+});
+
+app.post('/voicemail/transcription-webhook', async (req, res) => {
+  try {
+    const { CallSid, TranscriptionText } = req.body;
+    console.log(`📝 Voicemail transcription received for ${CallSid}`.cyan);
+    
+    if (TranscriptionText) {
+      // Store transcription in cache for WebSocket connection
+      voicemailTranscriptionCache.store(CallSid, TranscriptionText);
+    } else {
+      console.log('⚠️ Empty transcription received'.yellow);
+    }
+    
+    // Acknowledge webhook
+    res.status(200).send('OK');
+    
+  } catch (err) {
+    console.log('❌ Error handling voicemail transcription:', err);
+    res.status(500).send('Error');
+  }
 });
 
 app.ws('/connection', async (ws) => {
@@ -559,6 +670,7 @@ app.ws('/connection', async (ws) => {
     // Silence detection variables
     let silenceTimer = null;
     let isWaitingForResponse = false;
+    let isWaitingForVoicemailResponse = false;
     let hasAskedIfPresent = false;
     // CRITICAL FIX: Track when audio was last sent to prevent premature silence detection
     // This ensures we don't start the 5-second timer immediately after audio finishes
@@ -576,8 +688,8 @@ app.ws('/connection', async (ws) => {
 
     const startSilenceDetection = () => {
       // Don't start if we're already waiting or if there are still active marks
-      if (isWaitingForResponse || markCompletionService.getActiveMarkCount() > 0) {
-        console.log(`Skipping silence detection: waiting=${isWaitingForResponse}, activeMarks=${markCompletionService.getActiveMarkCount()}`.gray);
+      if (isWaitingForResponse || markCompletionService.getActiveMarkCount() > 0 || isWaitingForVoicemailResponse) {
+        console.log(`Skipping silence detection: waiting=${isWaitingForResponse}, activeMarks=${markCompletionService.getActiveMarkCount()}, voicemailWaiting=${isWaitingForVoicemailResponse}`.gray);
         return;
       }
       
@@ -709,6 +821,30 @@ app.ws('/connection', async (ws) => {
         }
         console.log(`🎭 Using persona: ${persona}`.magenta);
 
+        // Check for voicemail mode
+        let voicemailMode = false;
+        let voicemailTranscript = null;
+        let playConfirmation = false;
+        let isWaitingForVoicemailResponse = false;
+        
+        if (msg.start.customParameters) {
+          voicemailMode = msg.start.customParameters.voicemail_mode === 'true';
+          playConfirmation = msg.start.customParameters.play_confirmation === 'true';
+          
+          if (voicemailMode) {
+            console.log('📼 Voicemail mode activated - checking for transcript'.cyan);
+            
+            // Try to retrieve the voicemail transcription
+            const transcriptionData = voicemailTranscriptionCache.retrieve(callSid);
+            if (transcriptionData) {
+              voicemailTranscript = transcriptionData.transcription;
+              console.log(`📖 Retrieved voicemail transcript: "${voicemailTranscript.substring(0, 50)}${voicemailTranscript.length > 50 ? '...' : ''}"`.green);
+            } else {
+              console.log('⚠️ No voicemail transcript found - continuing without context'.yellow);
+            }
+          }
+        }
+
         // Now create GptService with persona information
         gptService = new GptService(markCompletionService, null, null, databaseManager, persona);
         
@@ -741,6 +877,12 @@ app.ws('/connection', async (ws) => {
         // Initialize GPT service with memory keys
         gptService.initialize().then(() => {
           // Silent initialization - no console output that might leak to chat
+          
+          // Set voicemail context if in voicemail mode
+          if (voicemailMode && voicemailTranscript) {
+            gptService.setVoicemailContext(voicemailTranscript);
+            console.log('📝 Voicemail context set in GPT service'.green);
+          }
         }).catch(error => {
           // HIPAA COMPLIANCE: Never log full error object as it may contain patient data (PHI)
           console.error('Error initializing GPT service:', error.message);
@@ -749,6 +891,12 @@ app.ws('/connection', async (ws) => {
         // Set up service event handlers after services are created
         gptService.on('gptreply', async (gptReply, icount) => {
           console.log(`Interaction ${icount}: GPT -> TTS: ${gptReply.partialResponse}`.green );
+          
+          // CRITICAL: If this is a real GPT response (not "Message sent!"), clear voicemail waiting flag
+          if (isWaitingForVoicemailResponse && gptReply.partialResponse && !gptReply.partialResponse.startsWith('Message sent!')) {
+            console.log('🎯 Real GPT response received - allowing silence detection to resume'.green);
+            isWaitingForVoicemailResponse = false;
+          }
           
           // Track assistant response in analyzer
           if (conversationAnalyzer && gptReply.partialResponse) {
@@ -785,29 +933,130 @@ app.ws('/connection', async (ws) => {
         recordingService(ttsService, callSid).then(() => {
           console.log(`Twilio -> Starting Media Stream for ${streamSid}`.underline.red);
 
-          // Variety of natural greetings - like a real person answering
-          const greetings = [
-            'Hello?',
-            'Hi Francine!',
-            'Hello Francine!',
-            'Hi there!',
-            'Hello!',
-            'Hi!',
-            'Hey there!',
-            'Hi Francine, how are you?',
-            'Hello Francine, how are you doing?',
-            'Hi, how are you?'
-          ];
+          // Handle voicemail mode vs regular mode
+          if (voicemailMode) {
+            console.log('📼 Voicemail mode - generating confirmation and contextual response'.cyan);
+            
+            if (playConfirmation) {
+              // First play "Message sent!" confirmation
+              ttsService.generate({
+                partialResponseIndex: null,
+                partialResponse: 'Message sent!',
+                isFinal: false  // Not final, more content coming
+              }, 0);
+              
+              // Then generate contextual response based on voicemail transcript
+              if (voicemailTranscript) {
+                // CRITICAL: Prevent silence detection while we generate GPT response
+                isWaitingForVoicemailResponse = true;
+                console.log('🔄 Generating voicemail response - preventing silence detection'.blue);
+                
+                // Let GPT generate a contextual response to the voicemail
+                setTimeout(() => {
+                  gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 1);
+                }, 1500); // Small delay to let "Message sent!" play first
+              } else {
+                // Wait for transcription to arrive (up to 10 seconds)
+                isWaitingForVoicemailResponse = true;
+                console.log('🔄 Waiting for voicemail transcription - preventing silence detection'.blue);
+                
+                let attempts = 0;
+                const waitForTranscription = setInterval(() => {
+                  attempts++;
+                  const transcriptionData = voicemailTranscriptionCache.retrieve(callSid);
+                  
+                  if (transcriptionData && transcriptionData.transcription) {
+                    clearInterval(waitForTranscription);
+                    isWaitingForVoicemailResponse = false;
+                    // CRITICAL: Clear any existing silence timer since we're about to respond
+                    clearSilenceTimer();
+                    console.log('📖 Late transcription retrieved - generating contextual response'.green);
+                    
+                    // Set the voicemail context now that we have the transcript
+                    gptService.setVoicemailContext(transcriptionData.transcription);
+                    
+                    // Generate contextual response
+                    setTimeout(() => {
+                      gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 1);
+                    }, 500);
+                  } else if (attempts >= 20) { // 10 seconds total wait
+                    clearInterval(waitForTranscription);
+                    isWaitingForVoicemailResponse = false;
+                    console.log('⚠️ Transcription timeout - using fallback response'.yellow);
+                    setTimeout(() => {
+                      ttsService.generate({
+                        partialResponseIndex: null,
+                        partialResponse: 'Hi Francine! I heard your message. Let me help you with whatever you need.',
+                        isFinal: true
+                      }, 1);
+                    }, 500);
+                  }
+                }, 500); // Check every 500ms
+              }
+            } else {
+              // Direct contextual response without confirmation
+              if (voicemailTranscript) {
+                gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 0);
+              } else {
+                // Wait for transcription to arrive (up to 10 seconds)
+                isWaitingForVoicemailResponse = true;
+                console.log('🔄 Waiting for voicemail transcription - preventing silence detection'.blue);
+                
+                let attempts = 0;
+                const waitForTranscription = setInterval(() => {
+                  attempts++;
+                  const transcriptionData = voicemailTranscriptionCache.retrieve(callSid);
+                  
+                  if (transcriptionData && transcriptionData.transcription) {
+                    clearInterval(waitForTranscription);
+                    isWaitingForVoicemailResponse = false;
+                    // CRITICAL: Clear any existing silence timer since we're about to respond
+                    clearSilenceTimer();
+                    console.log('📖 Late transcription retrieved - generating direct contextual response'.green);
+                    
+                    // Set the voicemail context now that we have the transcript
+                    gptService.setVoicemailContext(transcriptionData.transcription);
+                    
+                    // Generate contextual response
+                    gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 0);
+                  } else if (attempts >= 20) { // 10 seconds total wait
+                    clearInterval(waitForTranscription);
+                    isWaitingForVoicemailResponse = false;
+                    console.log('⚠️ Transcription timeout - using fallback greeting'.yellow);
+                    ttsService.generate({
+                      partialResponseIndex: null,
+                      partialResponse: 'Hi Francine! Let me help you with whatever you need.',
+                      isFinal: true
+                    }, 0);
+                  }
+                }, 500); // Check every 500ms
+              }
+            }
+          } else {
+            // Regular mode - variety of natural greetings
+            const greetings = [
+              'Hello?',
+              'Hi Francine!',
+              'Hello Francine!',
+              'Hi there!',
+              'Hello!',
+              'Hi!',
+              'Hey there!',
+              'Hi Francine, how are you?',
+              'Hello Francine, how are you doing?',
+              'Hi, how are you?'
+            ];
 
-          // Send greeting immediately - delay is now handled by TwiML at /incoming
-          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-          // CRITICAL FIX: Include isFinal: true to ensure greeting generates proper marks for tracking
-          // This prevents premature silence detection before the greeting finishes playing
-          ttsService.generate({
-            partialResponseIndex: null, 
-            partialResponse: randomGreeting, 
-            isFinal: true  // Ensures this generates marks that get tracked by markCompletionService
-          }, 0);
+            // Send greeting immediately - delay is now handled by TwiML at /incoming
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            // CRITICAL FIX: Include isFinal: true to ensure greeting generates proper marks for tracking
+            // This prevents premature silence detection before the greeting finishes playing
+            ttsService.generate({
+              partialResponseIndex: null, 
+              partialResponse: randomGreeting, 
+              isFinal: true  // Ensures this generates marks that get tracked by markCompletionService
+            }, 0);
+          }
         });
       } else if (msg.event === 'media') {
         transcriptionService.send(msg.media.payload);

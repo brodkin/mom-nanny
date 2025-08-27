@@ -84,6 +84,30 @@ class GptService extends EventEmitter {
     this.conversationAnalyzer = analyzer;
   }
 
+  // Set voicemail context for problem-focused responses
+  setVoicemailContext(transcript) {
+    this.voicemailTranscript = transcript;
+    
+    // Add voicemail context to system messages
+    this.userContext.push({
+      role: 'system',
+      content: `CRITICAL VOICEMAIL MODE: The caller just left this voicemail: "${transcript}"
+    
+MANDATORY INSTRUCTIONS:
+1. Your FIRST response after "Message sent!" must acknowledge their specific message topic
+2. Immediately offer concrete help for their stated problem
+3. Be proactive - suggest solutions without waiting to be asked
+4. Stay focused on their voicemail topic throughout the conversation
+5. Show urgency in addressing their concern
+
+Example opening: "Hi Francine! I heard you're worried about [specific topic from message]. Let's solve that right now. [Specific helpful suggestion]"
+
+DO NOT give generic greetings. ADDRESS THEIR SPECIFIC CONCERN IMMEDIATELY.`
+    });
+    
+    console.log('📝 Voicemail context added to GPT system messages'.green);
+  }
+
   // Get call frequency statistics (for progressive delay calculation)
   getCallStats() {
     return this.callStats;
