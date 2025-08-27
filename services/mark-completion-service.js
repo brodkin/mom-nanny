@@ -5,6 +5,9 @@ class MarkCompletionService extends EventEmitter {
     super();
     this.activeMarks = new Set();
     this.pendingCallbacks = [];
+    // CRITICAL FIX: Add debounce timer to prevent premature 'all-marks-complete' events
+    // This prevents the silence detection from starting between rapid audio chunks
+    this.completeTimer = null;
   }
 
   addMark(markId) {
@@ -14,12 +17,30 @@ class MarkCompletionService extends EventEmitter {
   removeMark(markId) {
     this.activeMarks.delete(markId);
     
-    // Check if all marks are complete
+    // CRITICAL FIX: Clear any existing completion timer to prevent multiple timers
+    if (this.completeTimer) {
+      clearTimeout(this.completeTimer);
+      this.completeTimer = null;
+    }
+    
+    // Check if all marks are complete with debounce to prevent race conditions
     if (this.activeMarks.size === 0) {
-      this.emit('all-marks-complete');
-      // Resolve all pending callbacks
-      this.pendingCallbacks.forEach(callback => callback());
-      this.pendingCallbacks = [];
+      // DEBOUNCE: Wait 250ms to ensure no new marks are added between audio chunks
+      // This prevents premature silence detection when GPT responses have multiple parts
+      this.completeTimer = setTimeout(() => {
+        // Double-check that marks are still empty after the delay
+        // (in case new marks were added while we were waiting)
+        if (this.activeMarks.size === 0) {
+          console.log('Debounced mark completion - all audio truly finished'.cyan);
+          this.emit('all-marks-complete');
+          // Resolve all pending callbacks
+          this.pendingCallbacks.forEach(callback => callback());
+          this.pendingCallbacks = [];
+        } else {
+          console.log('Mark completion cancelled - new marks added during debounce'.gray);
+        }
+        this.completeTimer = null;
+      }, 250); // 250ms debounce - long enough to catch rapid chunks, short enough to feel responsive
     }
   }
 
@@ -40,6 +61,11 @@ class MarkCompletionService extends EventEmitter {
   }
 
   clearAll() {
+    // CRITICAL FIX: Clear the completion timer when clearing all marks
+    if (this.completeTimer) {
+      clearTimeout(this.completeTimer);
+      this.completeTimer = null;
+    }
     this.activeMarks.clear();
     this.pendingCallbacks.forEach(callback => callback());
     this.pendingCallbacks = [];

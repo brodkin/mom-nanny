@@ -11,7 +11,7 @@ describe('Silence Detection Integration', () => {
     _mockClearSilenceTimer = jest.fn();
   });
 
-  test('should start silence detection when all marks complete', (done) => {
+  test('should start silence detection when all marks complete (with debouncing)', (done) => {
     // Listen for the event that triggers silence detection
     markCompletionService.on('all-marks-complete', () => {
       console.log('✅ all-marks-complete event received - would start silence detection');
@@ -25,9 +25,11 @@ describe('Silence Detection Integration', () => {
     // Remove all marks to trigger the event
     markCompletionService.removeMark('audio-chunk-1');
     markCompletionService.removeMark('audio-chunk-2');
-  });
+    
+    // Note: Event will fire after 250ms debounce delay
+  }, 400); // Increase timeout to accommodate debouncing
 
-  test('should handle multiple marks correctly', () => {
+  test('should handle multiple marks correctly (with debouncing)', (done) => {
     let eventCount = 0;
     
     markCompletionService.on('all-marks-complete', () => {
@@ -53,10 +55,11 @@ describe('Silence Detection Integration', () => {
     markCompletionService.removeMark('mark3');
     expect(markCompletionService.getActiveMarkCount()).toBe(0);
     
-    // Allow event to fire
+    // Allow event to fire with debouncing (250ms delay)
     setTimeout(() => {
-      expect(eventCount).toBe(1); // Event should fire once
-    }, 10);
+      expect(eventCount).toBe(1); // Event should fire once after debounce
+      done();
+    }, 300); // Wait longer than the 250ms debounce delay
   });
 
   test('should not start silence detection if marks are still active', () => {
@@ -77,5 +80,38 @@ describe('Silence Detection Integration', () => {
     const shouldStartDetection = !isWaitingForResponse && marks.length === 0;
     
     expect(shouldStartDetection).toBe(true);
+  });
+
+  test('should cancel debounced event when new marks are added', (done) => {
+    let eventCount = 0;
+    
+    markCompletionService.on('all-marks-complete', () => {
+      eventCount++;
+    });
+
+    // Add and remove a mark to start debouncing
+    markCompletionService.addMark('mark1');
+    markCompletionService.removeMark('mark1');
+    expect(markCompletionService.getActiveMarkCount()).toBe(0);
+    
+    // Add another mark during the debounce period
+    setTimeout(() => {
+      markCompletionService.addMark('mark2');
+      expect(markCompletionService.getActiveMarkCount()).toBe(1);
+    }, 100); // Add mark before the 250ms debounce completes
+    
+    // Check that the event was cancelled
+    setTimeout(() => {
+      expect(eventCount).toBe(0); // Event should have been cancelled
+      
+      // Now remove the final mark to trigger the event
+      markCompletionService.removeMark('mark2');
+      
+      // Wait for the new debounce to complete
+      setTimeout(() => {
+        expect(eventCount).toBe(1); // Event should fire now
+        done();
+      }, 300);
+    }, 280); // Wait past the original debounce time but before the new one
   });
 });

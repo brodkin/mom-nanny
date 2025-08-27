@@ -560,6 +560,9 @@ app.ws('/connection', async (ws) => {
     let silenceTimer = null;
     let isWaitingForResponse = false;
     let hasAskedIfPresent = false;
+    // CRITICAL FIX: Track when audio was last sent to prevent premature silence detection
+    // This ensures we don't start the 5-second timer immediately after audio finishes
+    let lastAudioSentTime = Date.now();
 
     // Helper functions for silence detection
     const clearSilenceTimer = () => {
@@ -575,6 +578,22 @@ app.ws('/connection', async (ws) => {
       // Don't start if we're already waiting or if there are still active marks
       if (isWaitingForResponse || markCompletionService.getActiveMarkCount() > 0) {
         console.log(`Skipping silence detection: waiting=${isWaitingForResponse}, activeMarks=${markCompletionService.getActiveMarkCount()}`.gray);
+        return;
+      }
+      
+      // CRITICAL FIX: Don't start silence timer if audio was sent very recently
+      // This prevents the timer from starting immediately after the last audio chunk
+      // before Twilio has had time to play it and the user has had time to hear it
+      const timeSinceLastAudio = Date.now() - lastAudioSentTime;
+      const AUDIO_BUFFER_TIME = 1500; // 1.5 seconds buffer - accounts for network latency and audio playback time
+      
+      if (timeSinceLastAudio < AUDIO_BUFFER_TIME) {
+        console.log(`Skipping silence detection: audio sent only ${timeSinceLastAudio}ms ago (need ${AUDIO_BUFFER_TIME}ms buffer)`.gray);
+        // Schedule a retry after the buffer time has elapsed
+        setTimeout(() => {
+          console.log('Retrying silence detection after audio buffer time elapsed'.cyan);
+          startSilenceDetection();
+        }, AUDIO_BUFFER_TIME - timeSinceLastAudio);
         return;
       }
       
@@ -643,14 +662,33 @@ app.ws('/connection', async (ws) => {
               
               interactionCount += 1;
               
-              // End the call after the goodbye message completes
-              // Wait for the goodbye audio to finish playing, then close the connection
+              // CRITICAL FIX: Wait for goodbye audio to actually complete using marks
+              // Instead of using a fixed timeout, listen for mark completion
+              let goodbyeCompletionHandler;
+              goodbyeCompletionHandler = () => {
+                // Only close if there are no active marks (goodbye audio finished)
+                if (markCompletionService.getActiveMarkCount() === 0) {
+                  console.log('Goodbye audio completed - closing call'.yellow);
+                  if (ws.readyState === ws.OPEN) {
+                    ws.close();
+                  }
+                  markCompletionService.off('all-marks-complete', goodbyeCompletionHandler);
+                } else {
+                  console.log(`Waiting for goodbye audio to complete (${markCompletionService.getActiveMarkCount()} marks remaining)`.gray);
+                }
+              };
+              
+              // Listen for marks completion
+              markCompletionService.on('all-marks-complete', goodbyeCompletionHandler);
+              
+              // Safety fallback: If something goes wrong with mark tracking, still close after 5 seconds
               setTimeout(() => {
                 if (ws.readyState === ws.OPEN) {
-                  console.log('Closing call due to unresponsive user'.yellow);
+                  console.log('Safety fallback: Closing call after 5-second maximum wait'.yellow);
+                  markCompletionService.off('all-marks-complete', goodbyeCompletionHandler);
                   ws.close();
                 }
-              }, 3000); // Give time for the goodbye message to play
+              }, 5000); // Longer safety timeout since we're waiting for actual audio completion
             }
           }, 5000); // 5 second final timeout
         }
@@ -729,6 +767,9 @@ app.ws('/connection', async (ws) => {
         streamService.on('audiosent', (markLabel) => {
           marks.push(markLabel);
           markCompletionService.addMark(markLabel);
+          // CRITICAL FIX: Update timestamp when audio is sent to Twilio
+          // This helps prevent silence detection from starting too soon after audio
+          lastAudioSentTime = Date.now();
         });
 
         // Listen for when all audio has completed playing
@@ -760,7 +801,13 @@ app.ws('/connection', async (ws) => {
 
           // Send greeting immediately - delay is now handled by TwiML at /incoming
           const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-          ttsService.generate({partialResponseIndex: null, partialResponse: randomGreeting}, 0);
+          // CRITICAL FIX: Include isFinal: true to ensure greeting generates proper marks for tracking
+          // This prevents premature silence detection before the greeting finishes playing
+          ttsService.generate({
+            partialResponseIndex: null, 
+            partialResponse: randomGreeting, 
+            isFinal: true  // Ensures this generates marks that get tracked by markCompletionService
+          }, 0);
         });
       } else if (msg.event === 'media') {
         transcriptionService.send(msg.media.payload);
