@@ -49,6 +49,18 @@ describe('TemplateService', () => {
       
       expect(result).toContain('Monday, December 25, 2023 at 10:30 AM PST');
       expect(result).not.toContain('{{currentDateTime}}');
+      // Without isJessica flag, the Jessica section won't be rendered
+      expect(result).toContain('AI Companion System Prompt');
+    });
+
+    test('should render template with Jessica persona', () => {
+      const result = templateService.render('system-prompt', {
+        currentDateTime: 'Monday, December 25, 2023 at 10:30 AM PST',
+        isJessica: true
+      });
+      
+      expect(result).toContain('Monday, December 25, 2023 at 10:30 AM PST');
+      expect(result).not.toContain('{{currentDateTime}}');
       expect(result).toContain('You are **Jessica**');
     });
 
@@ -72,12 +84,21 @@ describe('TemplateService', () => {
       expect(typeof prompt).toBe('string');
       expect(prompt.length).toBeGreaterThan(0);
       expect(prompt).not.toContain('{{currentDateTime}}'); // Should be rendered
-      expect(prompt).toContain('You are **Jessica**');
+      expect(prompt).toContain('You are **Jessica**'); // Default persona is 'jessica'
       expect(prompt).toContain('Current date and time in La Palma, CA (Orange County):');
       
       // Should contain current date
       const currentYear = new Date().getFullYear();
       expect(prompt).toContain(currentYear.toString());
+    });
+
+    test('should return system prompt with custom persona', () => {
+      const prompt = templateService.getSystemPrompt([], null, 'sarah');
+      
+      expect(typeof prompt).toBe('string');
+      expect(prompt.length).toBeGreaterThan(0);
+      expect(prompt).not.toContain('You are **Jessica**'); // Should not contain Jessica
+      expect(prompt).toContain('Current date and time in La Palma, CA (Orange County):');
     });
 
     test('should include all expected sections', () => {
