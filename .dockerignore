@@ -142,3 +142,33 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+# Project-specific exclusions
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+conversation-summaries.db*
+
+# Storage directory for recordings
+storage/
+
+# Temporary audio files for Whisper processing
+temp/
+
+# Claude configuration directory
+.claude/
+
+# Serena editor directory
+.serena/
+
+# IDE settings
+.vscode/
+
+# Fly.io configuration file
+fly.toml
+
+# Git worktrees directory
+trees/
+
+tasks.md
