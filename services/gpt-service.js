@@ -94,7 +94,7 @@ class GptService extends EventEmitter {
       content: `CRITICAL VOICEMAIL MODE: The caller just left this voicemail: "${transcript}"
     
 MANDATORY INSTRUCTIONS:
-1. Your FIRST response after "Message sent!" must acknowledge their specific message topic
+1. Your FIRST response after the confirmation message must acknowledge their specific message topic
 2. Immediately offer concrete help for their stated problem
 3. Be proactive - suggest solutions without waiting to be asked
 4. Stay focused on their voicemail topic throughout the conversation

@@ -6,7 +6,7 @@
  * 2. User's greeting playback
  * 3. Beep sound 
  * 4. Recording (up to 20 seconds)
- * 5. "Message sent!" confirmation via Deepgram TTS
+ * 5. "Message saved..." confirmation via Deepgram TTS
  * 6. Seamless transition to interactive conversation
  */
 
@@ -48,10 +48,8 @@ class VoicemailRecordingService {
   <!-- Record caller's message -->
   <Record 
     maxLength="20" 
-    timeout="2"
+    timeout="1"
     playBeep="false"
-    transcribe="true" 
-    transcribeCallback="/voicemail/transcription-webhook"
     action="/voicemail/recording-complete"
     method="POST"/>
 </Response>`;
@@ -98,7 +96,7 @@ class VoicemailRecordingService {
   }
 
   /**
-   * Generate "Message sent!" audio using Deepgram TTS
+   * Generate confirmation message audio using Deepgram TTS
    * Uses same voice model as the persona for consistency
    */
   async generateMessageSentAudio() {
@@ -108,7 +106,7 @@ class VoicemailRecordingService {
       const response = await axios.post(
         'https://api.deepgram.com/v1/speak',
         {
-          text: 'Message sent!'
+          text: 'Message saved. I\'ll send your message to Ryan and he will get back to you very soon.'
         },
         {
           headers: {
@@ -124,10 +122,10 @@ class VoicemailRecordingService {
         }
       );
 
-      console.log('🔊 Generated "Message sent!" audio via Deepgram TTS'.green);
+      console.log('🔊 Generated voicemail confirmation audio via Deepgram TTS'.green);
       return Buffer.from(response.data);
     } catch (error) {
-      console.error('❌ Failed to generate "Message sent!" audio:', error.message);
+      console.error('❌ Failed to generate voicemail confirmation audio:', error.message);
       // Return null - will trigger fallback in calling code
       return null;
     }
@@ -156,10 +154,8 @@ class VoicemailRecordingService {
   
   <Record 
     maxLength="20" 
-    timeout="2"
+    timeout="1"
     playBeep="false"
-    transcribe="true" 
-    transcribeCallback="/voicemail/transcription-webhook"
     action="/voicemail/recording-complete"
     method="POST"/>
 </Response>`;

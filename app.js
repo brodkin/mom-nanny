@@ -19,6 +19,8 @@ const MemoryService = require('./services/memory-service');
 const CallRoutingService = require('./services/call-routing-service');
 const VoicemailRecordingService = require('./services/voicemail-recording-service');
 const VoicemailTranscriptionCache = require('./services/voicemail-transcription-cache');
+const AudioDownloadService = require('./services/audio-download-service');
+const WhisperTranscriptionService = require('./services/whisper-transcription-service');
 
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
@@ -40,6 +42,8 @@ const PORT = process.env.PORT || 3000;
 // Initialize voicemail services
 const voicemailRecordingService = new VoicemailRecordingService();
 const voicemailTranscriptionCache = new VoicemailTranscriptionCache();
+const audioDownloadService = new AudioDownloadService();
+const whisperTranscriptionService = new WhisperTranscriptionService();
 
 // Welcome page route - serves the main landing page
 app.get('/', (req, res) => {
@@ -518,12 +522,12 @@ async function handleIncomingDirectConnect(req, res, personaName = 'jessica') {
 }
 
 /**
- * Handle voicemail recording flow with user greeting and "Message sent!" confirmation
+ * Handle voicemail recording flow with user greeting and confirmation message
  * Implements the complete voicemail experience:
  * 1. Ring simulation (30 seconds)
  * 2. User's greeting + beep
  * 3. Recording (up to 15 seconds)
- * 4. "Message sent!" confirmation
+ * 4. "Message saved..." confirmation
  * 5. Seamless transition to conversation
  */
 async function handleVoicemailRecording(req, res) {
@@ -556,7 +560,7 @@ app.post('/incoming/voicemail-legacy', async (req, res) => {
   await handleIncomingWithRouting(req, res, '/incoming/voicemail-legacy');
 });
 
-// NEW: Voicemail recording flow with user greeting and "Message sent!" confirmation
+// NEW: Voicemail recording flow with user greeting and confirmation message
 app.post('/incoming/voicemail', async (req, res) => {
   await handleVoicemailRecording(req, res);
 });
@@ -592,12 +596,67 @@ app.post('/voicemail/start-recording', async (req, res) => {
 app.post('/voicemail/recording-complete', async (req, res) => {
   try {
     const { CallSid, RecordingUrl, RecordingDuration } = req.body;
-    console.log(`📼 Voicemail recording complete for ${CallSid}`.green);
+    console.log(`📼 Voicemail recording complete for ${CallSid}: ${RecordingDuration}s`.green);
     
     // Store recording metadata
     voicemailRecordingService.handleRecordingComplete(CallSid, RecordingUrl, RecordingDuration);
     
-    // Connect to conversation WebSocket
+    // Check if Whisper transcription is enabled via feature flag
+    const enableWhisperTranscription = process.env.ENABLE_WHISPER_TRANSCRIPTION === 'true';
+    
+    if (enableWhisperTranscription) {
+      console.log(`🎤 Using Whisper transcription for ${CallSid}`.cyan);
+      
+      // Start Whisper transcription process asynchronously
+      setImmediate(async () => {
+        try {
+          // Step 1: Download audio file
+          console.log('⬇️ Downloading audio from Twilio...'.gray);
+          const { buffer: audioBuffer, format } = await audioDownloadService.downloadWithFallback(RecordingUrl, CallSid);
+          
+          // Step 2: Transcribe with Whisper
+          const transcriptionResult = await whisperTranscriptionService.transcribeAudio(audioBuffer, format, CallSid);
+          
+          // Step 3: Process and store transcription
+          if (transcriptionResult.text) {
+            const processedTranscription = whisperTranscriptionService.processVoicemailTranscription(transcriptionResult.text);
+            voicemailTranscriptionCache.store(CallSid, transcriptionResult.text, {
+              confidence: transcriptionResult.confidence,
+              processingTime: transcriptionResult.processingTime,
+              language: transcriptionResult.language,
+              duration: transcriptionResult.duration,
+              model: transcriptionResult.model,
+              fileSizeMB: transcriptionResult.fileSizeMB,
+              isEmpty: processedTranscription.isEmpty,
+              wordCount: processedTranscription.wordCount,
+              hasUrgency: processedTranscription.hasUrgency,
+              topics: processedTranscription.topics
+            });
+            
+            console.log(`✅ Whisper transcription stored for ${CallSid}: "${transcriptionResult.text.substring(0, 80)}${transcriptionResult.text.length > 80 ? '...' : ''}"`.green);
+          } else {
+            console.log(`⚠️ Empty Whisper transcription for ${CallSid}`.yellow);
+            // Store empty transcription to prevent waiting
+            voicemailTranscriptionCache.store(CallSid, '', { isEmpty: true });
+          }
+          
+        } catch (error) {
+          console.error(`❌ Whisper transcription failed for ${CallSid}: ${error.message}`.red);
+          // Store empty transcription on failure to prevent hanging
+          voicemailTranscriptionCache.store(CallSid, '', { 
+            error: error.message, 
+            fallbackUsed: true 
+          });
+        }
+      });
+      
+    } else {
+      console.log(`📝 Using legacy Twilio transcription for ${CallSid}`.yellow);
+      // Legacy mode - wait for Twilio transcription webhook
+      // No immediate action needed, transcription will arrive via separate webhook
+    }
+    
+    // Always connect to WebSocket immediately (transcription happens in background)
     const connectionResponse = voicemailRecordingService.createConnectionResponse(CallSid);
     
     res.type('text/xml');
@@ -697,7 +756,7 @@ app.ws('/connection', async (ws) => {
       // This prevents the timer from starting immediately after the last audio chunk
       // before Twilio has had time to play it and the user has had time to hear it
       const timeSinceLastAudio = Date.now() - lastAudioSentTime;
-      const AUDIO_BUFFER_TIME = 1500; // 1.5 seconds buffer - accounts for network latency and audio playback time
+      const AUDIO_BUFFER_TIME = 3000; // 3 seconds buffer - accounts for network latency, audio playback time, and processing time for elderly callers
       
       if (timeSinceLastAudio < AUDIO_BUFFER_TIME) {
         console.log(`Skipping silence detection: audio sent only ${timeSinceLastAudio}ms ago (need ${AUDIO_BUFFER_TIME}ms buffer)`.gray);
@@ -709,10 +768,10 @@ app.ws('/connection', async (ws) => {
         return;
       }
       
-      console.log('Starting 5-second silence timer'.cyan);
+      console.log('Starting 8-second silence timer (optimized for elderly callers)'.cyan);
       isWaitingForResponse = true;
       silenceTimer = setTimeout(() => {
-        console.log('5-second silence timeout reached'.yellow);
+        console.log('8-second silence timeout reached'.yellow);
         if (!isWaitingForResponse) {
           console.log('Timer fired but no longer waiting for response - ignoring'.gray);
           return;
@@ -747,7 +806,7 @@ app.ws('/connection', async (ws) => {
           
           // Start another timer for final timeout
           silenceTimer = setTimeout(() => {
-            console.log('Final 5-second timeout reached'.yellow);
+            console.log('Final 8-second timeout reached'.yellow);
             if (isWaitingForResponse) {
               console.log('No response received - ending call gracefully'.yellow);
               
@@ -802,9 +861,9 @@ app.ws('/connection', async (ws) => {
                 }
               }, 5000); // Longer safety timeout since we're waiting for actual audio completion
             }
-          }, 5000); // 5 second final timeout
+          }, 8000); // 8 second final timeout for elderly callers
         }
-      }, 5000); // 5 second initial timeout
+      }, 8000); // 8 second initial timeout for elderly callers
     };
 
     // Incoming from MediaStream
@@ -892,8 +951,8 @@ app.ws('/connection', async (ws) => {
         gptService.on('gptreply', async (gptReply, icount) => {
           console.log(`Interaction ${icount}: GPT -> TTS: ${gptReply.partialResponse}`.green );
           
-          // CRITICAL: If this is a real GPT response (not "Message sent!"), clear voicemail waiting flag
-          if (isWaitingForVoicemailResponse && gptReply.partialResponse && !gptReply.partialResponse.startsWith('Message sent!')) {
+          // CRITICAL: If this is a real GPT response (not confirmation message), clear voicemail waiting flag
+          if (isWaitingForVoicemailResponse && gptReply.partialResponse && !gptReply.partialResponse.startsWith('Message saved.')) {
             console.log('🎯 Real GPT response received - allowing silence detection to resume'.green);
             isWaitingForVoicemailResponse = false;
           }
@@ -938,10 +997,10 @@ app.ws('/connection', async (ws) => {
             console.log('📼 Voicemail mode - generating confirmation and contextual response'.cyan);
             
             if (playConfirmation) {
-              // First play "Message sent!" confirmation
+              // First play confirmation message
               ttsService.generate({
                 partialResponseIndex: null,
-                partialResponse: 'Message sent!',
+                partialResponse: 'Message saved. I\'ll send your message to Ryan and he will get back to you very soon.',
                 isFinal: false  // Not final, more content coming
               }, 0);
               
@@ -953,8 +1012,8 @@ app.ws('/connection', async (ws) => {
                 
                 // Let GPT generate a contextual response to the voicemail
                 setTimeout(() => {
-                  gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 1);
-                }, 1500); // Small delay to let "Message sent!" play first
+                  gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 1);
+                }, 1500); // Small delay to let confirmation message play first
               } else {
                 // Wait for transcription to arrive (up to 10 seconds)
                 isWaitingForVoicemailResponse = true;
@@ -977,7 +1036,7 @@ app.ws('/connection', async (ws) => {
                     
                     // Generate contextual response
                     setTimeout(() => {
-                      gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 1);
+                      gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 1);
                     }, 500);
                   } else if (attempts >= 20) { // 10 seconds total wait
                     clearInterval(waitForTranscription);
@@ -996,7 +1055,7 @@ app.ws('/connection', async (ws) => {
             } else {
               // Direct contextual response without confirmation
               if (voicemailTranscript) {
-                gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 0);
+                gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 0);
               } else {
                 // Wait for transcription to arrive (up to 10 seconds)
                 isWaitingForVoicemailResponse = true;
@@ -1018,7 +1077,7 @@ app.ws('/connection', async (ws) => {
                     gptService.setVoicemailContext(transcriptionData.transcription);
                     
                     // Generate contextual response
-                    gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT say 'Message sent!' as that was already played.`, 0);
+                    gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 0);
                   } else if (attempts >= 20) { // 10 seconds total wait
                     clearInterval(waitForTranscription);
                     isWaitingForVoicemailResponse = false;
