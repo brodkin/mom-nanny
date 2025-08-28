@@ -1151,6 +1151,12 @@ app.ws('/connection', async (ws) => {
             event: 'clear',
           })
         );
+        
+        // CRITICAL FIX: Clear TTS queue to prevent old responses from playing
+        if (ttsService && typeof ttsService.clearQueue === 'function') {
+          ttsService.clearQueue();
+        }
+        
         // Clear transcription buffers on interruption
         transcriptionService.clearBuffers();
       }

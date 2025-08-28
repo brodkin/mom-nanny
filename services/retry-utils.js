@@ -66,15 +66,19 @@ async function retryWithBackoff(fn, options = {}) {
         }
       }
 
+      // Add jitter to prevent thundering herd
+      const jitter = Math.random() * 0.1 * delay; // Add up to 10% jitter
+      const actualDelay = delay + jitter;
+
       // Log retry attempt
       if (onRetry) {
-        onRetry(attempt, delay, error);
+        onRetry(attempt, actualDelay, error);
       } else {
-        console.log(`Retry attempt ${attempt}/${maxRetries} after ${delay}ms. Error: ${error.message}`.yellow);
+        console.log(`Retry attempt ${attempt}/${maxRetries} after ${Math.round(actualDelay)}ms (${Math.round(jitter)}ms jitter). Error: ${error.message}`.yellow);
       }
 
       // Wait before retrying
-      await sleep(delay);
+      await sleep(actualDelay);
 
       // Exponential backoff for next attempt
       delay = Math.min(delay * backoffFactor, maxDelayMs);
