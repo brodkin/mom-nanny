@@ -734,6 +734,120 @@ app.ws('/connection', async (ws) => {
     // CRITICAL FIX: Track when audio was last sent to prevent premature silence detection
     // This ensures we don't start the 5-second timer immediately after audio finishes
     let lastAudioSentTime = Date.now();
+    
+    // GPT Processing Lock - prevents concurrent GPT responses
+    let isProcessingGPT = false;
+    let gptQueue = [];
+    
+    // Rapid input consolidation - combine rapid user inputs into single request
+    let rapidInputTimer = null;
+    let rapidInputBuffer = [];
+    let rapidInputDebounceMs = 1500; // 1.5 seconds to collect rapid inputs
+
+    // GPT processing with rapid input consolidation
+    const processGPTRequest = async (text, interactionCount, role = 'user', caller = 'transcription') => {
+      // For user transcriptions, use rapid input consolidation
+      if (caller === 'transcription' && role === 'user') {
+        return handleRapidUserInput(text, interactionCount);
+      }
+      
+      // For non-user inputs (voicemail, system), process immediately
+      console.log(`🧠 GPT Request queued: "${text.substring(0, 50)}" (caller: ${caller}, queue: ${gptQueue.length})`.cyan);
+      
+      if (isProcessingGPT) {
+        console.log(`⏳ GPT is busy, queuing request from ${caller}`.yellow);
+        gptQueue.push({ text, interactionCount, role, caller });
+        return;
+      }
+      
+      await executeGPTRequest(text, interactionCount, role, caller);
+    };
+
+    // Handle rapid user input consolidation
+    const handleRapidUserInput = (text, interactionCount) => {
+      // Add to rapid input buffer
+      rapidInputBuffer.push({ text, interactionCount, timestamp: Date.now() });
+      
+      console.log(`📝 Buffering rapid user input: "${text.substring(0, 50)}" (buffer: ${rapidInputBuffer.length})`.cyan);
+      
+      // Clear existing timer
+      if (rapidInputTimer) {
+        clearTimeout(rapidInputTimer);
+      }
+      
+      // Set timer to process consolidated input after debounce period
+      rapidInputTimer = setTimeout(() => {
+        if (rapidInputBuffer.length > 0) {
+          // Consolidate all buffered inputs
+          const consolidatedText = rapidInputBuffer.map(input => input.text.trim()).join(' ');
+          const latestInteractionCount = Math.max(...rapidInputBuffer.map(input => input.interactionCount));
+          
+          console.log(`🔄 Processing consolidated user input: "${consolidatedText.substring(0, 50)}" (${rapidInputBuffer.length} inputs combined)`.green);
+          
+          // Clear buffer
+          rapidInputBuffer = [];
+          
+          // Process the consolidated input
+          if (isProcessingGPT) {
+            console.log('⏳ GPT is busy, queuing consolidated request'.yellow);
+            gptQueue.push({ text: consolidatedText, interactionCount: latestInteractionCount, role: 'user', caller: 'transcription-consolidated' });
+          } else {
+            executeGPTRequest(consolidatedText, latestInteractionCount, 'user', 'transcription-consolidated');
+          }
+        }
+      }, rapidInputDebounceMs);
+    };
+
+    // Execute GPT request
+    const executeGPTRequest = async (text, interactionCount, role, caller) => {
+      isProcessingGPT = true;
+      console.log(`🚀 Processing GPT request from ${caller}`.green);
+      
+      try {
+        await gptService.completion(text, interactionCount, role);
+      } catch (error) {
+        console.error('❌ GPT processing error:', error.message);
+      } finally {
+        isProcessingGPT = false;
+        console.log(`✅ GPT request completed from ${caller}`.green);
+        
+        // Process next item in queue
+        if (gptQueue.length > 0) {
+          const nextRequest = gptQueue.shift();
+          console.log(`🔄 Processing next queued request from ${nextRequest.caller} (${gptQueue.length} remaining)`.cyan);
+          // Use setTimeout to prevent deep recursion
+          setTimeout(() => {
+            processGPTRequest(nextRequest.text, nextRequest.interactionCount, nextRequest.role, nextRequest.caller);
+          }, 10);
+        }
+      }
+    };
+
+    // Clear GPT queue and rapid input buffer on interruption
+    const clearGPTQueue = () => {
+      let clearedItems = 0;
+      
+      if (gptQueue.length > 0) {
+        clearedItems += gptQueue.length;
+        gptQueue = [];
+      }
+      
+      if (rapidInputBuffer.length > 0) {
+        clearedItems += rapidInputBuffer.length;
+        rapidInputBuffer = [];
+      }
+      
+      if (rapidInputTimer) {
+        clearTimeout(rapidInputTimer);
+        rapidInputTimer = null;
+      }
+      
+      if (clearedItems > 0) {
+        console.log(`🧹 Clearing GPT queue and rapid input buffer: ${clearedItems} total requests`.yellow);
+      }
+      
+      isProcessingGPT = false;
+    };
 
     // Helper functions for silence detection
     const clearSilenceTimer = () => {
@@ -1012,7 +1126,7 @@ app.ws('/connection', async (ws) => {
                 
                 // Let GPT generate a contextual response to the voicemail
                 setTimeout(() => {
-                  gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 1);
+                  processGPTRequest(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 1, 'user', 'voicemail-initial');
                 }, 1500); // Small delay to let confirmation message play first
               } else {
                 // Wait for transcription to arrive (up to 10 seconds)
@@ -1036,7 +1150,7 @@ app.ws('/connection', async (ws) => {
                     
                     // Generate contextual response
                     setTimeout(() => {
-                      gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 1);
+                      processGPTRequest(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 1, 'user', 'voicemail-delayed');
                     }, 500);
                   } else if (attempts >= 20) { // 10 seconds total wait
                     clearInterval(waitForTranscription);
@@ -1055,7 +1169,7 @@ app.ws('/connection', async (ws) => {
             } else {
               // Direct contextual response without confirmation
               if (voicemailTranscript) {
-                gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 0);
+                processGPTRequest(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${voicemailTranscript}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 0, 'user', 'voicemail-direct');
               } else {
                 // Wait for transcription to arrive (up to 10 seconds)
                 isWaitingForVoicemailResponse = true;
@@ -1077,7 +1191,7 @@ app.ws('/connection', async (ws) => {
                     gptService.setVoicemailContext(transcriptionData.transcription);
                     
                     // Generate contextual response
-                    gptService.completion(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 0);
+                    processGPTRequest(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 0, 'user', 'voicemail-late');
                   } else if (attempts >= 20) { // 10 seconds total wait
                     clearInterval(waitForTranscription);
                     isWaitingForVoicemailResponse = false;
@@ -1157,6 +1271,14 @@ app.ws('/connection', async (ws) => {
           ttsService.clearQueue();
         }
         
+        // CRITICAL FIX: Clear StreamService buffer to prevent old audio from being sent
+        if (streamService && typeof streamService.clear === 'function') {
+          streamService.clear();
+        }
+        
+        // CRITICAL FIX: Clear GPT queue to prevent old responses from processing
+        clearGPTQueue();
+        
         // Clear transcription buffers on interruption
         transcriptionService.clearBuffers();
       }
@@ -1178,7 +1300,9 @@ app.ws('/connection', async (ws) => {
         conversationAnalyzer.trackUserUtterance(text, new Date());
       }
       
-      gptService.completion(text, interactionCount);
+      // Rapid input is now handled by the consolidation system in handleRapidUserInput
+      
+      processGPTRequest(text, interactionCount, 'user', 'transcription');
       interactionCount += 1;
     });
 
@@ -1186,8 +1310,24 @@ app.ws('/connection', async (ws) => {
     ws.on('close', async () => {
       console.log('WebSocket closed, cleaning up services'.cyan);
       
+      // CRITICAL: Stop all processing immediately when WebSocket closes
+      
       // Clear silence detection timer
       clearSilenceTimer();
+      
+      // Clear all queues and stop processing
+      if (ttsService && typeof ttsService.clearQueue === 'function') {
+        ttsService.clearQueue();
+        console.log('🛑 TTS service cleared on WebSocket close'.red);
+      }
+      
+      if (streamService && typeof streamService.clear === 'function') {
+        streamService.clear();
+        console.log('🛑 StreamService buffer cleared on WebSocket close'.red);
+      }
+      
+      clearGPTQueue();
+      console.log('🛑 GPT queue cleared on WebSocket close'.red);
       
       // Generate and save conversation summary and messages
       if (conversationAnalyzer) {

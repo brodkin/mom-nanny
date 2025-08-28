@@ -37,6 +37,10 @@ class TextToSpeechService extends EventEmitter {
     // Active request tracking for interruption handling
     this.activeRequests = new Set();
     
+    // Cancellable timeout tracking for rate limiting
+    this.rateLimitTimeouts = new Set();
+    this.shouldStop = false;
+    
     // Metrics
     this.metrics = {
       totalRequests: 0,
@@ -66,6 +70,9 @@ class TextToSpeechService extends EventEmitter {
     this.requestQueue.push(request);
     this.metrics.queueSize = this.requestQueue.length;
     
+    // Reset stop flag if it was set by previous clearQueue
+    this.resetStopFlag();
+    
     // Start processing queue if not already processing
     if (!this.isProcessing) {
       this.processQueue();
@@ -73,13 +80,13 @@ class TextToSpeechService extends EventEmitter {
   }
 
   async processQueue() {
-    if (this.isProcessing || this.requestQueue.length === 0) {
+    if (this.isProcessing || this.requestQueue.length === 0 || this.shouldStop) {
       return;
     }
 
     this.isProcessing = true;
 
-    while (this.requestQueue.length > 0) {
+    while (this.requestQueue.length > 0 && !this.shouldStop) {
       // Check circuit breaker state
       if (!this.isCircuitClosed()) {
         console.log('🚫 TTS Circuit breaker is OPEN - skipping requests'.yellow);
@@ -90,14 +97,26 @@ class TextToSpeechService extends EventEmitter {
       const request = this.requestQueue.shift();
       this.metrics.queueSize = this.requestQueue.length;
       
-      // Apply rate limiting with adaptive delay
+      // Apply rate limiting with cancellable delay
       const timeSinceLastRequest = Date.now() - this.lastRequestTime;
       const minDelay = this.getCurrentDelay();
       
       if (timeSinceLastRequest < minDelay) {
         const waitTime = minDelay - timeSinceLastRequest;
         console.log(`⏱️ TTS rate limiting: waiting ${waitTime}ms`.gray);
-        await this.sleep(waitTime);
+        
+        // Use cancellable sleep instead of regular sleep
+        const cancelled = await this.cancellableSleep(waitTime);
+        if (cancelled) {
+          console.log('🚫 TTS rate limiting cancelled, stopping queue processing'.yellow);
+          break;
+        }
+      }
+
+      // Check if we should stop before processing the request
+      if (this.shouldStop) {
+        console.log('🚫 TTS queue processing stopped'.yellow);
+        break;
       }
 
       try {
@@ -202,7 +221,16 @@ class TextToSpeechService extends EventEmitter {
   }
 
   clearQueue() {
-    console.log(`🧹 Clearing TTS queue: ${this.requestQueue.length} requests, ${this.activeRequests.size} active`.cyan);
+    console.log(`🧹 Clearing TTS queue: ${this.requestQueue.length} requests, ${this.activeRequests.size} active, ${this.rateLimitTimeouts.size} rate-limit timeouts`.cyan);
+    
+    // Signal all processing to stop
+    this.shouldStop = true;
+    
+    // Clear all active rate-limiting timeouts
+    for (const timeoutId of this.rateLimitTimeouts) {
+      clearTimeout(timeoutId);
+    }
+    this.rateLimitTimeouts.clear();
     
     // Clear pending requests
     this.requestQueue = [];
@@ -210,6 +238,9 @@ class TextToSpeechService extends EventEmitter {
     
     // Mark active requests as cancelled (they'll check this flag)
     this.activeRequests.clear();
+    
+    // Reset processing state
+    this.isProcessing = false;
     
     // Emit event for monitoring
     this.emit('queue-cleared', {
@@ -333,6 +364,25 @@ class TextToSpeechService extends EventEmitter {
 
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  cancellableSleep(ms) {
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        this.rateLimitTimeouts.delete(timeoutId);
+        resolve(false); // false means not cancelled
+      }, ms);
+      
+      this.rateLimitTimeouts.add(timeoutId);
+    });
+  }
+
+  // Reset the stop flag when new requests come in after clearQueue
+  resetStopFlag() {
+    if (this.shouldStop) {
+      console.log('🔄 Resetting TTS stop flag for new requests'.cyan);
+      this.shouldStop = false;
+    }
   }
 }
 
