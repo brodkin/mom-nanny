@@ -701,6 +701,7 @@ router.get('/:id', async (req, res) => {
       timezoneAbbr: TimezoneUtils.getTimezoneAbbreviation(CONFIGURED_TIMEZONE),
       duration: conversation.duration,
       callerInfo: conversation.caller_info ? JSON.parse(conversation.caller_info) : null,
+      voicemailTranscript: conversation.voicemail_transcript || null,
       messages: messagesWithTimezone,
       analytics: analyticsData,
       emotionalTimeline,

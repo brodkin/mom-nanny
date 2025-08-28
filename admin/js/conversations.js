@@ -795,6 +795,19 @@ class ConversationsPage {
           <div class="messages-container">
     `;
 
+    // Add voicemail transcript if available
+    if (data.voicemailTranscript) {
+      html += `
+        <div class="message voicemail-message">
+          <div class="message-header">
+            <span class="role-badge voicemail">Voicemail</span>
+            <span class="timestamp">Start of Call</span>
+          </div>
+          <div class="message-content">${this.escapeHtml(data.voicemailTranscript)}</div>
+        </div>
+      `;
+    }
+
     // Add messages
     if (data.messages && data.messages.length > 0) {
       data.messages.forEach((message, _index) => {

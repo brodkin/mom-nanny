@@ -191,6 +191,12 @@ class DatabaseManager {
       this.applyFactMemoryMigration();
       this.runSync('INSERT INTO migrations (version) VALUES (?)', [6]);
     }
+    
+    // Apply voicemail transcript migration if needed
+    if (currentVersion < 7) {
+      this.applyVoicemailTranscriptMigration();
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [7]);
+    }
   }
 
   applyInitialSchema() {
@@ -423,6 +429,21 @@ class DatabaseManager {
       
       -- Create index on is_fact for performance (filtering queries)
       CREATE INDEX IF NOT EXISTS idx_memories_is_fact ON memories(is_fact);
+    `;
+
+    this._execSync(migration);
+  }
+
+  applyVoicemailTranscriptMigration() {
+    const migration = `
+      -- Migration 7: Add voicemail_transcript column to conversations table
+      -- Stores the initial voicemail transcript when a conversation starts with a voicemail
+      
+      -- Add voicemail_transcript column to conversations table
+      ALTER TABLE conversations ADD COLUMN voicemail_transcript TEXT;
+      
+      -- Create index on voicemail_transcript for performance (filtering conversations with voicemails)
+      CREATE INDEX IF NOT EXISTS idx_conversations_voicemail_transcript ON conversations(voicemail_transcript);
     `;
 
     this._execSync(migration);

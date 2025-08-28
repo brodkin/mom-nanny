@@ -776,6 +776,25 @@
   border-color: rgba(16, 185, 129, 0.2);
 }
 
+.message.voicemail-message {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  position: relative;
+  margin-bottom: var(--space-4);
+}
+
+.message.voicemail-message::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  bottom: -2px;
+  width: 4px;
+  background: linear-gradient(180deg, #fbbf24, #f59e0b);
+  border-radius: 2px;
+}
+
 .message-header {
   display: flex;
   justify-content: space-between;
@@ -800,6 +819,13 @@
 .role-badge.assistant {
   background: rgba(16, 185, 129, 0.2);
   color: #10b981;
+}
+
+.role-badge.voicemail {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
 }
 
 .timestamp {

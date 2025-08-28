@@ -40,14 +40,15 @@ class SqliteStorageService {
         } else {
           // Insert new conversation
           const result = this.db.runSync(`
-            INSERT INTO conversations (call_sid, start_time, end_time, duration, caller_info)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO conversations (call_sid, start_time, end_time, duration, caller_info, voicemail_transcript)
+            VALUES (?, ?, ?, ?, ?, ?)
           `, [
             summary.callSid,
             summary.startTime,
             summary.endTime || null,
             summary.callMetadata?.duration || null,
-            JSON.stringify(summary.callMetadata || {})
+            JSON.stringify(summary.callMetadata || {}),
+            summary.voicemailTranscript || null
           ]);
           
           conversationId = result.lastInsertRowid;

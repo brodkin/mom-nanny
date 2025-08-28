@@ -726,6 +726,9 @@ app.ws('/connection', async (ws) => {
     let marks = [];
     let interactionCount = 0;
     
+    // Voicemail tracking variable (available throughout WebSocket lifetime)
+    let currentVoicemailTranscript = null;
+    
     // Silence detection variables
     let silenceTimer = null;
     let isWaitingForResponse = false;
@@ -1011,6 +1014,7 @@ app.ws('/connection', async (ws) => {
             const transcriptionData = voicemailTranscriptionCache.retrieve(callSid);
             if (transcriptionData) {
               voicemailTranscript = transcriptionData.transcription;
+              currentVoicemailTranscript = voicemailTranscript; // Store for conversation saving
               console.log(`📖 Retrieved voicemail transcript: "${voicemailTranscript.substring(0, 50)}${voicemailTranscript.length > 50 ? '...' : ''}"`.green);
             } else {
               console.log('⚠️ No voicemail transcript found - continuing without context'.yellow);
@@ -1147,6 +1151,7 @@ app.ws('/connection', async (ws) => {
                     
                     // Set the voicemail context now that we have the transcript
                     gptService.setVoicemailContext(transcriptionData.transcription);
+                    currentVoicemailTranscript = transcriptionData.transcription; // Store for conversation saving
                     
                     // Generate contextual response
                     setTimeout(() => {
@@ -1189,6 +1194,7 @@ app.ws('/connection', async (ws) => {
                     
                     // Set the voicemail context now that we have the transcript
                     gptService.setVoicemailContext(transcriptionData.transcription);
+                    currentVoicemailTranscript = transcriptionData.transcription; // Store for conversation saving
                     
                     // Generate contextual response
                     processGPTRequest(`[VOICEMAIL RESPONSE NEEDED] The caller just left this voicemail: '${transcriptionData.transcription}' - respond directly to their specific concern with immediate help. DO NOT repeat the confirmation message as that was already played.`, 0, 'user', 'voicemail-late');
@@ -1342,6 +1348,10 @@ app.ws('/connection', async (ws) => {
           }
           
           const summary = summaryGenerator.generateSummary(conversationAnalyzer);
+          // Add voicemail transcript if available
+          if (currentVoicemailTranscript) {
+            summary.voicemailTranscript = currentVoicemailTranscript;
+          }
           
           const result = await storageService.saveSummary(summary);
           const conversationId = result.conversationId; // String conversation ID
