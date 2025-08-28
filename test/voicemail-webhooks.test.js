@@ -79,7 +79,7 @@ describe('Voicemail Webhook Endpoints', () => {
 
   describe('POST /incoming/voicemail', () => {
     test('should return TwiML for initial ring response', async () => {
-      const mockResponse = '<?xml version="1.0" encoding="UTF-8"?><Response><Pause length="1"/><Redirect>/voicemail/start-recording</Redirect></Response>';
+      const mockResponse = '<?xml version="1.0" encoding="UTF-8"?><Response><Pause length="15"/><Redirect>/voicemail/start-recording</Redirect></Response>';
       mockVoicemailService.createInitialRingResponse.mockReturnValue(mockResponse);
 
       const response = await request(app)

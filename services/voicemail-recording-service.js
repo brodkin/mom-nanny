@@ -2,7 +2,7 @@
  * VoicemailRecordingService - Handles voicemail recording flow with user-provided greeting
  * 
  * Implements the complete voicemail experience:
- * 1. Ring simulation (30 seconds)
+ * 1. Ring simulation (10-30 seconds, random)
  * 2. User's greeting playback
  * 3. Beep sound 
  * 4. Recording (up to 20 seconds)
@@ -21,13 +21,16 @@ class VoicemailRecordingService {
 
   /**
    * Step 1: Initial ring response - simulates traditional voicemail ringing
-   * Returns TwiML to pause for 30 seconds then redirect to greeting
+   * Returns TwiML to pause for random 10-30 seconds then redirect to greeting
    */
   createInitialRingResponse() {
+    // Generate random pause between 10 and 30 seconds (inclusive)
+    const pauseLength = Math.floor(Math.random() * 21) + 10;
+    
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <!-- Simulate 1-second ring for testing (normally 30s) -->
-  <Pause length="1"/>
+  <!-- Simulate ring for ${pauseLength} seconds (random 10-30s) -->
+  <Pause length="${pauseLength}"/>
   <Redirect>/voicemail/start-recording</Redirect>
 </Response>`;
   }

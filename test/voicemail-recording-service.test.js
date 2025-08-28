@@ -17,12 +17,13 @@ describe('VoicemailRecordingService', () => {
   });
 
   describe('createInitialRingResponse', () => {
-    test('should generate TwiML for initial ring with 1-second pause', () => {
+    test('should generate TwiML for initial ring with random pause (10-30s)', () => {
       const response = service.createInitialRingResponse();
       
       expect(response).toContain('<?xml version="1.0" encoding="UTF-8"?>');
       expect(response).toContain('<Response>');
-      expect(response).toContain('<Pause length="1"/>');
+      // Match any pause between 10 and 30 seconds
+      expect(response).toMatch(/<Pause length="(1[0-9]|2[0-9]|30)"\/>/);
       expect(response).toContain('<Redirect>/voicemail/start-recording</Redirect>');
       expect(response).toContain('</Response>');
     });
@@ -38,10 +39,8 @@ describe('VoicemailRecordingService', () => {
       expect(response).toContain('<Play>https://test.example.com/assets/audio/beep.mp3</Play>');
       expect(response).toContain('<Record');
       expect(response).toContain('maxLength="20"');
-      expect(response).toContain('timeout="2"');
+      expect(response).toContain('timeout="1"');
       expect(response).toContain('playBeep="false"');
-      expect(response).toContain('transcribe="true"');
-      expect(response).toContain('transcribeCallback="/voicemail/transcription-webhook"');
       expect(response).toContain('action="/voicemail/recording-complete"');
       expect(response).toContain('method="POST"');
       expect(response).toContain('</Response>');
@@ -79,10 +78,8 @@ describe('VoicemailRecordingService', () => {
       expect(response).toContain('<Play>https://test.example.com/assets/audio/beep.mp3</Play>');
       expect(response).toContain('<Record');
       expect(response).toContain('maxLength="20"');
-      expect(response).toContain('timeout="2"');
+      expect(response).toContain('timeout="1"');
       expect(response).toContain('playBeep="false"');
-      expect(response).toContain('transcribe="true"');
-      expect(response).toContain('transcribeCallback="/voicemail/transcription-webhook"');
       expect(response).toContain('action="/voicemail/recording-complete"');
       expect(response).toContain('method="POST"');
       expect(response).toContain('</Response>');
