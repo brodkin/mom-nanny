@@ -139,7 +139,7 @@ class Dashboard {
             ${conv.hasCareIndicators ? ' ⚠️' : ''}
           </div>
           <div class="conversation-summary">
-            ${this.formatDateTime(conv.startTime)} • ${conv.duration}
+            ${window.AdminUtils.timeAgo(conv.startTime)} • ${conv.duration}
           </div>
         </div>
       </div>
@@ -418,65 +418,12 @@ class Dashboard {
     return icons[type] || icons.info;
   }
   
-  formatDateTime(dateStr) {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const _yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    
-    // Calculate days difference
-    const daysDiff = Math.floor((today.getTime() - dateOnly.getTime()) / (24 * 60 * 60 * 1000));
-    
-    // Format time as "9:22 AM"
-    const timeStr = new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }).format(date);
-    
-    // Determine prefix based on date
-    if (daysDiff === 0) {
-      return `Today ${timeStr}`;
-    } else if (daysDiff === 1) {
-      return `Yesterday ${timeStr}`;
-    } else if (daysDiff <= 7) {
-      // Show day of week for this week (Monday, Tuesday, etc.)
-      const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
-      return `${dayName} ${timeStr}`;
-    } else {
-      // More than 7 days ago - use original format (Aug 22, 7:43 PM)
-      return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      }).format(date);
-    }
-  }
-  
   formatTime(date) {
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
     }).format(date);
-  }
-  
-  formatTimeAgo(date) {
-    const now = new Date();
-    const diffMs = now - date;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    
-    if (diffHours > 0) {
-      return `${diffHours}h ago`;
-    } else if (diffMinutes > 0) {
-      return `${diffMinutes}m ago`;
-    } else {
-      return 'Just now';
-    }
   }
   
   formatChartDate(dateStr) {

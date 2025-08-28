@@ -185,17 +185,23 @@ class ConversationsPage {
           title: 'Date/Time', 
           sortable: true,
           formatter: (value, row) => {
-            // Use server-provided formatted data if available
+            // Use friendly relative time for display
+            const relativeTime = window.AdminUtils.timeAgo(value);
+            
+            // Use server-provided formatted data for tooltip if available
+            let fullDateTime;
             if (row.startTimeFormatted) {
-              const formatted = this.formatDateTime(value, row.startTimeFormatted);
+              fullDateTime = this.formatDateTime(value, row.startTimeFormatted);
               // Add timezone abbreviation if available
               if (row.timezoneAbbr) {
-                return `${formatted} ${row.timezoneAbbr}`;
+                fullDateTime += ` ${row.timezoneAbbr}`;
               }
-              return formatted;
+            } else {
+              // Fallback to browser timezone
+              fullDateTime = this.formatDateTime(value);
             }
-            // Fallback to browser timezone
-            return this.formatDateTime(value);
+            
+            return `<span title="${fullDateTime}">${relativeTime}</span>`;
           }
         },
         { 

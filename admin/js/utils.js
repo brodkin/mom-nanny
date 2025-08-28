@@ -72,26 +72,57 @@ const formatDuration = (seconds) => {
 };
 
 const timeAgo = (date) => {
+  // Handle falsy values (null, undefined, '', 0, false)
+  if (!date) return 'Never';
+  
+  // Convert to Date object if needed
+  const dateObj = date instanceof Date ? date : new Date(date);
+  
+  // Check for invalid dates
+  if (isNaN(dateObj.getTime())) return 'Never';
+  
   const now = new Date();
-  const seconds = Math.floor((now - date) / 1000);
+  const diffMs = now - dateObj;
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
   
-  const intervals = {
-    year: 31536000,
-    month: 2592000,
-    week: 604800,
-    day: 86400,
-    hour: 3600,
-    minute: 60
-  };
-  
-  for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-    const interval = Math.floor(seconds / secondsInUnit);
-    if (interval >= 1) {
-      return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
-    }
+  // Within last 5 minutes - "Just now"
+  if (minutes < 5) {
+    return 'Just now';
   }
   
-  return 'just now';
+  // Under 60 minutes - "N minutes ago"
+  if (minutes < 60) {
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  // Same day - "N hours, N minutes ago"
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDateDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+  
+  if (startOfToday.getTime() === startOfDateDay.getTime()) {
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+    }
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'}, ${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  // Calculate days more accurately using date difference, not hours/24
+  const daysDiff = Math.floor((startOfToday - startOfDateDay) / (1000 * 60 * 60 * 24));
+  
+  // Within last 7 days - "N days ago"
+  if (daysDiff > 0 && daysDiff <= 7) {
+    return `${daysDiff} ${daysDiff === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  // Fallback to formatted date for older dates
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 };
 
 // Number utilities

@@ -729,7 +729,13 @@ class ChatSession extends EventEmitter {
    * Helper function to get relative time
    */
   getTimeAgo(date) {
-    const seconds = Math.floor((new Date() - date) / 1000);
+    // Handle falsy values
+    if (!date) return 'never';
+    
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) return 'never';
+    
+    const seconds = Math.floor((new Date() - dateObj) / 1000);
     
     if (seconds < 60) return 'just now';
     const minutes = Math.floor(seconds / 60);

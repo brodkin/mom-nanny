@@ -175,7 +175,7 @@ class MemoryManager {
     if (lastUpdatedEl) {
       if (this.stats.lastUpdated) {
         const date = new Date(this.stats.lastUpdated);
-        lastUpdatedEl.textContent = this.formatRelativeTime(date);
+        lastUpdatedEl.textContent = window.AdminUtils.timeAgo(date);
       } else {
         lastUpdatedEl.textContent = 'Never';
       }
@@ -335,7 +335,7 @@ class MemoryManager {
           </td>
           <td>
             <time datetime="${memory.last_accessed || ''}" title="${memory.last_accessed ? new Date(memory.last_accessed).toLocaleString() : 'Never'}">
-              ${memory.last_accessed ? this.formatRelativeTime(new Date(memory.last_accessed)) : 'Never'}
+              ${memory.last_accessed ? window.AdminUtils.timeAgo(new Date(memory.last_accessed)) : 'Never'}
             </time>
           </td>
           <td>
@@ -950,27 +950,6 @@ class MemoryManager {
     }
   }
 
-  /**
-   * Format relative time
-   */
-  formatRelativeTime(date) {
-    const now = new Date();
-    const diffMs = now - date;
-    const diffSeconds = Math.floor(diffMs / 1000);
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
-    
-    if (diffSeconds < 60) return 'Just now';
-    if (diffMinutes === 1) return '1 minute ago';
-    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-    if (diffHours === 1) return '1 hour ago';
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    if (diffDays === 1) return '1 day ago';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    
-    return date.toLocaleDateString();
-  }
 
   /**
    * Escape HTML to prevent XSS
