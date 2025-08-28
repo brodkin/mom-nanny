@@ -159,6 +159,9 @@ conversation-summaries.db*
 # Storage directory for recordings
 storage/
 
+# Temporary audio files for Whisper processing
+temp/
+
 # Claude configuration directory
 .claude/
 
