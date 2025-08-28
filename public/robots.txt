@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /
+
+# This is a private healthcare application
+# No content should be indexed by search engines
