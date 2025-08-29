@@ -29,6 +29,9 @@ const VoiceResponse = require('twilio').twiml.VoiceResponse;
 const app = express();
 ExpressWs(app);
 
+// Trust Fly.io proxy for proper HTTPS detection and cookie handling
+app.set('trust proxy', true);
+
 // Session configuration for authentication
 app.use(session({
   secret: process.env.SESSION_SECRET || 'compassionate-ai-companion-secret-' + Date.now(),
@@ -40,7 +43,7 @@ app.use(session({
     domain: process.env.COOKIE_DOMAIN || undefined, // Configure domain if needed
     path: '/',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours explicit expiration
-    sameSite: 'strict' // CSRF protection
+    sameSite: 'lax' // CSRF protection with better compatibility for proxies
   },
   name: 'companion.sid' // Custom session cookie name
 }));

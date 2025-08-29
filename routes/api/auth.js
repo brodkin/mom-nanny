@@ -181,6 +181,7 @@ router.post('/login/complete', authRateLimit, requireUnauthenticated, async (req
       const sessionCreated = await createUserSession(result.user.id, sessionId, req);
 
       if (sessionCreated) {
+        req.session.id = sessionId; // Critical: Set session.id for middleware validation
         req.session.userId = result.user.id;
         req.session.email = result.user.email;
         
