@@ -20,9 +20,6 @@ beforeEach(async () => {
 afterEach(async () => {
   // Reset database singleton after each test
   DatabaseManager.resetInstance();
-  
-  // Add a small delay to allow database connections to close
-  await new Promise(resolve => setTimeout(resolve, 100));
 });
 
 // Suppress console output during tests unless specifically needed

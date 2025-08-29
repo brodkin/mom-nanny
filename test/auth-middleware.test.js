@@ -60,8 +60,14 @@ describe('Authentication Middleware', () => {
       DatabaseManager.getInstance = originalGetInstance;
     }
     
+    // Explicitly close database connection
     if (dbManager) {
-      await dbManager.close();
+      try {
+        await dbManager.close();
+      } catch (err) {
+        // Ignore close errors in tests
+      }
+      dbManager = null;
     }
     
     // Reset singleton after test
