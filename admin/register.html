@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Companion Admin - Registration</title>
+    <link href="/admin/css/admin.css" rel="stylesheet">
+    <style>
+        .registration-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .registration-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .registration-header {
+            margin-bottom: 30px;
+        }
+
+        .registration-header h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .registration-header p {
+            color: #718096;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d3748;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #ffffff;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-control:disabled {
+            background: #f7fafc;
+            color: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .alert-danger {
+            background: #fed7d7;
+            border: 1px solid #feb2b2;
+            color: #c53030;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            border: 1px solid #9ae6b4;
+            color: #2f855a;
+        }
+
+        .alert-info {
+            background: #bee3f8;
+            border: 1px solid #90cdf4;
+            color: #2b6cb0;
+        }
+
+        .token-info {
+            background: #fef5e7;
+            border: 1px solid #f6d55c;
+            color: #d69e2e;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .token-info strong {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .footer-link {
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .footer-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .footer-link a:hover {
+            text-decoration: underline;
+        }
+
+        .passkey-icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="registration-container">
+        <div class="registration-card">
+            <div class="registration-header">
+                <h1>Admin Registration</h1>
+                <p>Complete your registration using a secure passkey</p>
+            </div>
+
+            <div id="tokenInfo" class="token-info">
+                <strong>Token-based Registration</strong>
+                Your registration token was generated by an administrator via CLI. Enter your display name below and complete the passkey setup.
+            </div>
+
+            <div id="alertContainer"></div>
+
+            <form id="registrationForm">
+                <input type="hidden" id="token" name="token" required>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" required 
+                           placeholder="Enter your email address"
+                           autocomplete="email"
+                           spellcheck="false">
+                </div>
+
+                <div class="form-group">
+                    <label for="displayName">Full Name</label>
+                    <input type="text" id="displayName" name="displayName" class="form-control" required 
+                           placeholder="Enter your full name"
+                           autocomplete="name"
+                           spellcheck="false">
+                </div>
+
+                <button type="submit" id="registerBtn" class="btn btn-primary">
+                    <span class="btn-icon">
+                        <svg class="passkey-icon" viewBox="0 0 24 24">
+                            <path d="M7,14A2,2 0 0,1 5,12A2,2 0 0,1 7,10A2,2 0 0,1 9,12A2,2 0 0,1 7,14M12.65,10C11.83,7.67 9.61,6 7,6A6,6 0 0,0 1,12A6,6 0 0,0 7,18C9.61,18 11.83,16.33 12.65,14H17V18H21V14H23V10H12.65Z"/>
+                        </svg>
+                        Register with Passkey
+                    </span>
+                </button>
+            </form>
+
+            <div class="footer-link">
+                <a href="/admin/login">Already registered? Sign in</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebAuthn Client Library -->
+    <script src="https://unpkg.com/@simplewebauthn/browser@12.0.0/dist/bundle/index.umd.min.js"></script>
+    <script src="/admin/js/webauthn-client.js"></script>
+    
+    <script>
+        // Initialize WebAuthn client
+        const webauthnClient = new WebAuthnClient();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registrationForm');
+            const tokenInput = document.getElementById('token');
+            const emailInput = document.getElementById('email');
+            const displayNameInput = document.getElementById('displayName');
+            const registerBtn = document.getElementById('registerBtn');
+            const alertContainer = document.getElementById('alertContainer');
+
+            // Check for token in URL query parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            if (urlToken) {
+                tokenInput.value = urlToken;
+                // Focus on email if token is pre-filled
+                emailInput.focus();
+            }
+
+            function showAlert(message, type = 'danger') {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-${type}">
+                        ${message}
+                    </div>
+                `;
+                alertContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            function setLoading(loading) {
+                registerBtn.disabled = loading;
+                if (loading) {
+                    registerBtn.innerHTML = `
+                        <span class="btn-icon">
+                            <div class="spinner"></div>
+                            Creating Account...
+                        </span>
+                    `;
+                } else {
+                    registerBtn.innerHTML = `
+                        <span class="btn-icon">
+                            <svg class="passkey-icon" viewBox="0 0 24 24">
+                                <path d="M7,14A2,2 0 0,1 5,12A2,2 0 0,1 7,10A2,2 0 0,1 9,12A2,2 0 0,1 7,14M12.65,10C11.83,7.67 9.61,6 7,6A6,6 0 0,0 1,12A6,6 0 0,0 7,18C9.61,18 11.83,16.33 12.65,14H17V18H21V14H23V10H12.65Z"/>
+                            </svg>
+                            Register with Passkey
+                        </span>
+                    `;
+                }
+            }
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const token = tokenInput.value.trim();
+                const email = emailInput.value.trim();
+                const displayName = displayNameInput.value.trim();
+
+                if (!token || !email || !displayName) {
+                    showAlert('Please fill in all required fields.');
+                    return;
+                }
+
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    showAlert('Please enter a valid email address.');
+                    return;
+                }
+
+                if (displayName.length < 2) {
+                    showAlert('Full name must be at least 2 characters long.');
+                    return;
+                }
+
+                setLoading(true);
+                alertContainer.innerHTML = '';
+
+                try {
+                    // Use webauthn-client for registration
+                    const result = await webauthnClient.registerPasskey(token, email, displayName);
+
+                    if (result.success) {
+                        showAlert('Registration successful! Redirecting to login...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/admin/login';
+                        }, 2000);
+                    } else {
+                        throw new Error(result.error || 'Registration failed');
+                    }
+
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    
+                    let errorMessage = error.message;
+                    
+                    // Handle common WebAuthn errors
+                    if (errorMessage.includes('NotAllowedError')) {
+                        errorMessage = 'Registration was cancelled or not allowed. Please try again.';
+                    } else if (errorMessage.includes('InvalidStateError')) {
+                        errorMessage = 'This passkey is already registered. Please try a different device or browser.';
+                    } else if (errorMessage.includes('NotSupportedError')) {
+                        errorMessage = 'Passkeys are not supported on this device or browser.';
+                    } else if (errorMessage.includes('SecurityError')) {
+                        errorMessage = 'Security error during registration. Please ensure you\'re using a secure connection.';
+                    }
+                    
+                    showAlert(errorMessage);
+                } finally {
+                    setLoading(false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

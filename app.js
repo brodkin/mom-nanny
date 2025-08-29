@@ -3,6 +3,8 @@ require('colors');
 
 const express = require('express');
 const ExpressWs = require('express-ws');
+const session = require('express-session');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const { GptService } = require('./services/gpt-service');
@@ -27,6 +29,34 @@ const VoiceResponse = require('twilio').twiml.VoiceResponse;
 const app = express();
 ExpressWs(app);
 
+// Session configuration for authentication
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'compassionate-ai-companion-secret-' + Date.now(),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'strict'
+  },
+  name: 'companion.sid' // Custom session cookie name
+}));
+
+// General rate limiting for the application
+const generalRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(generalRateLimit);
+
 // Admin routes
 const adminRouter = require('./routes/admin');
 const adminStatsRouter = require('./routes/api/admin-stats');
@@ -36,6 +66,7 @@ const adminDashboardRealRouter = require('./routes/api/admin-dashboard-real');
 const emotionalMetricsRouter = require('./routes/api/emotional-metrics');
 const conversationsRouter = require('./routes/api/conversations');
 const searchRouter = require('./routes/api/search');
+const authRouter = require('./routes/api/auth');
 
 const PORT = process.env.PORT || 3000;
 
@@ -330,6 +361,7 @@ app.get('/', (req, res) => {
 // Add JSON parsing middleware for admin API routes
 app.use('/admin', express.json());
 app.use('/api/admin', express.json());
+app.use('/api/auth', express.json());
 
 // Serve voicemail audio assets 
 const assetsPath = path.join(__dirname, 'assets');
@@ -350,6 +382,9 @@ app.use('/api/conversations', conversationsRouter);
 
 // Mount search API routes
 app.use('/api/search', searchRouter);
+
+// Mount authentication API routes
+app.use('/api/auth', authRouter);
 
 // System heartbeat endpoint (directly on admin API)
 app.get('/api/admin/heartbeat', async (req, res) => {

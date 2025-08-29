@@ -197,6 +197,18 @@ class DatabaseManager {
       this.applyVoicemailTranscriptMigration();
       this.runSync('INSERT INTO migrations (version) VALUES (?)', [7]);
     }
+    
+    // Apply authentication migration if needed
+    if (currentVersion < 8) {
+      this.applyAuthenticationMigration();
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [8]);
+    }
+    
+    // Apply registration token improvement migration if needed
+    if (currentVersion < 9) {
+      this.applyRegistrationTokenMigration();
+      this.runSync('INSERT INTO migrations (version) VALUES (?)', [9]);
+    }
   }
 
   applyInitialSchema() {
@@ -448,6 +460,158 @@ class DatabaseManager {
 
     this._execSync(migration);
   }
+
+  /**
+   * Migration 8: Add authentication tables for WebAuthn passkey support
+   * 
+   * This migration creates the authentication system tables per original spec:
+   * - users: Admin user accounts (email only, no usernames)
+   * - registration_tokens: CLI-generated registration tokens with 24-hour expiry
+   * - user_credentials: WebAuthn credential storage (renamed from webauthn_credentials)
+   * - user_sessions: Active session management
+   * 
+   * Follows CLI-only registration flow as specified in tasks.md
+   */
+  applyAuthenticationMigration() {
+    const migration = `
+      -- Migration 8: Authentication tables for CLI-based WebAuthn passkey support
+      
+      -- Users table: Admin user accounts (email-based, no usernames)
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        display_name TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
+      );
+      
+      -- Registration tokens table: CLI-generated tokens with 24-hour expiry
+      CREATE TABLE IF NOT EXISTS registration_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token TEXT UNIQUE NOT NULL,
+        email TEXT NOT NULL,
+        expires_at DATETIME NOT NULL,
+        used INTEGER DEFAULT 0 CHECK (used IN (0, 1)),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      -- User credentials table: Store WebAuthn passkey credentials
+      CREATE TABLE IF NOT EXISTS user_credentials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        credential_id TEXT UNIQUE NOT NULL,
+        public_key TEXT NOT NULL,
+        counter INTEGER DEFAULT 0,
+        transports TEXT, -- JSON array of supported transports
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_used_at DATETIME,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      
+      -- User sessions table: Manage active login sessions
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        session_id TEXT UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        user_agent TEXT,
+        ip_address TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      
+      -- Indexes for authentication performance
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+      CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
+      
+      CREATE INDEX IF NOT EXISTS idx_registration_tokens_token ON registration_tokens(token);
+      CREATE INDEX IF NOT EXISTS idx_registration_tokens_email ON registration_tokens(email);
+      CREATE INDEX IF NOT EXISTS idx_registration_tokens_expires_at ON registration_tokens(expires_at);
+      
+      CREATE INDEX IF NOT EXISTS idx_user_credentials_user_id ON user_credentials(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_credentials_credential_id ON user_credentials(credential_id);
+      
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_session_id ON user_sessions(session_id);
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
+    `;
+
+    this._execSync(migration);
+  }
+
+  /**
+   * Migration 9: Make email optional in registration_tokens table
+   * 
+   * This migration modifies the registration_tokens table to:
+   * - Make email field optional (collected during registration, not token generation)
+   * - Update the schema to support email-less token generation
+   * 
+   * This enables the CLI to generate tokens without collecting email upfront,
+   * matching the original specification where email is collected on the registration page.
+   */
+  applyRegistrationTokenMigration() {
+    // Check if the registration_tokens table exists first
+    const tableExists = this._getSync(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='registration_tokens'
+    `);
+
+    if (!tableExists) {
+      // Table doesn't exist yet, create it with optional email directly
+      const migration = `
+        -- Migration 9: Create registration_tokens table with optional email
+        CREATE TABLE IF NOT EXISTS registration_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          token TEXT UNIQUE NOT NULL,
+          email TEXT, -- Optional email
+          expires_at DATETIME NOT NULL,
+          used INTEGER DEFAULT 0 CHECK (used IN (0, 1)),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        -- Create indexes
+        CREATE INDEX IF NOT EXISTS idx_registration_tokens_token ON registration_tokens(token);
+        CREATE INDEX IF NOT EXISTS idx_registration_tokens_email ON registration_tokens(email);
+        CREATE INDEX IF NOT EXISTS idx_registration_tokens_expires_at ON registration_tokens(expires_at);
+      `;
+      this._execSync(migration);
+    } else {
+      // Table exists, need to modify it (SQLite requires recreation)
+      const migration = `
+        -- Migration 9: Make email optional in existing registration_tokens table
+        -- SQLite doesn't support ALTER COLUMN directly, so we need to recreate the table
+        
+        -- Create new table with optional email
+        CREATE TABLE registration_tokens_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          token TEXT UNIQUE NOT NULL,
+          email TEXT, -- Made optional
+          expires_at DATETIME NOT NULL,
+          used INTEGER DEFAULT 0 CHECK (used IN (0, 1)),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        -- Copy existing data
+        INSERT INTO registration_tokens_new (id, token, email, expires_at, used, created_at)
+        SELECT id, token, email, expires_at, used, created_at FROM registration_tokens;
+        
+        -- Drop old table
+        DROP TABLE registration_tokens;
+        
+        -- Rename new table
+        ALTER TABLE registration_tokens_new RENAME TO registration_tokens;
+        
+        -- Recreate indexes
+        CREATE INDEX IF NOT EXISTS idx_registration_tokens_token ON registration_tokens(token);
+        CREATE INDEX IF NOT EXISTS idx_registration_tokens_email ON registration_tokens(email);
+        CREATE INDEX IF NOT EXISTS idx_registration_tokens_expires_at ON registration_tokens(expires_at);
+      `;
+      this._execSync(migration);
+    }
+  }
+
 
   getCurrentMigrationVersion() {
     try {
