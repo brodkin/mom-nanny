@@ -33,11 +33,6 @@ async function developmentAutoLogin(req) {
     return false;
   }
 
-  // Don't override existing sessions
-  if (req.session?.id) {
-    return false;
-  }
-
   try {
     const dbManager = DatabaseManager.getInstance();
     await dbManager.waitForInitialization();
@@ -54,6 +49,12 @@ async function developmentAutoLogin(req) {
     if (user) {
       // Generate session ID and create session
       const sessionId = uuidv4();
+      
+      // Ensure session object exists
+      if (!req.session) {
+        req.session = {};
+      }
+      
       req.session.id = sessionId;
       req.session.userId = user.id;
       req.session.email = user.email;
@@ -111,8 +112,22 @@ async function authenticateAdmin(req, res, next) {
       return res.redirect('/admin/setup.html');
     }
 
-    // Try development auto-login if no session exists
-    if (!req.session?.id && process.env.NODE_ENV === 'development') {
+    // Get session ID from cookies
+    const sessionId = req.session?.id;
+    
+    let sessionData = null;
+    if (sessionId) {
+      // Validate session in database
+      sessionData = await dbManager.get(`
+        SELECT us.*, u.id as user_id, u.email, u.display_name, u.is_active
+        FROM user_sessions us
+        JOIN users u ON us.user_id = u.id
+        WHERE us.session_id = ? AND us.expires_at > datetime('now') AND u.is_active = 1
+      `, [sessionId]);
+    }
+
+    // Try development auto-login if no session or invalid session in development
+    if (!sessionData && process.env.NODE_ENV === 'development') {
       const autoUser = await developmentAutoLogin(req);
       if (autoUser) {
         req.user = {
@@ -124,23 +139,15 @@ async function authenticateAdmin(req, res, next) {
       }
     }
 
-    // Get session ID from cookies
-    const sessionId = req.session?.id;
     if (!sessionId) {
       return redirectToLogin(req, res, 'No session found');
     }
 
-    // Validate session in database
-    const sessionData = await dbManager.get(`
-      SELECT us.*, u.id as user_id, u.email, u.display_name, u.is_active
-      FROM user_sessions us
-      JOIN users u ON us.user_id = u.id
-      WHERE us.session_id = ? AND us.expires_at > datetime('now') AND u.is_active = 1
-    `, [sessionId]);
-
     if (!sessionData) {
       // Clean up expired session from client
-      req.session.destroy();
+      if (req.session && req.session.destroy) {
+        req.session.destroy();
+      }
       return redirectToLogin(req, res, 'Invalid or expired session');
     }
 

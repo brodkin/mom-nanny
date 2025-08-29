@@ -13,7 +13,7 @@
     "test:auto-login": "node ./scripts/test-auto-login.js",
     "test:auto-login:browser": "node ./scripts/test-auto-login-browser.js",
     "test:auto-login:curl": "./scripts/test-curl-commands.sh",
-    "dev": "nodemon app.js",
+    "dev": "NODE_ENV=development nodemon app.js",
     "start": "node app.js",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
