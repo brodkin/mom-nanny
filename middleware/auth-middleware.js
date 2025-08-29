@@ -396,8 +396,10 @@ function redirectToLogin(req, res, reason) {
   res.redirect('/admin/login');
 }
 
-// Schedule periodic cleanup (every hour)
-setInterval(cleanupExpiredSessions, 60 * 60 * 1000);
+// Schedule periodic cleanup (every hour) - only in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(cleanupExpiredSessions, 60 * 60 * 1000);
+}
 
 module.exports = {
   authenticateAdmin,
