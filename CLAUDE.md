@@ -259,10 +259,16 @@ npm run inbound  # Automated test script
 npm run outbound # Calls YOUR_NUMBER
 ```
 
-### Development Mode
+### Development Mode (MANDATORY)
 ```bash
-npm run dev # Nodemon auto-reload
+npm run dev # ONLY allowed way to run dev server - runs in background with auto-reload
 ```
+
+**CRITICAL**: The development server MUST ONLY be started using `npm run dev`. This command:
+- Runs the server in the background with auto-reload capability
+- Automatically restarts when code changes are detected
+- Is the ONLY supported method for development
+- Must NOT be run with `npm start` or direct node commands during development
 
 ### Unit Testing
 ```bash
