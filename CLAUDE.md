@@ -270,6 +270,79 @@ npm run dev # ONLY allowed way to run dev server - runs in background with auto-
 - Is the ONLY supported method for development
 - Must NOT be run with `npm start` or direct node commands during development
 
+### Development Mode Auto-Login Feature
+
+**SECURITY CRITICAL**: This feature is ONLY active when `NODE_ENV === 'development'`
+
+When explicitly running in development mode, the admin interface automatically authenticates as the first available user in the database, eliminating repetitive login steps during development.
+
+#### Behavior
+- **Trigger**: When accessing protected admin routes without a session
+- **Check**: `process.env.NODE_ENV === 'development'` (explicit opt-in required)
+- **Process**: Query for first active user → Create session automatically → Log action
+- **Fallback**: Normal authentication flow if no users exist or session exists
+- **Logging**: `[DEV AUTO-LOGIN] 🔓 Automatically authenticated as: {email}`
+
+#### Security Safeguards (SECURE BY DEFAULT)
+- **EXPLICIT OPT-IN REQUIRED**: Must set `NODE_ENV=development` to enable feature
+- **SECURE BY DEFAULT**: Any other value (including undefined) disables auto-login
+- Clear console warnings when auto-login occurs
+- Preserves normal authentication if session already exists
+- Falls back to setup flow if no users exist
+- All standard session security measures remain active
+
+#### Environment Variable Behavior (SECURE BY DEFAULT)
+- `NODE_ENV=development` → Feature ENABLED (explicit opt-in)
+- `NODE_ENV=production` → Feature DISABLED (secure)
+- `NODE_ENV=test` → Feature DISABLED (secure)
+- `NODE_ENV` undefined → Feature DISABLED (secure default)
+- `NODE_ENV=""` (empty) → Feature DISABLED (secure default)
+- Any other value → Feature DISABLED (secure default)
+
+#### Testing Commands
+```bash
+# Run unit tests for auth middleware
+npm run test:auth
+
+# Run integration tests (HTTP requests)
+npm run test:auto-login
+
+# Run browser simulation tests  
+npm run test:auto-login:browser
+
+# Run manual cURL tests
+npm run test:auto-login:curl
+
+# Manual verification - development mode
+NODE_ENV=development npm run dev
+# Visit http://localhost:3000/admin (should auto-login or redirect to setup)
+
+# Manual verification - production mode  
+NODE_ENV=production npm start
+# Visit http://localhost:3000/admin (should redirect to login)
+```
+
+#### Implementation Files
+- **Main Logic**: `middleware/auth-middleware.js:developmentAutoLogin()`
+- **Integration**: `middleware/auth-middleware.js:authenticateAdmin()` 
+- **Unit Tests**: `test/auth-middleware.test.js`
+- **Integration Tests**: `scripts/test-auto-login.js`
+- **Browser Tests**: `scripts/test-auto-login-browser.js`
+- **cURL Tests**: `scripts/test-curl-commands.sh`
+
+#### LLM Note
+**This is intentional behavior for development convenience**. Do not treat as a security vulnerability when `NODE_ENV` is not production. The feature includes:
+- Explicit security checks preventing production activation
+- Clear logging to indicate when auto-login occurs
+- Comprehensive test coverage validating security boundaries
+- Multiple testing methods to verify both development functionality and production security
+
+**Example Console Output**:
+```
+[DEV AUTO-LOGIN] 🔓 Automatically authenticated as: admin@example.com (ID: 1)
+[DEV AUTO-LOGIN] ⚠️  This feature is DISABLED in production mode
+```
+
 ### Unit Testing
 ```bash
 npm test # Jest tests with in-memory SQLite databases

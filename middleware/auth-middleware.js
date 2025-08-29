@@ -1,4 +1,5 @@
 const DatabaseManager = require('../services/database-manager');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Authentication Middleware for Admin Interface
@@ -10,10 +11,74 @@ const DatabaseManager = require('../services/database-manager');
  * Features:
  * - Session validation from database
  * - Bootstrap detection (redirect to setup if no users exist)
+ * - Development mode auto-login (SECURITY: only when NODE_ENV === 'development')
  * - Graceful redirects for unauthenticated requests
  * - Audit logging for security events
  * - Rate limiting integration
  */
+
+/**
+ * Development mode auto-login helper
+ * SECURITY CRITICAL: Only works when NODE_ENV === 'development'
+ * 
+ * Automatically creates a session for the first available user in development mode
+ * to eliminate repetitive login steps during development.
+ * 
+ * @param {Object} req - Express request object
+ * @returns {Object|false} User object if auto-login successful, false otherwise
+ */
+async function developmentAutoLogin(req) {
+  // SECURITY: Only allow in development mode - explicit opt-in required
+  if (process.env.NODE_ENV !== 'development') {
+    return false;
+  }
+
+  // Don't override existing sessions
+  if (req.session?.id) {
+    return false;
+  }
+
+  try {
+    const dbManager = DatabaseManager.getInstance();
+    await dbManager.waitForInitialization();
+
+    // Get first available active user
+    const user = await dbManager.get(`
+      SELECT id, email, display_name 
+      FROM users 
+      WHERE is_active = 1 
+      ORDER BY created_at ASC 
+      LIMIT 1
+    `);
+
+    if (user) {
+      // Generate session ID and create session
+      const sessionId = uuidv4();
+      req.session.id = sessionId;
+      req.session.userId = user.id;
+      req.session.email = user.email;
+
+      // Create session in database
+      const sessionCreated = await createUserSession(user.id, sessionId, req);
+      
+      if (sessionCreated) {
+        console.log(`[DEV AUTO-LOGIN] 🔓 Automatically authenticated as: ${user.email} (ID: ${user.id})`);
+        console.log('[DEV AUTO-LOGIN] ⚠️  This feature is DISABLED in production mode');
+        
+        return {
+          id: user.id,
+          email: user.email,
+          displayName: user.display_name
+        };
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error('[DEV AUTO-LOGIN] Error during development auto-login:', error);
+    return false;
+  }
+}
 
 /**
  * Main authentication middleware
@@ -44,6 +109,19 @@ async function authenticateAdmin(req, res, next) {
     if (!hasUsers && !req.path.startsWith('/auth/')) {
       // Redirect to setup if no admin users exist
       return res.redirect('/admin/setup.html');
+    }
+
+    // Try development auto-login if no session exists
+    if (!req.session?.id && process.env.NODE_ENV === 'development') {
+      const autoUser = await developmentAutoLogin(req);
+      if (autoUser) {
+        req.user = {
+          id: autoUser.id,
+          email: autoUser.email,
+          displayName: autoUser.displayName
+        };
+        return next();
+      }
     }
 
     // Get session ID from cookies
@@ -316,5 +394,6 @@ module.exports = {
   createUserSession,
   destroyUserSession,
   cleanupExpiredSessions,
-  getUserSessions
+  getUserSessions,
+  developmentAutoLogin
 };
