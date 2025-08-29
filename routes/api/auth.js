@@ -15,7 +15,7 @@ const webauthnService = new WebAuthnService();
 // Rate limiting for authentication endpoints
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 50 : 5, // Higher limit in development
+  max: process.env.NODE_ENV === 'development' ? 50 : 20, // Reasonable limit for production
   message: {
     success: false,
     error: 'Too many authentication attempts, please try again later',
@@ -27,7 +27,7 @@ const authRateLimit = rateLimit({
 
 const registrationRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: process.env.NODE_ENV === 'development' ? 100 : 3, // Higher limit in development
+  max: process.env.NODE_ENV === 'development' ? 100 : 10, // Reasonable limit for production
   message: {
     success: false,
     error: 'Too many registration attempts, please try again later',
