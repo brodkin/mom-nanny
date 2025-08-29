@@ -33,6 +33,11 @@ async function developmentAutoLogin(req) {
     return false;
   }
 
+  // Don't override existing session
+  if (req.session && req.session.id) {
+    return false;
+  }
+
   try {
     const dbManager = DatabaseManager.getInstance();
     await dbManager.waitForInitialization();

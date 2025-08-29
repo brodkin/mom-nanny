@@ -153,13 +153,26 @@ describe('DatabaseManager', () => {
       expect(version).toBeGreaterThanOrEqual(0);
     });
 
-    test('should apply migrations in order', async () => {
-      // This tests that all migrations are applied to a fresh database
-      const tables = await dbManager.getTables();
-      expect(tables.length).toBeGreaterThan(0);
+    test('should apply migrations to create complete schema', async () => {
+      // Test that all required tables exist after migrations
+      const tableNames = await dbManager.getTables(); // getTables() already returns array of strings
       
+      // Core tables from initial migration
+      expect(tableNames).toContain('conversations');
+      expect(tableNames).toContain('summaries');
+      expect(tableNames).toContain('messages');
+      expect(tableNames).toContain('analytics');
+      
+      // Tables from later migrations
+      expect(tableNames).toContain('memories');
+      expect(tableNames).toContain('settings');
+      expect(tableNames).toContain('emotional_metrics');
+      expect(tableNames).toContain('users');
+      
+      // Verify migration tracking works
       const version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(6); // Should be at latest version (6) after initial setup with fact memory migration
+      expect(typeof version).toBe('number');
+      expect(version).toBeGreaterThanOrEqual(9); // Should be at latest version after all migrations
     });
 
     test('should apply Migration 4 performance indexes', async () => {
@@ -182,12 +195,9 @@ describe('DatabaseManager', () => {
       expect(indexNames).toContain('idx_memories_category_updated');
     });
 
-    test('should skip Migration 4 if already applied', async () => {
-      // First, verify we're at version 6 (with fact memory migration)
-      let version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(6);
-
-      // Count current indexes
+    test('should be idempotent when migrations reapplied', async () => {
+      // Get initial state
+      let initialVersion = await dbManager.getCurrentMigrationVersion();
       const initialIndexes = await dbManager.all(`
         SELECT COUNT(*) as count FROM sqlite_master 
         WHERE type='index' AND sql NOT NULL
@@ -196,11 +206,11 @@ describe('DatabaseManager', () => {
       // Apply migrations again - should be idempotent
       await dbManager.applyMigrations();
       
-      // Version should still be 6 (latest migration)
-      version = await dbManager.getCurrentMigrationVersion();
-      expect(version).toBe(6);
+      // Version should be unchanged (same as latest)
+      let finalVersion = await dbManager.getCurrentMigrationVersion();
+      expect(finalVersion).toBe(initialVersion);
 
-      // Index count should be unchanged
+      // Index count should be unchanged (no duplicates created)
       const finalIndexes = await dbManager.all(`
         SELECT COUNT(*) as count FROM sqlite_master 
         WHERE type='index' AND sql NOT NULL
