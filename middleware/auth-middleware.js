@@ -113,8 +113,8 @@ async function authenticateAdmin(req, res, next) {
     // Check for bootstrap condition (no users exist)
     const hasUsers = await checkHasUsers(dbManager);
     if (!hasUsers && !req.path.startsWith('/auth/')) {
-      // Redirect to setup if no admin users exist
-      return res.redirect('/admin/setup.html');
+      // Redirect to login if no admin users exist (CLI registration only)
+      return res.redirect('/admin/login');
     }
 
     // Get session ID from cookies

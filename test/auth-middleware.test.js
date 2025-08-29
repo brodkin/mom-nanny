@@ -237,7 +237,7 @@ describe('Authentication Middleware', () => {
       expect(res.redirect).toHaveBeenCalledWith('/admin/login');
     });
 
-    test('should redirect to setup when no users exist', async () => {
+    test('should redirect to login when no users exist', async () => {
       process.env.NODE_ENV = 'development';
       
       const req = createMockReq();
@@ -247,7 +247,7 @@ describe('Authentication Middleware', () => {
       await authenticateAdmin(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
-      expect(res.redirect).toHaveBeenCalledWith('/admin/setup.html');
+      expect(res.redirect).toHaveBeenCalledWith('/admin/login');
     });
   });
 
