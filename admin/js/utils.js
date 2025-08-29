@@ -307,8 +307,10 @@ const request = async (url, options = {}) => {
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest', // Mark as AJAX request
       ...options.headers
     },
+    credentials: 'include', // Include cookies for authentication
     ...options
   };
   
@@ -318,6 +320,24 @@ const request = async (url, options = {}) => {
   
   try {
     const response = await fetch(url, config);
+    
+    // Handle authentication errors
+    if (response.status === 401) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        if (errorData.redirect) {
+          // Redirect to login page
+          console.log('[Auth] Authentication required, redirecting to login');
+          window.location.href = errorData.redirect;
+          return; // Don't throw error, we're redirecting
+        }
+      }
+      // If no redirect info, redirect to default login
+      console.log('[Auth] Authentication required, redirecting to default login');
+      window.location.href = '/admin/login';
+      return;
+    }
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

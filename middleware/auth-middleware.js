@@ -286,8 +286,14 @@ async function checkHasUsers(dbManager) {
 function redirectToLogin(req, res, reason) {
   console.log(`[Auth] Redirecting to login: ${reason} (Path: ${req.path})`);
   
-  // For API requests, return JSON error
-  if (req.path.startsWith('/api/') || req.accepts('json')) {
+  // For actual API requests or AJAX requests, return JSON error
+  // Check for explicit API paths, XMLHttpRequest, or Fetch API headers
+  const isApiRequest = req.path.startsWith('/api/') || 
+                      req.get('X-Requested-With') === 'XMLHttpRequest' ||
+                      req.get('Content-Type') === 'application/json' ||
+                      (req.get('Accept') && req.get('Accept').includes('application/json') && !req.get('Accept').includes('text/html'));
+  
+  if (isApiRequest) {
     return res.status(401).json({
       success: false,
       error: 'Authentication required',

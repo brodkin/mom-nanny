@@ -31,6 +31,9 @@ class AdminDashboard {
     
     console.log('🚀 Admin Dashboard initialized');
     
+    // Initialize global authentication handler
+    this.initializeGlobalAuthHandler();
+    
     // Initialize dashboard-specific features if on dashboard page
     if (window.location.pathname.includes('dashboard')) {
       this.initializeDashboardFeatures();
@@ -941,6 +944,29 @@ class AdminDashboard {
       // Set fallback values
       this.setFallbackUserInfo();
     }
+  }
+
+  initializeGlobalAuthHandler() {
+    // Override the native fetch to handle 401s globally for any fetch calls that bypass the utils wrapper
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await originalFetch.apply(window, args);
+      
+      // Handle authentication errors for any fetch call
+      if (response.status === 401) {
+        const url = args[0];
+        // Only handle admin API calls, not external APIs
+        if (typeof url === 'string' && (url.startsWith('/api/') || url.startsWith('/admin/'))) {
+          console.log('[Auth] Global 401 handler: Authentication required, redirecting to login');
+          window.location.href = '/admin/login';
+          return response; // Return the response but redirect is already happening
+        }
+      }
+      
+      return response;
+    };
+    
+    console.log('[Auth] Global authentication handler initialized');
   }
 
   async loadUserInfo() {
