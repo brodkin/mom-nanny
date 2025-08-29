@@ -169,6 +169,8 @@ class TemplateLoader {
       window.adminDashboard.bindEvents();
       // CRITICAL: Reinitialize theme after templates are loaded and toggle button exists
       window.adminDashboard.initializeTheme();
+      // CRITICAL: Reinitialize user profile after header template is loaded
+      window.adminDashboard.initializeUserProfile();
     }
 
     // Dispatch custom event for other scripts to listen to

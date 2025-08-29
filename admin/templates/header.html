@@ -47,17 +47,32 @@
 
     <!-- User Profile -->
     <div class="user-profile dropdown">
-      <div class="avatar avatar-md">
-        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" alt="Admin user" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-        <div style="display: none;">AD</div>
+      <button class="user-profile-button" id="user-profile-button" aria-label="User profile menu" data-tooltip="User Profile">
+        <div class="avatar avatar-md">
+          <div class="avatar-initials" id="user-initials">...</div>
+        </div>
+        <div class="user-info">
+          <div class="user-name" id="user-display-name">Loading...</div>
+          <div class="user-role">Care Coordinator</div>
+        </div>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <polyline points="6,9 12,15 18,9"/>
+        </svg>
+      </button>
+      
+      <!-- Dropdown menu -->
+      <div class="dropdown-menu" id="user-dropdown-menu">
+        <div class="dropdown-header">
+          <div class="user-email" id="user-email">...</div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <a href="#" class="dropdown-item" onclick="logout()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sign Out
+        </a>
       </div>
-      <div class="user-info">
-        <div class="user-name">Caregiver Admin</div>
-        <div class="user-role">Care Coordinator</div>
-      </div>
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <polyline points="6,9 12,15 18,9"/>
-      </svg>
     </div>
   </div>
 </header>

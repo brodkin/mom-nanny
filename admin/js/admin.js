@@ -26,6 +26,9 @@ class AdminDashboard {
     // Initialize collapsible components
     this.initializeCollapsibles();
     
+    // Initialize user profile
+    this.initializeUserProfile();
+    
     console.log('🚀 Admin Dashboard initialized');
     
     // Initialize dashboard-specific features if on dashboard page
@@ -46,6 +49,19 @@ class AdminDashboard {
     if (themeToggle) {
       themeToggle.addEventListener('click', () => this.toggleTheme());
     }
+
+    // User profile dropdown
+    const userProfileButton = document.getElementById('user-profile-button');
+    if (userProfileButton) {
+      userProfileButton.addEventListener('click', (e) => this.toggleUserProfileDropdown(e));
+    }
+
+    // Close user profile dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.user-profile')) {
+        this.closeUserProfileDropdown();
+      }
+    });
 
     // Search functionality
     const searchInput = document.getElementById('search-input');
@@ -914,7 +930,151 @@ class AdminDashboard {
       }, 60000);
     }
   }
+
+  // User Profile Methods
+  async initializeUserProfile() {
+    try {
+      // Load user information from the API
+      await this.loadUserInfo();
+    } catch (error) {
+      console.error('Failed to initialize user profile:', error);
+      // Set fallback values
+      this.setFallbackUserInfo();
+    }
+  }
+
+  async loadUserInfo() {
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          this.updateUserDisplay(data.user);
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Failed to load user info:', error);
+      throw error;
+    }
+  }
+
+  updateUserDisplay(user) {
+    // Update user name
+    const userNameElement = document.getElementById('user-display-name');
+    if (userNameElement) {
+      userNameElement.textContent = user.displayName;
+    }
+
+    // Update user initials
+    const userInitialsElement = document.getElementById('user-initials');
+    if (userInitialsElement) {
+      userInitialsElement.textContent = user.initials;
+    }
+
+    // Update user email in dropdown
+    const userEmailElement = document.getElementById('user-email');
+    if (userEmailElement) {
+      userEmailElement.textContent = user.email;
+    }
+
+    // Store user info globally for other components
+    window.currentUser = user;
+  }
+
+  setFallbackUserInfo() {
+    // Set fallback values if API fails
+    const userNameElement = document.getElementById('user-display-name');
+    if (userNameElement) {
+      userNameElement.textContent = 'Admin User';
+    }
+
+    const userInitialsElement = document.getElementById('user-initials');
+    if (userInitialsElement) {
+      userInitialsElement.textContent = 'AU';
+    }
+
+    const userEmailElement = document.getElementById('user-email');
+    if (userEmailElement) {
+      userEmailElement.textContent = 'admin@example.com';
+    }
+  }
+
+  toggleUserProfileDropdown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const userProfile = document.querySelector('.user-profile');
+    const dropdownMenu = document.getElementById('user-dropdown-menu');
+    
+    if (userProfile && dropdownMenu) {
+      const isOpen = userProfile.classList.contains('dropdown-open');
+      
+      if (isOpen) {
+        this.closeUserProfileDropdown();
+      } else {
+        this.openUserProfileDropdown();
+      }
+    }
+  }
+
+  openUserProfileDropdown() {
+    const userProfile = document.querySelector('.user-profile');
+    if (userProfile) {
+      userProfile.classList.add('dropdown-open');
+    }
+  }
+
+  closeUserProfileDropdown() {
+    const userProfile = document.querySelector('.user-profile');
+    if (userProfile) {
+      userProfile.classList.remove('dropdown-open');
+    }
+  }
 }
+
+// Global logout function (called from HTML template)
+window.logout = async function() {
+  try {
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      // Clear any client-side data
+      if (window.currentUser) {
+        delete window.currentUser;
+      }
+      
+      // Redirect to login page
+      window.location.href = data.redirectUrl || '/admin/login';
+    } else {
+      console.error('Logout failed:', data.error);
+      // Force redirect anyway for security
+      window.location.href = '/admin/login';
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Force redirect anyway for security
+    window.location.href = '/admin/login';
+  }
+};
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {

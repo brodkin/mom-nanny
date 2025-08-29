@@ -904,3 +904,118 @@
   background: var(--color-gray-400);
   box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.3);
 }
+
+/* User Profile Components */
+.user-profile {
+  position: relative;
+}
+
+.user-profile-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+}
+
+.user-profile-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+}
+
+.user-profile .user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.user-profile .user-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.user-profile .user-role {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-inverse);
+  background: var(--gradient-primary);
+  border-radius: var(--radius-full);
+}
+
+/* Dropdown menu specific to user profile */
+.user-profile .dropdown-menu {
+  min-width: 220px;
+  padding: var(--space-2) 0;
+}
+
+.dropdown-header {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+  margin-bottom: var(--space-1);
+}
+
+.user-email {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-primary);
+  margin: var(--space-1) 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .user-profile .user-info {
+    display: none;
+  }
+  
+  .user-profile .user-name {
+    max-width: 100px;
+  }
+}

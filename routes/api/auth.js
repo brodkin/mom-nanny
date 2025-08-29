@@ -330,7 +330,52 @@ router.get('/profile', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Get user's credentials
+// Get current user info
+router.get('/me', authenticateAdmin, async (req, res) => {
+  try {
+    const user = req.user;
+    
+    // Generate initials from display name or email
+    const generateInitials = (name, email) => {
+      if (name && name.trim()) {
+        return name.trim().split(' ')
+          .map(word => word.charAt(0).toUpperCase())
+          .slice(0, 2)
+          .join('');
+      }
+      // Fallback to email initials
+      if (email) {
+        const emailParts = email.split('@')[0].split(/[._]/);
+        return emailParts
+          .map(part => part.charAt(0).toUpperCase())
+          .slice(0, 2)
+          .join('');
+      }
+      return 'U';
+    };
+    
+    const initials = generateInitials(user.display_name, user.email);
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.display_name || user.email,
+        initials: initials
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[Auth API] User info error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch user information',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 router.get('/credentials', authenticateAdmin, async (req, res) => {
   try {
     const credentials = await webauthnService.getUserCredentials(req.user.id);
