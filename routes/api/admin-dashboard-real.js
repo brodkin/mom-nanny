@@ -686,17 +686,27 @@ function formatDurationHumanReadable(seconds) {
 
 function determineEmotionalState(conversation) {
   // Determine emotional state based on metrics
+  // Handle null emotional metrics (when async analysis hasn't completed)
   const anxiety = conversation.anxiety_level || 0;
   const agitation = conversation.agitation_level || 0;
   const confusion = conversation.confusion_level || 0;
   const comfort = conversation.comfort_level || 0;
   
-  // Priority: Critical states first
-  if (anxiety >= 8 || agitation >= 8) return 'critical';
-  if (confusion >= 7) return 'concerning';
-  if (anxiety >= 5 || agitation >= 5) return 'elevated';
-  if (comfort >= 7) return 'positive';
-  if (anxiety <= 3 && agitation <= 3 && confusion <= 3) return 'stable';
+  // If all metrics are null/undefined, this indicates missing emotional analysis
+  // Return neutral with gray background as fallback
+  if (conversation.anxiety_level === null && 
+      conversation.agitation_level === null && 
+      conversation.confusion_level === null && 
+      conversation.comfort_level === null) {
+    return 'neutral';
+  }
+  
+  // Map emotional states to frontend expectations (comfortable/neutral/distressed)
+  // Priority: Distressing states first
+  if (anxiety >= 8 || agitation >= 8 || confusion >= 7) return 'distressed';
+  if (anxiety >= 5 || agitation >= 5) return 'distressed';
+  if (comfort >= 7) return 'comfortable';
+  if (anxiety <= 3 && agitation <= 3 && confusion <= 3) return 'comfortable';
   
   return 'neutral';
 }
