@@ -51,7 +51,7 @@ class VoicemailRecordingService {
   <!-- Record caller's message -->
   <Record 
     maxLength="20" 
-    timeout="1"
+    timeout="3"
     playBeep="false"
     action="/voicemail/recording-complete"
     method="POST"/>
@@ -157,7 +157,7 @@ class VoicemailRecordingService {
   
   <Record 
     maxLength="20" 
-    timeout="1"
+    timeout="3"
     playBeep="false"
     action="/voicemail/recording-complete"
     method="POST"/>

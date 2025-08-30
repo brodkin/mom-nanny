@@ -39,7 +39,7 @@ describe('VoicemailRecordingService', () => {
       expect(response).toContain('<Play>https://test.example.com/assets/audio/beep.mp3</Play>');
       expect(response).toContain('<Record');
       expect(response).toContain('maxLength="20"');
-      expect(response).toContain('timeout="1"');
+      expect(response).toContain('timeout="3"');
       expect(response).toContain('playBeep="false"');
       expect(response).toContain('action="/voicemail/recording-complete"');
       expect(response).toContain('method="POST"');
@@ -78,7 +78,7 @@ describe('VoicemailRecordingService', () => {
       expect(response).toContain('<Play>https://test.example.com/assets/audio/beep.mp3</Play>');
       expect(response).toContain('<Record');
       expect(response).toContain('maxLength="20"');
-      expect(response).toContain('timeout="1"');
+      expect(response).toContain('timeout="3"');
       expect(response).toContain('playBeep="false"');
       expect(response).toContain('action="/voicemail/recording-complete"');
       expect(response).toContain('method="POST"');
