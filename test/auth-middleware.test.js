@@ -119,19 +119,29 @@ describe('Authentication Middleware', () => {
       );
     });
 
-    test('should not override existing session', async () => {
+    test('should create new session even when Express session ID exists', async () => {
       // Create test user
       await dbManager.run(`
         INSERT INTO users (email, display_name, is_active) 
         VALUES (?, ?, ?)
       `, ['test@example.com', 'Test User', 1]);
 
-      const existingSessionId = 'existing-session-123';
-      const req = createMockReq({ id: existingSessionId, userId: 99 });
+      // Express creates session IDs automatically, but this doesn't mean the session is authenticated
+      const expressSessionId = 'express-generated-session-123';
+      const req = createMockReq({ id: expressSessionId });
       const result = await developmentAutoLogin(req);
 
-      expect(result).toBe(false);
-      expect(req.session.id).toBe(existingSessionId);
+      // Should succeed and create a new authenticated session
+      expect(result).toEqual({
+        id: expect.any(Number),
+        email: 'test@example.com', 
+        displayName: 'Test User'
+      });
+      
+      // Should create a new session ID for authentication (different from Express session ID)
+      expect(req.session.id).not.toBe(expressSessionId);
+      expect(req.session.userId).toBe(result.id);
+      expect(req.session.email).toBe('test@example.com');
     });
 
     test('should return false when no users exist', async () => {

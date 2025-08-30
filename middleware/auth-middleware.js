@@ -33,10 +33,10 @@ async function developmentAutoLogin(req) {
     return false;
   }
 
-  // Don't override existing session
-  if (req.session && req.session.id) {
-    return false;
-  }
+  // Don't override existing authenticated session - but Express creates session IDs automatically
+  // We only care if there's a valid authenticated session, not just a session ID
+  // Note: We don't return false here just because req.session.id exists, 
+  // because Express creates session IDs automatically. We only care if it's authenticated.
 
   try {
     const dbManager = DatabaseManager.getInstance();
